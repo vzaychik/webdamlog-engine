@@ -416,9 +416,9 @@ In the string: #{line}
       unless local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
-          str_res << "temp :#{wlrule.head.fullrelname} <= "
+          str_res << "temp :#{make_rel_name(wlrule.head.fullrelname)} <= "
         else
-          str_res << "#{wlrule.head.fullrelname} <= "
+          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
         end
       end
 
@@ -441,11 +441,16 @@ In the string: #{line}
       #      end
 
       if body.length==0
+        if @options[:accessc]
+          #VZM:TODO! - when is rule body length ever 0??? and what do we do in such cases with access controL?
+          puts "translation of rule with zero body length while in access control mode not implemented!!!"
+        end
+
         str_res << " ["
         str_res << projection_bud_string(wlrule)
         str_res << "];"
       else
-        if body.length==1
+        if body.length==1 && !@options[:accessc]
           str_res << body.first.fullrelname
         else
           # #Generate rule collection names using pairs and combos keywords.
@@ -459,10 +464,34 @@ In the string: #{line}
         str_res << " {|";
         wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
         str_res.slice!(-2..-1) #remove last and before last
+
+        #VZM access control - need to add variable names for each acl we added
+        if @options[:accessc]
+          wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << ", #{WLProgram.atom_iterator_by_pos(v)}acl"}
+          str_res << ", aclw"
+        end
+
         str_res << "| "
         
         str_res << projection_bud_string(wlrule)
         str_res << condition_bud_string(wlrule)
+
+        #add the check for the right plist in acls
+        #add the check that we can write to the head relation
+        if @options[:accessc]
+          if str_res.include?(" if ")
+            str_res << " && "
+          else
+            str_res << " if "
+          end
+          wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}acl.priv == \"Read\" && #{WLProgram.atom_iterator_by_pos(v)}acl.rel == \"#{wlrule.dic_invert_relation_name[v]}\" && "}
+          str_res << "("
+          wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}.plist & #{WLProgram.atom_iterator_by_pos(v)}acl.plist & "}
+          str_res.slice!(-3..-1)
+          str_res << ").include?(\"#{wlrule.head.peername}\")"
+
+          str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{peername}\")"
+        end
         
         #        unless wlrule.dic_wlconst.empty?
         #          str_res << str_self_join.sub(/&&/,'if')
@@ -472,6 +501,20 @@ In the string: #{line}
 
         str_res << "};"
       end
+    end
+
+    # Generates the string representing the relation name
+    # If access control is on, turns into extended relation
+    def make_rel_name (rel)
+      rel, pname = rel.split('_at_')
+      str_res = "#{rel}"
+
+      if @options[:accessc]
+        str_res << "_ext"
+      end
+
+      str_res << "_at_#{pname}"
+      return str_res
     end
 
     # Read the content and erase. It return the hash of the collection to create
@@ -657,7 +700,7 @@ In the string: #{line}
         # #add location specifier
         raise WLErrorPeerId, "impossible to define the peer that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{destination}\", "
-        relation = "#{wlrule.head.fullrelname}"
+        relation = "#{make_rel_name(wlrule.head.fullrelname)}"
         raise WLErrorProgram, "impossible to define the relation that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{relation}\", "
         str << "["
@@ -684,6 +727,13 @@ In the string: #{line}
           str << "#{quote_string(f.token_text_value)}, "
         end
       end
+
+      if @options[:accessc]
+        #add priv and plist computation
+        str << "\"Read\", "
+        wlrule.dic_invert_relation_name.keys.sort.each {|v| str << "#{WLProgram.atom_iterator_by_pos(v)}.plist & #{WLProgram.atom_iterator_by_pos(v)}acl.plist & "}
+      end
+
       str.slice!(-2..-1) unless fields.empty?
 
       unless local?(wlrule.head)
@@ -759,9 +809,18 @@ In the string: #{line}
       raise WLError, "The dictionary should have been created before calling this method" unless wlrule.dic_made
       str = '(';
       wlrule.body.each do |atom|
-        str <<  "#{atom.fullrelname} * "
+        str <<  "#{make_rel_name(atom.fullrelname)} * "
       end
       str.slice!(-2..-1) unless wlrule.body.empty?
+
+      #VZM access control - need to add acls for each relation for reading and one for writing
+      if @options[:accessc]
+        wlrule.body.each do |atom|
+          str << " * acl_at_#{atom.peername}"
+        end
+        str << " * acl_at_#{wlrule.head.peername}"
+      end
+
       str << ').combos('
 
       # create join conditions
@@ -791,7 +850,7 @@ In the string: #{line}
             # '
             # => ' << WLProgram.atom_iterator_by_pos(rel_other) << attr_other <<
             # ',' ;
-            str << rel_first_name << '.' << col_name_first << ' => ' << rel_other_name << '.' << col_name_other
+            str << make_rel_name(rel_first_name) << '.' << col_name_first << ' => ' << make_rel_name(rel_other_name) << '.' << col_name_other
             combos=true
           end
           str << ','

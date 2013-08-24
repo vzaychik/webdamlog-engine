@@ -460,6 +460,15 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       return "#{relname}_at_#{peername}"
     end
 
+    def make_extended
+      str = "collection #{get_type.to_s.downcase} "
+      str << "persistent" + " " if self.persistent?
+      str << relname
+      str << "_ext@"
+      str << peername
+      str << "(#{col_fields.text_value}, priv, plist) ;"
+    end
+
     # Return the name of this atom in the format "relation_at_peer"
     #
     # Create a string for the name of the relation that fits bud restriction
@@ -474,7 +483,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     def show_wdl_format
       str = ""
       str << get_type.to_s.downcase + " "
-      str << "persitent" + " " if self.persistent?
+      str << "persistent" + " " if self.persistent?
       str << fullrelname
       str << "( #{col_fields.text_value} ) ;"
     end

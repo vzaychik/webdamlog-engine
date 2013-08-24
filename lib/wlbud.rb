@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ####License####
 #  File name wlbud.rb
 #  Copyright © by INRIA
@@ -47,6 +48,10 @@ module WLBud
   require "#{PATH_WLBUD}/wlgrammar"
   # #file tool project
   require "#{PATH_WLBUD}/tools/wltools"
+
+  # create omega for access control computations
+  require "#{PATH_WLBUD}/wlaccess"
+
 
   # Override bud methods
   require "#{PATH_BUD}/budoverride"
@@ -210,11 +215,15 @@ module WLBud
       load_lattice_defs
       builtin_state
 
+      #VZM access control
+      @options[:accessc] ||= false
+      self.add_aclkind
+
       # #### WLBud:Begin adding to Bud
       #
       # #Loads .wl file containing the setup(facts and rules) for the
       #   Webdamlog instance.
-      @wl_program = WLBud::WLProgram.new( @peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug]} )
+      @wl_program = WLBud::WLProgram.new( @peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc]} )
       @wl_program.flush_new_local_declaration
       @wlb_tmp_inc=0
       @need_rewrite_strata=false
@@ -746,7 +755,84 @@ module WLBud
       puts "Adding a collection: \n #{collection.show}" if @options[:debug]
       name, schema = self.schema_init(collection)
       @collection_added = true
+
+      #VZM Need to update kind relation
+      if @options[:accessc]
+        tables["t_kind".to_sym] <+ [[name.to_s, collection.get_type.to_s, collection.arity]]	  
+        #need to add extended collection
+        extended_collection = @wl_program.parse(collection.make_extended)
+        puts "Adding a collection: \n #{extended_collection.show}" if @options[:debug]
+        self.schema_init(extended_collection)
+        #now need to install a rule
+        #have to make a string to pass into bloom to evaluate
+        
+        #need to insert Omega
+        str_res = "#{extended_collection.fullrelname} <= #{name} {|t| ["
+        collection.fields.each {|field|
+          str_res << "t." << field << ", "
+        }
+        str_res << "\"Read\", Omega.new]};"
+
+        #write to a file
+        extrulename = "webdamlog_#{@peername}_#{name}_extrule"
+        filestr = build_string_rule_to_include(extrulename, str_res)
+        fullfilename = File.join(@rule_dir, extrulename)
+        fout = File.new("#{fullfilename}", "w+")
+        fout.puts "#{filestr}"
+        fout.close
+        load fullfilename
+      end #accessc
+
       return name.to_s, schema
+    end
+
+    # This is for special collections acl and kind
+    # VZM access control
+    def add_aclkind
+      keys=[]
+      values=[]
+      if @options[:accessc]
+        keys << :"rel"
+        keys << :"priv"
+        keys << :"plist"
+        aclschema = {keys => values}
+        #acl is intensional, so declared as scratch
+        self.scratch("acl_at_#{peername}".to_sym, aclschema)
+        #need some basic default facts so need a separate extentional table acle
+        keys = []
+        keys << :"peer"
+        keys << :"priv"
+        keys << :"rel"
+        acleschema = {keys => values}
+        self.table("acle_at_#{peername}".to_sym, acleschema)
+        keys = []
+        keys << :"rel"
+        values = []
+        values << :"kind"
+        values << :"arity"
+        kindschema = {keys => values}
+        self.table("t_kind".to_sym, kindschema)
+        #install default rules into acl
+        #have to make a string to pass into bloom to evaluate
+        str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| t};"
+        #any time kind is updated because a new relation is added, need to install into acl
+        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'GrantP', k.rel]};"
+        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Write', k.rel]};"
+        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Read', k.rel]};"
+        #peer has full privs to his own acl
+        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"GrantP\", \"acl_at_#{peername}\"]];"
+        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Write\", \"acl_at_#{peername}\"]];"
+        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Read\", \"acl_at_#{peername}\"]];"                
+        #write to a file
+        aclrulename = "webdamlog_#{@peername}_aclkind"
+        filestr = build_string_rule_to_include(aclrulename, str_res)
+        fullfilename = File.join(@rule_dir, aclrulename)
+        fout = File.new("#{fullfilename}", "w+")
+        fout.puts "#{filestr}"
+        fout.close
+        load fullfilename
+        @need_rewrite_strata = true
+      end
     end
 
     # Takes in a string representing a WLRule, parses it and adds it directly

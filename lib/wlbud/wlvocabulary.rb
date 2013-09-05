@@ -64,6 +64,7 @@ module WLBud
       @dic_made = false
       # unique id of the rule for this peer
       @rule_id = nil
+      @author = nil
       @body = nil
       # The dic_relation_name is a hash that defines variables included in the
       # conversion from webdamlog-formatted rule to bud-formatted rule. Its key
@@ -223,6 +224,15 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       end
     end
 
+    def author= name
+      @author = name
+    end
+
+    # Get the name of the peer who created this rule
+    def author
+      return @author
+    end
+
     # show the instruction as stored in the wl_program
     def show_wdl_format
       str = "rule #{head.show_wdl_format} :- "
@@ -368,7 +378,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       @schema=nil
       @fields=nil
       @type=nil
-      @persitent=false
+      @persistent=false
       super(a1,a2,a3)
     end
 
@@ -466,7 +476,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       str << relname
       str << "_ext@"
       str << peername
-      str << "(#{col_fields.text_value}, priv, plist) ;"
+      str << "(#{col_fields.text_value}, priv*, plist) ;"
     end
 
     # Return the name of this atom in the format "relation_at_peer"
@@ -626,6 +636,10 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
         @relname = self.rrelation.text_value
       end
       return @relname
+    end
+
+    def relname= name
+        @relname = name
     end
 
     def map_peername! &block

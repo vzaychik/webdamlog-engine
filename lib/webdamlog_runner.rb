@@ -75,6 +75,16 @@ module WLRunner
     return fct, err
   end
 
+  def update_acl (rel, peer, priv)
+    sync_do do
+      begin
+        self.tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
+      rescue WLError => e
+        puts e
+      end
+    end
+  end
+
   # Async update of rules
   # @raise [WLError] if something goes wrong
   # @return [Array] rule_id, rule string of the local rule installed or nil if the rule is fully delegated.

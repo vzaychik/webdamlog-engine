@@ -93,6 +93,9 @@ module WLBud
       # Array:(WLBud:WLRule)
       #
       @nonlocalrules=[]
+      # The list of rules which have a non-local head - this only matters
+      # in access control on mode
+      @nonlocalheadrules=[]
       # The list of delegation needed to send after having processed the
       # wlprogram at initialization. Ie. the non-local part of rules should
       # start with an intermediary relation that control it triggering.
@@ -145,6 +148,10 @@ module WLBud
       # process non-local rules
       @nonlocalrules.each do |rule|
         rewrite_non_local rule
+      end
+      #VZM access control
+      @nonlocalheadrules.each do |rule|
+        rewrite_non_local_head_rule rule
       end
     end
 
@@ -255,6 +262,8 @@ In the string: #{line}
             @wlfacts << result
           when WLBud::WLRule
             result.rule_id = rule_id_generator
+            #assign current peer as the rule author by default
+            result.author = @peername
             if rewritten
               if local?(result)
                 @rewrittenlocal << result
@@ -268,6 +277,12 @@ In the string: #{line}
               else
                 @nonlocalrules << result
               end
+            end
+            #VZM access control - need to do additional special processing
+            #if the head is not local but the body is local, then need to
+            #rewrite to delegate since we need to check write permissions
+            if @options[:accessc] && !local?(result.head) && !result.head.relname.start_with?("deleg_") && local?(result)
+              @nonlocalheadrules << result
             end
           end
         end
@@ -375,6 +390,43 @@ In the string: #{line}
       return intermediary_relation_declaration_for_local_peer
     end # def rewrite_non_local(wlrule)
 
+    #For access control rewrite a local rule with non-local head to have an intermediary nonlocal head
+    #plus a delegated rule to the other peer
+    def rewrite_non_local_head_rule wlrule
+      raise WLErrorProgram, "local peername:#{@peername} is not defined yet while rewrite rule:#{wlrule}" if @peername.nil?
+      raise WLErrorProgram, "trying to rewrite a seed instead of a static rule" if wlrule.seed?
+      raise WLErrorProgram, "trying to rewrite the remote head rule for a local-head rule" if local?(wlrule.head)
+      
+      intermediary_relation_declaration_for_remote_peer = nil
+      destination_peer = wlrule.head.peername
+      addr_destination_peer = @wlpeers[destination_peer]
+      
+      relation_name = generate_intermediary_relation_name(wlrule.rule_id)
+      local_vars=[]
+      wlrule.head.variables.flatten.each { |var|
+        local_vars << var unless var.nil? or local_vars.include?(var)
+      }
+      dec_fields=''
+      var_fields=''
+      local_vars.each_index do |i|
+        local_var=local_vars[i]
+        dec_fields << local_var.gsub( /(^\$)(.*)/ , relation_name+"_\\2_"+i.to_s+"\*," )
+        var_fields << local_var << ","
+      end ; dec_fields.slice!(-1);var_fields.slice!(-1);
+
+      intermediary_relation_declaration_for_remote_peer = "collection inter persistent #{relation_name}@#{destination_peer}(#{dec_fields});"
+      @new_relations_to_declare_on_remote_peer[addr_destination_peer] << intermediary_relation_declaration_for_remote_peer
+      intermediary_relation_atom_in_rule = "#{relation_name}@#{destination_peer}(#{var_fields})"
+      delegation = "rule #{wlrule.head} :- #{intermediary_relation_atom_in_rule};"
+      @new_delegations_to_send[addr_destination_peer] << delegation
+      @rule_mapping[wlrule.rule_id] << delegation
+      @rule_mapping[delegation] << delegation
+
+      #as a last step, switch out the head
+      wlrule.head.relname = relation_name
+    end
+
+
     # Split the rule by reading atoms from left to right until non local atom or
     # variable in relation name or peer name has been found
     def split_rule wlrule
@@ -416,7 +468,7 @@ In the string: #{line}
       unless local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
-          str_res << "temp :#{make_rel_name(wlrule.head.fullrelname)} <= "
+          str_res << "temp :#{wlrule.head.fullrelname} <= "
         else
           str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
         end
@@ -467,8 +519,14 @@ In the string: #{line}
 
         #VZM access control - need to add variable names for each acl we added
         if @options[:accessc]
-          wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << ", #{WLProgram.atom_iterator_by_pos(v)}acl"}
-          str_res << ", aclw"
+          wlrule.body.each do |atom|
+            if local?(atom) && !intermediary?(atom)
+                str_res << ", #{atom.relname}acl"
+            end
+          end
+          if local?(wlrule.head)
+            str_res << ", aclw"
+          end
         end
 
         str_res << "| "
@@ -484,13 +542,36 @@ In the string: #{line}
           else
             str_res << " if "
           end
-          wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}acl.priv == \"Read\" && #{WLProgram.atom_iterator_by_pos(v)}acl.rel == \"#{wlrule.dic_invert_relation_name[v]}\" && "}
+          wlrule.body.each do |atom|
+            if local?(atom) && !intermediary?(atom)
+              str_res << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+            end
+          end
+          
+          ##wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}acl.priv == \"Read\" && #{WLProgram.atom_iterator_by_pos(v)}acl.rel == \"#{wlrule.dic_invert_relation_name[v]}\" && "}
           str_res << "("
-          wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}.plist & #{WLProgram.atom_iterator_by_pos(v)}acl.plist & "}
-          str_res.slice!(-3..-1)
-          str_res << ").include?(\"#{wlrule.head.peername}\")"
+          first_intersection = true
+          wlrule.body.each do |atom|
+            unless first_intersection
+              str_res << "("
+            end
+            str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+            unless first_intersection
+              str_res << ")"
+            end
+            str_res << ".intersect"
+            if local?(atom) && !intermediary?(atom)
+              str_res << "(#{atom.relname}acl.plist).intersect"
+            end
+            first_intersection = false
+          end
 
-          str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{peername}\")"
+          str_res.slice!(-10..-1)
+          str_res << ").include?(\"#{wlrule.head.peername}\")"
+          
+          if local?(wlrule.head)
+            str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
+          end
         end
         
         #        unless wlrule.dic_wlconst.empty?
@@ -505,6 +586,7 @@ In the string: #{line}
 
     # Generates the string representing the relation name
     # If access control is on, turns into extended relation
+    # unless it's a delegated relation
     def make_rel_name (rel)
       rel, pname = rel.split('_at_')
       str_res = "#{rel}"
@@ -731,7 +813,22 @@ In the string: #{line}
       if @options[:accessc]
         #add priv and plist computation
         str << "\"Read\", "
-        wlrule.dic_invert_relation_name.keys.sort.each {|v| str << "#{WLProgram.atom_iterator_by_pos(v)}.plist & #{WLProgram.atom_iterator_by_pos(v)}acl.plist & "}
+        first_intersection = true
+        wlrule.body.each do |atom|
+          unless first_intersection
+            str << "("
+          end
+          str << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+          unless first_intersection
+            str << ")"
+          end
+          str << ".intersect"
+          if local?(atom) && !intermediary?(atom)
+            str << "(#{atom.relname}acl.plist).intersect"
+          end
+          first_intersection = false
+        end
+        str.slice!(-8..-1)
       end
 
       str.slice!(-2..-1) unless fields.empty?
@@ -813,12 +910,16 @@ In the string: #{line}
       end
       str.slice!(-2..-1) unless wlrule.body.empty?
 
-      #VZM access control - need to add acls for each relation for reading and one for writing
+      #VZM access control - need to add acls for each relation that is local and not delegated 
       if @options[:accessc]
         wlrule.body.each do |atom|
-          str << " * acl_at_#{atom.peername}"
+          if local?(atom) && !intermediary?(atom)
+            str << " * acl_at_#{atom.peername}"
+          end
         end
-        str << " * acl_at_#{wlrule.head.peername}"
+        if local?(wlrule.head)
+          str << " * acl_at_#{wlrule.head.peername}"
+        end
       end
 
       str << ').combos('
@@ -903,6 +1004,17 @@ In the string: #{line}
         @next+=1
       end
       return @next
+    end
+
+    def intermediary? (wlatom)
+      if wlatom.is_a? WLBud::WLAtom
+        return @wlcollections[wlatom.fullrelname].rel_type.intermediary?
+      elsif wlatom.is_a? WLBud::WLCollection
+        return wlatom.get_type.intermediary?
+      else
+        raise WLErrorProgram,
+        "Tried to determine if #{wlatom} is intermediary but it has wrong type #{wlatom.class}"
+      end
     end
 
   end # class WLProgram

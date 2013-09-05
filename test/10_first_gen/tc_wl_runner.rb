@@ -177,8 +177,8 @@ end
       wl_obj = WLRunner.create(@username, @pg_file, @port)
     end
     wl_obj.run_engine
-    assert_equal ["extensional persitent local_at_test_snapshot_collection( atom1* ) ;",
-      "extensional persitent join_delegated_at_test_snapshot_collection( atom1* ) ;",
+    assert_equal ["extensional persistent local_at_test_snapshot_collection( atom1* ) ;",
+      "extensional persistent join_delegated_at_test_snapshot_collection( atom1* ) ;",
       "intensional local2_at_test_snapshot_collection( atom1* ) ;",
       "intermediary deleg_from_test_snapshot_collection_1_1_at_p1( deleg_from_test_snapshot_collection_1_1_x_0* ) ;"],
       wl_obj.snapshot_collections
@@ -225,8 +225,8 @@ end
           "p1 localhost:11111",
           "p2 localhost:11112",
           "p3 localhost:11113"],
-        ["extensional persitent local_at_test_snapshot_collection( atom1* ) ;",
-          "extensional persitent join_delegated_at_test_snapshot_collection( atom1* ) ;",
+        ["extensional persistent local_at_test_snapshot_collection( atom1* ) ;",
+          "extensional persistent join_delegated_at_test_snapshot_collection( atom1* ) ;",
           "intensional local2_at_test_snapshot_collection( atom1* ) ;",
           "intermediary deleg_from_test_snapshot_collection_1_1_at_p1( deleg_from_test_snapshot_collection_1_1_x_0* ) ;"],
         {1=>

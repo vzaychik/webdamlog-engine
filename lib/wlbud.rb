@@ -218,6 +218,7 @@ module WLBud
       #VZM access control
       @options[:accessc] ||= false
       self.add_aclkind
+      @extended_collections_to_flush = []
 
       # #### WLBud:Begin adding to Bud
       #
@@ -346,12 +347,22 @@ module WLBud
           end
           if @options[:filter_delegations]
             packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?
+            if @options[:accessc]
+              @extended_collections_to_flush.each {|col|
+                @wl_program.wlcollections[col.fullrelname] = col
+              }
+            end
             @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
             add_facts(packet_value.facts) unless packet_value.facts.nil?
           else
             # Declare all the new relations and insert the rules
             packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?
-            packet_value.rules.each{ |rule| add_rule(rule) } unless packet_value.rules.nil?
+            if @options[:accessc]
+              @extended_collections_to_flush.each {|col|
+                @wl_program.wlcollections[col.fullrelname] = col
+              }
+            end
+            packet_value.rules.each{ |rule| add_rule(rule, packet_value.peer_name) } unless packet_value.rules.nil?
             add_facts(packet_value.facts) unless packet_value.facts.nil?
           end
         end
@@ -762,6 +773,7 @@ module WLBud
         extended_collection = @wl_program.parse(collection.make_extended)
         puts "Adding a collection: \n #{extended_collection.show}" if @options[:debug]
         self.schema_init(extended_collection)
+        @extended_collections_to_flush << extended_collection
         #now need to install a rule
         #have to make a string to pass into bloom to evaluate
         
@@ -793,7 +805,7 @@ module WLBud
       if @options[:accessc]
         keys << :"rel"
         keys << :"priv"
-        keys << :"plist"
+        values << :"plist"
         aclschema = {keys => values}
         #acl is intensional, so declared as scratch
         self.scratch("acl_at_#{peername}".to_sym, aclschema)
@@ -813,7 +825,7 @@ module WLBud
         self.table("t_kind".to_sym, kindschema)
         #install default rules into acl
         #have to make a string to pass into bloom to evaluate
-        str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| t};"
+        str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| [t.peer, t.priv, PList.new(t.rel)]};"
         #any time kind is updated because a new relation is added, need to install into acl
         str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'GrantP', k.rel]};"
         str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Write', k.rel]};"
@@ -839,8 +851,9 @@ module WLBud
     #
     # @raise [WLError] if something goes wrong @return [Array] rule_id, rule
     # string of the local rule installed or nil if the rule is fully delegated.
-    def add_rule(wlpg_rule)
+    def add_rule(wlpg_rule, sourcep=@peername)
       rule = @wl_program.parse(wlpg_rule, true)
+      rule.author = sourcep
       raise WLErrorProgram, "parse rule and get #{rule.class}" unless rule.is_a?(WLBud::WLRule)
       unless @wl_program.local?(rule)
         @wl_program.rewrite_non_local(rule)
@@ -884,6 +897,11 @@ module WLBud
         WLTools::Debug_messages.h3 "make_program start generate_schema"
       end
       @wl_program.wlcollections.each_value {|s| add_collection(s)}
+      if @options[:accessc]
+        @extended_collections_to_flush.each {|col|
+          @wl_program.wlcollections[col.fullrelname] = col
+        }
+      end
       if @options[:debug]
         WLTools::Debug_messages.h3 "make_program start generate_facts"
       end
@@ -975,6 +993,16 @@ module WLBud
             if tuple.is_a? Array or tuple.is_a? Struct
               if tuple.size == @wl_program.wlcollections[relation_name].arity
                 begin
+                  #VZM access control need to change plist arrays back to sets
+                  if @options[:accessc]
+                    tuple.collect! {|x|
+                      if x.is_a? Array
+                        PList.new(x.to_set)
+                      else
+                        x
+                      end
+                    }
+                  end
                   tables[relation_name.to_sym] <+ [tuple]
                   (valid[relation_name] ||= []) << tuple                  
                 rescue StandardError => error
@@ -988,6 +1016,7 @@ module WLBud
             end
           end # tuples.each do |tuple|
         else
+          puts "relation name #{k} translated to #{relation_name} has not been declared previously"
           err[[k,tuples]] = "relation name #{k} translated to #{relation_name} has not been declared previously"
         end
       end # end facts.each_pair
@@ -1017,6 +1046,24 @@ module WLBud
     def write_packet_on_channel
       packets_to_send = []
       facts_to_send = aggregate_facts(sbuffer)
+      if @options[:accessc]
+        facts_to_send.values.each {|fctsinr| #this is the list of collections to update
+          fctsinr.values.each { |fcts|
+            fcts.each {|tuple| #tuple is an array
+              if tuple.is_a? Array
+                tuple.collect! {|x| 
+                  if x.is_a? PList 
+                    x.to_a
+                  else
+                    x
+                  end
+                }
+              end
+            }
+          }    
+        }      
+      end
+
       peer_to_contact = Set.new(facts_to_send.keys)
       peer_to_contact.merge(@rules_to_delegate.keys)
       if @options[:wl_test]

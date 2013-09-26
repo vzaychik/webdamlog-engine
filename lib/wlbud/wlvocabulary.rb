@@ -611,7 +611,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
   class WLAtom < WLVocabulary
     include WLBud::NamedSentence
 
-    attr_accessor :peername
+    attr_accessor :peername, :rproven
 
     def initialize (a1,a2,a3)
       @name_choice=false
@@ -671,6 +671,10 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       self.rfields.fields
     end
 
+    def provenance
+      self.rproven
+    end
+
     # This method gives the name of the relation. It may also change the name of
     # the relation on this rule only, in order to implement renaming strategies
     # for self joins. @return [String] relationname_at_peername
@@ -703,7 +707,49 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     end
 
     def show_wdl_format
-      return "#{fullrelname}(#{self.rfields.show_wdl_format})"
+      if self.rproven == nil || self.rproven.empty?
+        return "#{fullrelname}(#{self.rfields.show_wdl_format})"
+      else
+        if self.rproven.type == :Hide
+          return "[HIDE #{fullrelname}(#{self.rfields.show_wdl_format})]"
+        elsif self.rproven.type == :Preserve
+          return "[PRESERVE #{fullrelname}(#{self.rfields.show_wdl_format})]"
+        end
+      end
+    end
+  end
+
+  class WLProvenance < WLVocabulary
+    attr_reader :type
+    def initialize (a1,a2,a3)
+      super(a1,a2,a3)
+      @type=nil
+    end
+    def hide?
+      return @type == :Hide
+    end
+    def preserve?
+      return @type == :Preserve
+    end
+  end
+
+  class WLProvHide < WLProvenance
+    def initialize (a1,a2,a3=nil)
+      super(a1,a2,a3)
+      @type = :Hide
+    end
+    def to_s
+      return "hide"
+    end
+  end
+
+  class WLProvPreserve < WLProvenance
+    def initialize (a1,a2,a3=nil)
+      super(a1,a2,a3)
+      @type = :Preserve
+    end
+    def to_s
+      return "preserve"
     end
   end
 

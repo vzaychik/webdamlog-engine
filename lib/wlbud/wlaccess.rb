@@ -3,10 +3,6 @@ require 'bud/lattice-lib'
 class PList < Bud::SetLattice
   alias_method :base_intersect, :intersect
 
-  def merge(i)
-    wrap_unsafe(i.reveal)
-  end
-  
   def include?(element)
     @v.member? element
   end
@@ -39,7 +35,7 @@ class Omega < PList
   end
 
   def inspect
-    return "All peers"
+    return "<: #{self.to_a}>"
   end
 
   def to_s
@@ -47,7 +43,7 @@ class Omega < PList
   end
 
   def to_a
-    return [Omega]
+    return ["All peers"]
   end
 
 end

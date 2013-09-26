@@ -175,9 +175,18 @@ module WLBud
       ### for rules ###
         #### atom in rules ####
         rule atom
-          rrelation ('@'/'_at_') rpeer sep '(' sep rfields sep ')' <WLAtom>
+          rproven:provenance? sep rrelation ('@'/'_at_') rpeer sep '(' sep rfields sep ')' sep ']'? <WLAtom>
         end
           ###### relation name in atom #####
+	  rule provenance
+	    hide / preserve
+	  end
+	  rule hide
+	    '[HIDE ' <WLProvHide>
+	  end
+	  rule preserve
+	    '[PRESERVE ' <WLProvPreserve>
+	  end
           rule rrelation
             ( relation_name / variable ) <WLRRelation>
           end

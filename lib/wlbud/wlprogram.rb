@@ -524,7 +524,7 @@ In the string: #{line}
                 str_res << ", #{atom.relname}acl"
             end
           end
-          if local?(wlrule.head)
+          if local?(wlrule.head) && wlrule.author != @peername
             str_res << ", aclw"
           end
         end
@@ -548,7 +548,6 @@ In the string: #{line}
             end
           end
           
-          ##wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}acl.priv == \"Read\" && #{WLProgram.atom_iterator_by_pos(v)}acl.rel == \"#{wlrule.dic_invert_relation_name[v]}\" && "}
           str_res << "("
           first_intersection = true
           wlrule.body.each do |atom|
@@ -569,7 +568,7 @@ In the string: #{line}
           str_res.slice!(-10..-1)
           str_res << ").include?(\"#{wlrule.head.peername}\")"
           
-          if local?(wlrule.head)
+          if local?(wlrule.head) && wlrule.author != @peername
             str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
           end
         end
@@ -813,25 +812,32 @@ In the string: #{line}
       if @options[:accessc]
         #add priv and plist computation
         str << "\"Read\", "
-        first_intersection = true
-        wlrule.body.each do |atom|
-          unless first_intersection
-            str << "("
-          end
-          str << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-          unless first_intersection
-            str << ")"
-          end
-          str << ".intersect"
-          if local?(atom) && !intermediary?(atom)
-            str << "(#{atom.relname}acl.plist).intersect"
-          end
-          first_intersection = false
-        end
-        str.slice!(-8..-1)
-      end
+        str << "Omega.new"
 
-      str.slice!(-2..-1) unless fields.empty?
+        if extensional?(wlrule.head)
+          #only intersect those that have preserve on them
+          wlrule.body.each do |atom|
+            if !atom.provenance.empty? && atom.provenance.type == :Preserve
+              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"              
+              if local?(atom) && !intermediary?(atom)
+                str << ".intersect(#{atom.relname}acl.plist)"
+              end
+            end
+          end
+        else
+          #if there is a hide, do not carry over the access restrictions
+          wlrule.body.each do |atom|
+            if atom.provenance.empty? || atom.provenance.type != :Hide
+              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"
+              if local?(atom) && !intermediary?(atom)
+                str << ".intersect(#{atom.relname}acl.plist)"
+              end
+            end
+          end
+        end
+      else #regular non-access control execution
+        str.slice!(-2..-1) unless fields.empty?
+      end
 
       unless local?(wlrule.head)
         str << "]"
@@ -917,7 +923,7 @@ In the string: #{line}
             str << " * acl_at_#{atom.peername}"
           end
         end
-        if local?(wlrule.head)
+        if local?(wlrule.head) && wlrule.author != @peername
           str << " * acl_at_#{wlrule.head.peername}"
         end
       end
@@ -1014,6 +1020,22 @@ In the string: #{line}
       else
         raise WLErrorProgram,
         "Tried to determine if #{wlatom} is intermediary but it has wrong type #{wlatom.class}"
+      end
+    end
+
+    def extensional? (wlatom)
+      if wlatom.is_a? WLBud::WLAtom
+        if @wlcollections[wlatom.fullrelname] != nil
+          return @wlcollections[wlatom.fullrelname].rel_type.extensional?
+       else #FIXME: it would be better to look this up in the delegated kind relation
+          puts "looking up whether #{wlatom.relname} is extensional"
+          return !wlatom.relname.end_with?("_i") && !wlatom.relname.start_with?("deleg_from")
+        end
+      elsif wlatom.is_a? WLBud::WLCollection
+        return wlatom.get_type.extensional?
+      else
+        raise WLErrorProgram,
+        "Tried to determine is #{wlatom} is extensional but it has wrong type #{wlatom.class}"
       end
     end
 

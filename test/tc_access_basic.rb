@@ -37,17 +37,20 @@ end
        end
        runner.run_engine
        #verify acl contents
-       assert_equal [{:plist=>PList.new(["test_access"].to_set), :priv=>"GrantP", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Write", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Read", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"GrantP", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Write", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Read", :rel=>"acl_at_test_access"}],
+       assert_equal [{:plist=>PList.new(["test_access"].to_set), :priv=>"Grant", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Write", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Read", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Grant", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Write", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"Read", :rel=>"acl_at_test_access"}],
 				  runner.snapshot_facts(:acl_at_test_access)
       #verify kind contents
       assert_equal [{:rel=>"local1_at_test_access", :kind=>"Extensional", :arity=>1}], runner.snapshot_facts(:t_kind)
 
       assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner.snapshot_facts(:local1_at_test_access)
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}], runner.snapshot_facts(:local1_ext_at_test_access)
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Grant", :plist=>Omega.new}], runner.snapshot_facts(:local1_ext_at_test_access)
 	
     ensure
-       runner.stop
-       File.delete(@pg_file) if File.exists?(@pg_file)
+      runner.clear_rule_dir
+      if EventMachine::reactor_running?
+        runner.stop
+      end
+      File.delete(@pg_file) if File.exists?(@pg_file)
     end
   end  
 end
@@ -86,11 +89,13 @@ end
        runner.run_engine
 
       #what do we want to check here? that for local rules all facts get in because peer can read his own stuff
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Read", :plist=>PList.new(["test_access"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
+      assert_equal [{:atom1=>"1", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"1", :priv=>"Read", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Read", :plist=>PList.new(["test_access"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
       assert_equal [], runner.snapshot_facts(:local1_i_at_test_access)
 
     ensure
-       runner.stop
+      if EventMachine::reactor_running?
+        runner.stop
+      end
        File.delete(@pg_file) if File.exists?(@pg_file)
     end
     
@@ -156,10 +161,10 @@ end
 
       #first check the collections that have direct facts inserted into them
       assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner1.tables[:local2_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}], runner1.tables[:local2_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Grant", :plist=>Omega.new}], runner1.tables[:local2_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [], runner1.tables[:local3_i_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new}], runner2.tables[:local1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
+      assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"3", :priv=>"Grant", :plist=>Omega.new}], runner2.tables[:local1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created
       assert_equal [],
@@ -295,10 +300,10 @@ end
 
       #first check the collections that have direct facts inserted into them
       assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner1.tables[:local2_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}], runner1.tables[:local2_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Grant", :plist=>Omega.new}], runner1.tables[:local2_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new}], runner2.tables[:local1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
+      assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"3", :priv=>"Grant", :plist=>Omega.new}], runner2.tables[:local1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created
       assert_equal [],
@@ -348,21 +353,29 @@ end
 
       assert_equal [{:atom1=>"1", :priv=>"Read",:plist=>Omega.new}, {:atom1=>"2",:priv=>"Read",:plist=>Omega.new}],
         runner2.tables[:delegated1_ext_at_p1].map{|t| Hash[t.each_pair.to_a]}
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+      #because this is an extensional-head relation, without grant privs on p1's local1 the result should still be empty
+      assert_equal [], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       
       #test_access does not have privs to read local1@p1 so no results
       assert_equal [],
-        runner1.tables[:local3_at_test_access].map{|t| Hash[t.each_pair.to_a]}
+        runner1.tables[:local3_ext_at_test_access].map{|t| Hash[t.each_pair.to_a]}
 
-      #now let's set that and see results finally materialize at p1
+      #now let's set that and see results still not materialize at p1 due to lack of grant
       runner2.update_acl("local1_at_p1","test_access","Read")
       runner1.tick
       runner1.tick
 
-      #FIXME - the below assertion fails but in a weird way
-      #assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      #incidentally, this also means delegated_join has an updated list
+      assert_equal [], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+
+      #now let's set grant and finally should see results
+      runner2.update_acl("local1_at_p1","test_access","Grant")
+      runner2.tick
+      runner1.tick
+
       assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)

@@ -17,6 +17,9 @@ collection ext local1@test_access(atom1*);
 collection int local3_i@test_access(atom1*);
 fact local2@test_access(1);
 fact local2@test_access(2);
+policy local2 read ALL;
+policy local1 read p1;
+policy local3_i write p1;
 rule local1@test_access($x) :- [PRESERVE local2@test_access($x)];
 rule local3_i@test_access($x) :- [HIDE local2@test_access($x)];
 end
@@ -42,8 +45,13 @@ end
 
       assert_equal({1=> "rule local1_at_test_access($x) :- [PRESERVE local2_at_test_access($x)];", 2=> "rule local3_i_at_test_access($x) :- [HIDE local2_at_test_access($x)];"}, runner.snapshot_rules)
 
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Read", :plist=>PList.new(["test_access"].to_set)}], runner.tables[:local1_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}], runner.tables[:local3_i_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Grant", :plist=>Omega.new}], runner.tables[:local2_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
+
+
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}], runner.tables[:local1_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Grant", :plist=>Omega.new}], runner.tables[:local3_i_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
+
+      assert_equal(["policy local2 read ALL","policy local1 read p1","policy local3_i write p1"], runner.snapshot_policies)
 	
     ensure
        runner.stop
@@ -51,7 +59,6 @@ end
     end
   end  
 end
-
 
 class TcAccessAdvancedRules < Test::Unit::TestCase
   include MixinTcWlTest
@@ -126,7 +133,7 @@ end
       runner2.update_acl("s_at_p1","p","Read")
       runner3.update_acl("s_at_p2","p","Read")
 
-      assert_equal [{:atom1=>"5", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"6", :priv=>"Read", :plist=>Omega.new}], runner3.tables[:s_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+      assert_equal [{:atom1=>"5", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"5", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"6", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"6", :priv=>"Grant", :plist=>Omega.new}], runner3.tables[:s_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
 
       runner2.tick
       runner3.tick
@@ -226,17 +233,23 @@ end
       runner1.tick
 
       assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>PList.new(["p", "p1", "p2"].to_set)},{:atom1=>"4", :priv=>"Read", :plist=>PList.new(["p", "p1", "p2"].to_set)}], runner1.tables[:r2_i_ext_at_p].map{ |t| Hash[t.each_pair.to_a]}
-      #FIXME - this assertion fails for a strange reason
-      #assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"4",:priv=>"Read",:plist=>Omega.new}], runner1.tables[:r_i_ext_at_p].map{ |t| Hash[t.each_pair.to_a]}
+      #without grant priv nothing would materialize
+      assert_equal [], runner1.tables[:r_i_ext_at_p].map{ |t| Hash[t.each_pair.to_a]}
+
+      runner2.update_acl("s_at_p1","p","Grant")
+      runner2.tick
+      runner1.tick
+
+      assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"4",:priv=>"Read",:plist=>Omega.new}, {:atom1=>"3", :priv=>"Grant", :plist=>Omega.new},{:atom1=>"4",:priv=>"Grant",:plist=>Omega.new}], runner1.tables[:r_i_ext_at_p].map{ |t| Hash[t.each_pair.to_a]}
+
       assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>PList.new(["p","p1"].to_set)}], runner1.tables[:r3_i_ext_at_p].map{ |t| Hash[t.each_pair.to_a]}
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)
       File.delete(@pg_file2) if File.exists?(@pg_file2)
       if EventMachine::reactor_running?
-        #runner1.stop
-        #runner2.stop
-        #runner3.stop
+        runner1.stop
+        runner2.stop
       end
     end
 
@@ -285,7 +298,7 @@ end
       runner.tick
       runner.tick
 
-      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2", :priv=>"Read", :plist=>PList.new(["test_access","p1","p2"].to_set)},{:atom1=>"3", :priv=>"Read", :plist=>PList.new(["test_access","p2"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
+      assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2", :priv=>"Read", :plist=>PList.new(["test_access","p1","p2"].to_set)}, {:atom1=>"1", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)},  {:atom1=>"3", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"3", :priv=>"Read", :plist=>PList.new(["test_access","p2"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
 
     ensure
        #runner.stop
@@ -294,3 +307,4 @@ end
     
   end
 end
+

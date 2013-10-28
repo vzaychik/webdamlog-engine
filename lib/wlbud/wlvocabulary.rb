@@ -862,4 +862,130 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       true
     end
   end
+
+  class WLPolicy < WLVocabulary
+
+    attr_reader :ractype
+
+    def initialize (a1,a2,a3)
+      super(a1,a2,a3)
+    end
+
+    public
+    def show
+      puts "Class name : #{self.class}"
+      puts "Relation name : #{self.relname}"
+      puts "Peers : #{self.access.text_value}"
+      puts "Privilege : #{self.ractype.text_value}"
+    end
+
+    def show_wdl_format
+      str = "policy "
+      str << self.relname
+      str << " "
+      if self.access_type.read?
+        str << "read "
+      elsif self.access_type.write?
+        str << "write "
+      elsif self.access_type.grant?
+        str << "grant "
+      end
+      if self.access.all?
+        str << "ALL"
+      else
+        str << self.access.value
+      end
+    end
+
+    def relname
+      unless @relname
+        @relname = self.relation_name.text_value
+      end
+      return @relname
+    end
+
+    def access_type
+      self.ractype
+    end
+  end      
+
+  class WLAccessType < WLVocabulary
+    attr_reader :type
+    def initialize (a1,a2,a3)
+      super(a1,a2,a3)
+      @type=nil
+    end
+    def read?
+      return @type == :Read
+    end
+    def write?
+      return @type == :Write
+    end
+    def grant?
+      return @type == :Grant
+    end
+  end
+
+  class WLRead < WLAccessType
+    def initialize (a1,a2,a3=nil)
+      super(a1,a2,a3)
+      @type = :Read
+    end
+    def to_s
+      return "Read"
+    end
+  end
+
+  class WLWrite < WLAccessType
+    def initialize (a1,a2,a3=nil)
+      super(a1,a2,a3)
+      @type = :Write
+    end
+    def to_s
+      return "Write"
+    end
+  end
+
+  class WLGrant < WLAccessType
+    def initialize (a1,a2,a3=nil)
+      super(a1,a2,a3)
+      @type = :Grant
+    end
+    def to_s
+      return "Grant"
+    end
+  end
+
+  module WLAccess
+    def all?
+      self.text_value == 'ALL'
+    end
+
+    def relation?
+      self.text_value.include?('_at_') or self.text_value.include?('@')
+    end
+
+    def relname
+      unless @relname
+        @relname = self.relation_name.text_value
+      end
+      return @relname
+    end
+
+    def peername
+      unless @peername
+        @peername = self.peer_name.text_value
+      end
+      return @peername
+    end
+
+    def fullrelname
+      return "#{self.relname}_at_#{self.peername}"
+    end
+
+
+    def value
+      self.text_value
+    end
+  end
 end

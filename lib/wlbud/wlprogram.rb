@@ -15,7 +15,7 @@ module WLBud
   #   screen.
   #
   class WLProgram
-    attr_reader :wlcollections, :peername, :wlpeers, :wlfacts
+    attr_reader :wlcollections, :peername, :wlpeers, :wlfacts, :wlpolicies
     attr_accessor :localrules, :nonlocalrules, :delegations, :rewrittenlocal, :rule_mapping
 
     # The initializer for the WLBud program takes in a filename corresponding to
@@ -71,6 +71,10 @@ module WLBud
       # Array:(WLBud:WLFact)
       #
       @wlfacts=[]
+      # List of access control policies in the program file
+      # Array: (WLBud::WLPolicy)
+      #
+      @wlpolicies=[]
       # The original rules before the rewriting used for evaluation. It gives
       # the original semantic of the program.
       #
@@ -167,6 +171,8 @@ module WLBud
       @wlfacts.each {|wl| wl.show}
       puts "\n\n------------------------RULES---------------------------"
       @localrules.each {|wl| wl.show}
+      puts "\n\n----------------------POLICIES--------------------------"
+      @wlpolicies.each {|wl| wl.show}
       puts "\n\n--------------------------------------------------------"
     end
 
@@ -175,6 +181,9 @@ module WLBud
 
     # Returns true if no facts are loaded for evaluation.
     def facts_empty? ; return @wlfacts.empty?; end
+
+    # Returns true if no policies are loaded for evaluation.
+    def policies_empty? ; return @wlpolicies.empty?; end
 
     # Return true if no collection is loaded for evaluation.
     def collection_empty? ; return @wlcollections.empty?; end
@@ -284,6 +293,8 @@ In the string: #{line}
             if @options[:accessc] && !local?(result.head) && !result.head.relname.start_with?("deleg_") && local?(result)
               @nonlocalheadrules << result
             end
+          when WLBud::WLPolicy
+            @wlpolicies << result
           end
         end
       end
@@ -542,32 +553,72 @@ In the string: #{line}
           else
             str_res << " if "
           end
+          #select just the Read tuples
+          str_res << "atom0.priv == \"Read\" && "
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              str_res << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+              if (extensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                  (intensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+                str_res << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+              elsif (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                  (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+                str_res << "#{atom.relname}acl.priv == \"Grant\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+              end
             end
           end
           
-          str_res << "("
+          ## check for read or grant for target peer on preserved relations only
           first_intersection = true
           wlrule.body.each do |atom|
-            unless first_intersection
-              str_res << "("
-            end
-            str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-            unless first_intersection
-              str_res << ")"
-            end
-            str_res << ".intersect"
             if local?(atom) && !intermediary?(atom)
-              str_res << "(#{atom.relname}acl.plist).intersect"
+              if (extensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                  (intensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+                str_res << "("
+                str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+                unless first_intersection
+                  str_res << ")"
+                end
+                str_res << ".intersect"
+                if local?(atom) && !intermediary?(atom)
+                  str_res << "(#{atom.relname}acl.plist).intersect"
+                end
+                first_intersection = false
+              end
             end
-            first_intersection = false
+          end
+          
+          unless first_intersection
+            str_res.slice!(-10..-1)
+            str_res << ").include?(\"#{wlrule.head.peername}\") && "
           end
 
-          str_res.slice!(-10..-1)
-          str_res << ").include?(\"#{wlrule.head.peername}\")"
+          ## check for grant for author peer on hide relations only
+          first_intersection = true
+          wlrule.body.each do |atom|
+            if local?(atom) && !intermediary?(atom)
+              if (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                  (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+                str_res << "("
+                str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+                unless first_intersection
+                  str_res << ")"
+                end
+                str_res << ".intersect"
+                if local?(atom) && !intermediary?(atom)
+                  str_res << "(#{atom.relname}acl.plist).intersect"
+                end
+                first_intersection = false
+              end
+            end
+          end
           
+          if first_intersection
+            str_res.slice!(-3..-1)
+          else
+            str_res.slice!(-10..-1)
+            str_res << ").include?(\"#{wlrule.author}\")"
+          end
+
           if local?(wlrule.head) && wlrule.author != @peername
             str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
           end
@@ -811,6 +862,7 @@ In the string: #{line}
 
       if @options[:accessc]
         #add priv and plist computation
+        #we select just the read tuples
         str << "\"Read\", "
         str << "Omega.new"
 
@@ -1037,6 +1089,10 @@ In the string: #{line}
         raise WLErrorProgram,
         "Tried to determine is #{wlatom} is extensional but it has wrong type #{wlatom.class}"
       end
+    end
+
+    def intensional? (wlatom)
+      !extensional? wlatom
     end
 
   end # class WLProgram

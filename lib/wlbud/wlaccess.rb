@@ -2,6 +2,7 @@ require 'bud/lattice-lib'
 
 class PList < Bud::SetLattice
   alias_method :base_intersect, :intersect
+  alias_method :base_merge, :merge
 
   def include?(element)
     @v.member? element
@@ -11,9 +12,17 @@ class PList < Bud::SetLattice
     self.reveal.to_a
   end
 
+  def merge(other)
+    if (other.kind_of? Omega)
+      return other
+    else
+      base_merge(other)
+    end
+  end
+
   def intersect(other)
     if (other.kind_of? Omega)
-      return other.intersect(self)
+      return self
     else
       base_intersect(other)
     end
@@ -24,6 +33,10 @@ class Omega < PList
 
   def intersect(other)
     return other
+  end
+
+  def merge(other)
+    return self
   end
 
   def include?(element)

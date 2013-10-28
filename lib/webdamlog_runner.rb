@@ -20,12 +20,14 @@ module WLRunner
     klass.module_eval { attr_accessor :bootstrap_program}
     klass.module_eval { attr_accessor :bootstrap_collections}
     klass.module_eval { attr_accessor :bootstrap_rules}
+    klass.module_eval { attr_accessor :bootstrap_policies}
     obj = klass.new(username, pg_file, options)
     # #Loading twice the file from io. could find another way but need clear
     # interface from wl_bud
     obj.bootstrap_program = pg_file ? open(pg_file).readlines.join("").split(";").map {|stmt| "#{stmt};"} : []
     obj.bootstrap_collections = obj.bootstrap_program ? obj.bootstrap_program.select {|stmt| stmt.lstrip()[0..9]=='collection' } : []
     obj.bootstrap_rules = obj.bootstrap_program ? obj.bootstrap_program.select {|stmt| stmt.lstrip()[0..3]=='rule' } : []
+    obj.bootstrap_policies = obj.bootstrap_program ? obj.bootstrap_program.select {|stmt| stmt.lstrip()[0..3]=='policy' } : []
     obj.extend WLRunner
     return obj
   end
@@ -143,6 +145,15 @@ module WLRunner
       coll = self.tables[relname].map{ |t| Hash[t.each_pair.to_a] }
     end
     return coll
+  end
+
+  # @return [Array] list of policies declared in wdl
+  def snapshot_policies
+    coll = []
+    sync_do do
+      coll = self.wl_program.wlpolicies
+    end
+    return coll.map{ |p| p.show_wdl_format}
   end
 
   # This method filter out the relation created by the webdamlog engine for bud

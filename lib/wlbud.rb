@@ -219,6 +219,7 @@ module WLBud
       @options[:accessc] ||= false
       self.add_aclkind
       @extended_collections_to_flush = []
+      @packet_metrics = []
 
       # #### WLBud:Begin adding to Bud
       #
@@ -543,8 +544,25 @@ module WLBud
         else
           benchmark_file_log = File.new(@options[:measure_file], "a+")
         end
+        #count number of tuples in user tables
+        tuplecount = 0;
+        wordcount = 0;
+        utables = @tables.keys - @builtin_tables.keys
+        utables.each do |tbl|
+          tuplecount += tables[tbl].length
+          tables[tbl].each { |fct|
+            fct.each { |elem|
+              if elem.is_a? PList
+                wordcount += elem.to_a.length
+              else
+                wordcount += 1
+              end
+            }
+          }
+        end
         puts "time to tick #{@budtime-1} : #{timetick[@budtime-1].inspect} ; wltime=#{wltime} ; budtime=#{budtime} ; mixin=#{mixin}" if @options[:debug]
-        benchmark_file_log.puts "array = #{timetick[@budtime-1].inspect} ; wltime=#{wltime} ; budtime=#{budtime} ; mixin=#{mixin}"
+        #benchmark_file_log.puts "array = #{timetick[@budtime-1].inspect} ; wltime=#{wltime} ; budtime=#{budtime} ; mixin=#{mixin}"
+        benchmark_file_log.puts "#{timetick[@budtime-1].inspect}, #{tuplecount}, #{wordcount}, #{@packet_metrics.inspect}"
         benchmark_file_log.close
       end
     end
@@ -650,10 +668,20 @@ module WLBud
       @wl_program.disamb_peername!(wlrule)
       rule = "#{@wl_program.translate_rule_str(wlrule)}"
       name = "webdamlog_#{@peername}_#{wlrule.rule_id}"
+
+      #this is a bit hacky - with access control we generate 2 rules instead of one
+      #one for grant priv and one for read
+      if @options[:accessc]
+        rule2 = "#{rule}"
+        rule2.gsub! 'Read', 'Grant'
+        rule << rule2
+      end
+
       str = build_string_rule_to_include(name, rule)
       fullfilename = File.join(@rule_dir,name)
       fout = File.new("#{fullfilename}", "w+")
       fout.puts "#{str}"
+
       fout.close
       if @options[:debug]
         puts "Content of the tmp file is:\n#{File.readlines(fullfilename).each{|f| f }}\n"
@@ -783,6 +811,11 @@ module WLBud
           str_res << "t." << field << ", "
         }
         str_res << "\"Read\", Omega.new]};"
+        str_res << "#{extended_collection.fullrelname} <= #{name} {|t| ["
+        collection.fields.each {|field|
+          str_res << "t." << field << ", "
+        }
+        str_res << "\"Grant\", Omega.new]};"
 
         #write to a file
         extrulename = "webdamlog_#{@peername}_#{name}_extrule"
@@ -827,11 +860,12 @@ module WLBud
         #have to make a string to pass into bloom to evaluate
         str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| [t.peer, t.priv, PList.new(t.rel)]};"
         #any time kind is updated because a new relation is added, need to install into acl
-        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'GrantP', k.rel]};"
+
+        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Grant', k.rel]};"
         str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Write', k.rel]};"
         str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Read', k.rel]};"
         #peer has full privs to his own acl
-        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"GrantP\", \"acl_at_#{peername}\"]];"
+        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Grant\", \"acl_at_#{peername}\"]];"
         str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Write\", \"acl_at_#{peername}\"]];"
         str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Read\", \"acl_at_#{peername}\"]];"                
         #write to a file
@@ -843,6 +877,34 @@ module WLBud
         fout.close
         load fullfilename
         @need_rewrite_strata = true
+      end
+    end
+
+    # Takes in an access policy and updates acl
+    def apply_policy(policy)
+      puts "Applying access policy #{policy.show}" if @options[:debug]
+      #TODO - need to give automatic read/write for a peer who has grant priv
+      priv = policy.access_type.to_s
+      rel = policy.relname + "_at_" + self.peername
+
+      #support special case of peer list from a relation
+      if policy.access.relation?
+        #have to make a string to pass into bloom to evaluate
+        str_res = "acle_at_#{self.peername} <= #{policy.access.fullrelname} {|t| [t[0],'#{priv}',\"#{rel}\"]};"
+        #write to a file
+        policyname = "webdamlog_#{@peername}_policy"
+        filestr = build_string_rule_to_include(policyname, str_res)
+        fullfilename = File.join(@rule_dir, policyname)
+        fout = File.new("#{fullfilename}", "w+")
+        fout.puts "#{filestr}"
+        fout.close
+        load fullfilename
+        #@need_rewrite_strata = true
+      elsif policy.access.all?
+        tables["acl_at_#{self.peername}".to_sym] <+ [["#{rel}","#{priv}",Omega.new]]
+      else
+        peer = policy.access.value
+        tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
       end
     end
 
@@ -898,6 +960,8 @@ module WLBud
       end
       @wl_program.wlcollections.each_value {|s| add_collection(s)}
       if @options[:accessc]
+        #apply policies
+        @wl_program.wlpolicies.each {|p| apply_policy(p)}
         @extended_collections_to_flush.each {|col|
           @wl_program.wlcollections[col.fullrelname] = col
         }
@@ -997,7 +1061,11 @@ module WLBud
                   if @options[:accessc]
                     tuple.collect! {|x|
                       if x.is_a? Array
-                        PList.new(x.to_set)
+                        if (x.include?("All peers"))
+                          Omega.new
+                        else
+                          PList.new(x.to_set)
+                        end
                       else
                         x
                       end
@@ -1116,6 +1184,28 @@ module WLBud
           end
         end
         puts "END"
+      end
+      if @options[:mesure]
+        rulect = 0
+        fctct = 0
+        declct = 0
+        @packet_metrics = []
+        wlpacketsdata = chan.pending
+        wlpacketsdata.keys.each do |packet|
+          unless packet[1].nil?
+            data = packet[1]
+            unless data[2]["rules"].nil?
+              rulect += data[2]["rules"].length
+            end
+            unless data[2]["facts"].nil?
+              fctct += data[2]["facts"].length
+            end
+            unless data[2]["declarations"].nil?
+              declct += data[2]["declarations"].length
+            end
+          end
+        end
+        @packet_metrics << declct << rulect << fctct
       end
     end
 

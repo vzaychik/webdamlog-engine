@@ -20,7 +20,7 @@ module WLBud
       ### Root program ###
       #### Each line is either a comment or it describe either a peer a fact a collection or a rule
       rule root
-        sep instruction:(fact / collection / rul / peer_dec / comment) sep ';' sep <WLVocabulary>
+        sep instruction:(fact / collection / rul / peer_dec / comment / policy) sep ';' sep <WLVocabulary>
       end
 
       ### Optional separator
@@ -206,6 +206,25 @@ module WLBud
     rule variable
         ( '$' word / '$_' ) <WLVar>
     end
+
+    rule policy
+    	'policy ' sep relation_name sep ractype:access_type sep access <WLPolicy>
+    end
+        rule access_type
+    	    read / write / grant
+   	end
+    	rule read
+            'Read ' / 'read ' <WLRead>
+	end
+    	rule write
+            'Write ' / 'write ' <WLWrite>
+        end
+    	rule grant
+            'Grant ' / 'grant ' <WLGrant>
+        end
+    	rule access
+             (relation_name ('@'/'_at_') peer_name / 'ALL' / peer_name) <WLAccess>
+        end
 
    end # grammar WebdamLogGrammar
 end # module WLBud

@@ -145,8 +145,8 @@ end
       assert_nothing_raised do
         #runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :mesure => true, :tag => "test_access" })
         #runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :mesure => true, :tag => "p1"  })
-        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :optim1 => true, :mesure => true, :tag => "test_access" })
-        runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :optim1 => true, :mesure => true, :tag => "p1"  })
+        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :optim1 => true, :measure => true, :tag => "test_access" })
+        runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :optim1 => true, :measure => true, :tag => "p1"  })
       end
 
       runner2.tick

@@ -229,7 +229,7 @@ module WLBud
       # #### WLBud:Begin adding to Bud
       #
       if @options[:measure]
-        @measure_obj = WlMeasure.new @budtime, @options[:measure_file]
+        @measure_obj = WlMeasure.new @budtime, @peername, @options[:measure_file]
       end
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
       #   instance.
@@ -536,7 +536,7 @@ module WLBud
             }
           }
         end
-        @measure_obj.append_counts(tuplecount, wordcount, @packet_metrics)
+        @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
 
         @measure_obj.dump_measures @budtime-1
       end
@@ -1250,7 +1250,7 @@ module WLBud
               rulect += data[2]["rules"].length
             end
             unless data[2]["facts"].nil?
-              data[2]["facts"].values {|vals|
+              data[2]["facts"].values.each {|vals|
                 fctct += vals.length
               }
             end

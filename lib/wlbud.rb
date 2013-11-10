@@ -218,6 +218,7 @@ module WLBud
       #VZM access control
       @options[:accessc] ||= false
       self.add_aclkind
+      self.add_access_optim
       @extended_collections_to_flush = []
       @packet_metrics = []
 
@@ -225,7 +226,7 @@ module WLBud
       #
       # #Loads .wl file containing the setup(facts and rules) for the
       #   Webdamlog instance.
-      @wl_program = WLBud::WLProgram.new( @peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc]} )
+      @wl_program = WLBud::WLProgram.new( @peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1]} )
       @wl_program.flush_new_local_declaration
       @wlb_tmp_inc=0
       @need_rewrite_strata=false
@@ -666,6 +667,9 @@ module WLBud
     #
     def translate_rule(wlrule)
       @wl_program.disamb_peername!(wlrule)
+      if @options[:optim1]
+        add_capc wlrule
+      end
       rule = "#{@wl_program.translate_rule_str(wlrule)}"
       name = "webdamlog_#{@peername}_#{wlrule.rule_id}"
 
@@ -676,6 +680,8 @@ module WLBud
         rule2.gsub! 'Read', 'Grant'
         rule << rule2
       end
+
+      rule << @wl_program.translate_capc_str(wlrule) #this will only work if optim1 is on, otherwise will be empty
 
       str = build_string_rule_to_include(name, rule)
       fullfilename = File.join(@rule_dir,name)
@@ -880,6 +886,29 @@ module WLBud
       end
     end
 
+    def add_access_optim
+      if @options[:accessc] and @options[:optim1]
+        keys=[]
+        values=[]
+        keys << :"peer"
+        keys << :"rel"
+        writeableschema = {keys => values}
+        self.scratch("writeable_at_#{peername}".to_sym, writeableschema)
+        #now need to put in the rule
+        #FIXME! - no way to write a bud rule with variable in the rule name
+        #so at least for now just delegate to all my peers knowledge of what they can write to
+      end
+    end
+
+    def add_capc(wlrule)
+      keys=[]
+      values=[]
+      keys << :"priv"
+      values << :"plist"
+      capcschema = {keys => values}
+      self.scratch("capc_#{wlrule.rule_id}_at_#{peername}".to_sym,capcschema)
+    end
+
     # Takes in an access policy and updates acl
     def apply_policy(policy)
       puts "Applying access policy #{policy.show}" if @options[:debug]
@@ -899,7 +928,6 @@ module WLBud
         fout.puts "#{filestr}"
         fout.close
         load fullfilename
-        #@need_rewrite_strata = true
       elsif policy.access.all?
         tables["acl_at_#{self.peername}".to_sym] <+ [["#{rel}","#{priv}",Omega.new]]
       else
@@ -965,6 +993,22 @@ module WLBud
         @extended_collections_to_flush.each {|col|
           @wl_program.wlcollections[col.fullrelname] = col
         }
+        #Until this implementation can have variables for a peer name, have to do this manually
+        if @options[:optim1]
+          str_res = ""
+          @wl_program.wlpeers.each {|p|
+            if p[0] != @peername
+              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"Write\" && rel.plist.include?(\"#{p[0]}\")};"
+            end
+          }
+          optim1name = "webdamlog_#{@peername}_writeable"
+          filestr = build_string_rule_to_include(optim1name, str_res)
+          fullfilename = File.join(@rule_dir, optim1name)
+          fout = File.new("#{fullfilename}", "w+")
+          fout.puts "#{filestr}"
+          fout.close
+          load fullfilename
+        end
       end
       if @options[:debug]
         WLTools::Debug_messages.h3 "make_program start generate_facts"
@@ -1078,6 +1122,19 @@ module WLBud
                 end
               else
                 err[[k,tuple]] = "fact of arity #{tuple.size} in relation #{k} of arity #{arity}"
+              end
+            else
+              err[[k,tuple]] = "fact in relation #{k} with value \"#{tuple}\" should be an Array or struct instead found a #{tuple.class}"
+            end
+          end # tuples.each do |tuple|
+        elsif @options[:accessc] && @options[:optim1] && relation_name.start_with?("writeable")
+          tuples.each do |tuple|
+            if tuple.is_a? Array or tuple.is_a? Struct
+              begin
+                tables[relation_name.to_sym] <+ [tuple]
+                (valid[relation_name] ||= []) << tuple
+              rescue StandardError => error
+                err[[k,tuple]]=error.inspect
               end
             else
               err[[k,tuple]] = "fact in relation #{k} with value \"#{tuple}\" should be an Array or struct instead found a #{tuple.class}"

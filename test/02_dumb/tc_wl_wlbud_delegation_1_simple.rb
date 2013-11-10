@@ -124,15 +124,17 @@ Hash[@tcoption#{i}.each_pair.to_a])")
     assert_equal [], wl_peer[0].join_delegated_at_p0.to_a.sort
     assert_equal 0, wl_peer[0].chan.length, "chan should be empty since peer1 is not suppose to receive something (storage and delta are empty)"
     assert_equal 0, wl_peer[0].chan.pending.length, "pending is always empty at the end of the tick"
-    assert_equal 1, wl_peer[0].rules_to_delegate.length
-    assert_equal 1, wl_peer[0].relation_to_declare.length
-    assert_equal 1, wl_peer[0].relation_to_declare.values.first.length
-    p wl_peer[0].relation_to_declare if $test_verbose
-    new_declaration = wl_peer[0].relation_to_declare.values.first
+    assert_equal 1, wl_peer[0].test_send_on_chan.length, "one packet should have been sent"
+    assert_equal(["collection inter persistent deleg_from_p0_1_1@p1(deleg_from_p0_1_1_x_0*);"],
+      wl_peer[0].test_send_on_chan[0][1][2]['declarations'],
+      "the delegation should be formated as expected")
+    new_declaration = wl_peer[0].test_send_on_chan[0][1][2]['declarations']
     /(deleg.*)\(/ =~ new_declaration.to_s
     new_rel = Regexp.last_match(1).gsub('@', '_at_')
     assert_kind_of Bud::BudScratch, wl_peer[0].tables[new_rel.to_sym], "check the type of the newly created relation Table or Scratch"
-    assert_equal 1, wl_peer[0].test_send_on_chan.length, "should send 1 packet"
+    assert_equal(["rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),delegated@p1($x);"],
+      wl_peer[0].test_send_on_chan[0][1][2]['rules'],
+      "the rules to be sent is not as expected")
 
     #p "===wl_peer[1].tick 2==="    
     old_nb_rel_peer2 = wl_peer[1].tables.length
@@ -154,6 +156,8 @@ Hash[@tcoption#{i}.each_pair.to_a])")
     packet = wl_peer[1].test_received_on_chan.first
     assert_equal 1, packet.declarations.length, "only one new relation"
     assert_equal new_declaration, packet.declarations, "new declaration received is suppose to be #{new_declaration}"
+    assert_equal({"deleg_from_p0_1_1_at_p1"=>[["1"], ["2"], ["3"], ["4"]]}, packet.facts, "new facts for the deleg relation should have been received")
+    assert_equal(["rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),delegated@p1($x);"], packet.rules, "")
 
     assert_equal old_nb_rel_peer2 + 1, nb_rel_peer2, "one new relation should have been created"
     assert wl_peer[1].tables.keys.include?(new_rel.to_sym), "don't find the new relation #{new_rel}"

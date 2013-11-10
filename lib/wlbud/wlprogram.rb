@@ -78,8 +78,9 @@ module WLBud
       # The original rules before the rewriting used for evaluation. It gives
       # the original semantic of the program.
       #
-      # Original rules id are stored as key and rewriting of these ones as value
-      # in an array
+      # Original rules are stored as key and rewriting of these ones as value in
+      # an array
+      #
       @rule_mapping = Hash.new{ |h,k| h[k]=Array.new }
       # The local rules straightforward to convert into bud (simple syntax
       # translation)
@@ -208,6 +209,7 @@ module WLBud
     # ===parameter
     # * +lines+ is an array of string, each cell containing a line of the file.
     #   Usually lines is the result of IO.readlines.
+    #
     def parse_lines (lines, add_to_program=false)
       ans=[]
       current=""

@@ -22,7 +22,7 @@ module WLRunner
     klass.module_eval { attr_accessor :bootstrap_rules}
     klass.module_eval { attr_accessor :bootstrap_policies}
     obj = klass.new(username, pg_file, options)
-    # #Loading twice the file from io. could find another way but need clear
+    # Loading twice the file from io. could find another way but need clear
     # interface from wl_bud
     obj.bootstrap_program = pg_file ? open(pg_file).readlines.join("").split(";").map {|stmt| "#{stmt};"} : []
     obj.bootstrap_collections = obj.bootstrap_program ? obj.bootstrap_program.select {|stmt| stmt.lstrip()[0..9]=='collection' } : []
@@ -105,6 +105,7 @@ module WLRunner
     return "" if pg.nil?
     file = StringIO.new(pg)
     line = file.readlines
+    file.close
     ret = []
     begin
       ret = self.wl_program.parse_lines line, false

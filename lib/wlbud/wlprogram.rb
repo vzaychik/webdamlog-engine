@@ -263,7 +263,8 @@ In the string: #{line}
           case result
           when WLBud::WLPeerDec
             pname = WLTools.sanitize(result.peername)
-            ip = WLTools.sanitize(result.ip)
+            #ip = WLTools.sanitize(result.ip)
+            ip = result.ip
             port = WLTools.sanitize(result.port)
             add_peer pname, ip, port
           when WLBud::WLCollection
@@ -641,8 +642,8 @@ In the string: #{line}
             end
           end
 
-          puts "rule head is not local " if !local?(wlrule.head)
-          puts "rule author is #{wlrule.author}, peername is #{@peername}"
+          puts "rule head is not local " if !local?(wlrule.head) if @options[:debug]
+          puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
           if wlrule.author != @peername && local?(wlrule.head) && !@options[:optim1]
             str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
           elsif @options[:optim1] && !local?(wlrule.head)

@@ -894,13 +894,14 @@ module WLBud
       #TODO - need to give automatic read/write for a peer who has grant priv
       priv = policy.access_type.to_s
       rel = policy.relname + "_at_" + self.peername
+      peer = policy.access.value
 
       #support special case of peer list from a relation
       if policy.access.relation?
         #have to make a string to pass into bloom to evaluate
         str_res = "acle_at_#{self.peername} <= #{policy.access.fullrelname} {|t| [t[0],'#{priv}',\"#{rel}\"]};"
         #write to a file
-        policyname = "webdamlog_#{@peername}_policy"
+        policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
         filestr = build_string_rule_to_include(policyname, str_res)
         fullfilename = File.join(@rule_dir, policyname)
         fout = File.new("#{fullfilename}", "w+")
@@ -908,9 +909,19 @@ module WLBud
         fout.close
         load fullfilename
       elsif policy.access.all?
-        tables["acl_at_#{self.peername}".to_sym] <+ [["#{rel}","#{priv}",Omega.new]]
+        puts "adding to acl Omega for #{rel} for priv #{priv}"
+        str_res = "acl_at_#{self.peername} <= [[\"#{rel}\",\"#{priv}\",Omega.new]]"
+        #write to a file
+        policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
+        filestr = build_string_rule_to_include(policyname, str_res)
+        fullfilename = File.join(@rule_dir, policyname)
+        fout = File.new("#{fullfilename}", "w+")
+        fout.puts "#{filestr}"
+        fout.close
+        load fullfilename
+
+        #tables["acl_at_#{self.peername}".to_sym] <= [["#{rel}","#{priv}",Omega.new]]
       else
-        peer = policy.access.value
         tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
       end
     end

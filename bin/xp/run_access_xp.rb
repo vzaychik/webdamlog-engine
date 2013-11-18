@@ -4,6 +4,8 @@ require 'csv'
 
 #XP_FILE_DIR = "/home/ec2-user/out1384232017478"
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
+NUM_ITER = 20
+NUM_ITER = ARGV[1].to_i if (ARGV[1] != nil)
 XPFILE = "XP_NOACCESS"
 
 def run_access_xp!
@@ -33,7 +35,7 @@ def run_access_xp!
 #    runner.run_engine
 #    p "#{runner.peername} started"
 #  end
-  20.times do
+  NUM_ITER.times do
     runners.reverse_each do |runner|
       runner.tick
     end

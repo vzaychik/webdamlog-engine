@@ -6,6 +6,8 @@ require 'csv'
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
 NUM_ITER = 200
 NUM_ITER = ARGV[1].to_i if (ARGV[1] != nil)
+SLEEP_TIME = 1
+SLEEP_TIME = ARGV[2].to_f if (ARGV[2] != nil)
 XPFILE = "XP_NOACCESS"
 
 def run_access_remote!
@@ -34,7 +36,7 @@ def run_access_remote!
   NUM_ITER.times do
     runners.reverse_each do |runner|
       runner.tick
-      sleep 1
+      sleep SLEEP_TIME
     end
   end
   

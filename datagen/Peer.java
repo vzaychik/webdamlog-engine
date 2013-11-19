@@ -125,14 +125,14 @@ public class Peer {
 		StringBuffer prog = new StringBuffer("// access control policy\n");
 		if (_policy == POLICY.PUB) {
 			for (Collection c : _collections) {
-				prog.append("policy " + c.getName() + c.getSuffix() + "@" + this.getName() + " read ALL;\n");
-				prog.append("policy " + c.getName() + c.getSuffix() + "@" + this.getName() + " write ALL;\n");
+				prog.append("policy " + c.getName() + c.getSuffix() + " read ALL;\n");
+				prog.append("policy " + c.getName() + c.getSuffix() + " write ALL;\n");
 			}
 		} else if (_policy == POLICY.KNOWN) {
 			for (Collection c : _collections) {
 				for (Peer p : _knownPeers) {
-					prog.append("policy " + c.getName() + c.getSuffix() + "@" + this.getName() + " read " + p.getName() + ";\n");
-					prog.append("policy " + c.getName() + c.getSuffix() + "@" + this.getName() + " write " + p.getName() + ";\n");
+					prog.append("policy " + c.getName() + c.getSuffix() + " read " + p.getName() + ";\n");
+					prog.append("policy " + c.getName() + c.getSuffix() + " write " + p.getName() + ";\n");
 
 				}
 			}	

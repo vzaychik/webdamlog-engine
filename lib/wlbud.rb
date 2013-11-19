@@ -901,7 +901,7 @@ module WLBud
         #have to make a string to pass into bloom to evaluate
         str_res = "acle_at_#{self.peername} <= #{policy.access.fullrelname} {|t| [t[0],'#{priv}',\"#{rel}\"]};"
         #write to a file
-        policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
+        policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{policy.access.relname}"
         filestr = build_string_rule_to_include(policyname, str_res)
         fullfilename = File.join(@rule_dir, policyname)
         fout = File.new("#{fullfilename}", "w+")

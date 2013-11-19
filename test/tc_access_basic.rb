@@ -241,6 +241,7 @@ end
   end
 end
 
+
 class TcAccessExtensionalRules < Test::Unit::TestCase
   include MixinTcWlTest
 
@@ -305,37 +306,13 @@ end
       assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"3", :priv=>"Grant", :plist=>Omega.new}], runner2.tables[:local1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
-      #now check delegated collections that should be created
-      assert_equal [],
+      #now check delegated collections that should be created. because of extensional head they should materialize right away
+      assert_equal [{:deleg_from_test_access_1_1_x_0=>"1",:priv=>"Read",:plist=>Omega.new}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"Read",:plist=>Omega.new},{:deleg_from_test_access_1_1_x_0=>"1",:priv=>"Grant",:plist=>Omega.new}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"Grant",:plist=>Omega.new}],
         runner2.tables[:deleg_from_test_access_1_1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [],
+      assert_equal [{:deleg_from_test_access_2_1_x_0=>"1",:priv=>"Read",:plist=>Omega.new}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"Read",:plist=>Omega.new},{:deleg_from_test_access_2_1_x_0=>"1",:priv=>"Grant",:plist=>Omega.new}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"Grant",:plist=>Omega.new}],
         runner2.tables[:deleg_from_test_access_2_1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [],
+      assert_equal [{:deleg_from_test_access_3_1_x_0=>"1",:priv=>"Read",:plist=>Omega.new}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"Read",:plist=>Omega.new},{:deleg_from_test_access_3_1_x_0=>"1",:priv=>"Grant",:plist=>Omega.new}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"Grant",:plist=>Omega.new}],
         runner2.tables[:deleg_from_test_access_3_1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-
-      #now check materialized collections from rules
-      assert_equal [],
-        runner2.tables[:delegated1_ext_at_p1].map{|t| Hash[t.each_pair.to_a]}
-      assert_equal [],
-        runner2.tables[:delegated_join_ext_at_p1].map{|t| Hash[t.each_pair.to_a]}
-      assert_equal [],
-        runner1.tables[:local3_ext_at_test_access].map{|t| Hash[t.each_pair.to_a]}
-
-      #now manually change acl for reading and test that tuples come over
-      runner1.update_acl("local2_at_test_access","p1","Read")
-
-      runner1.tick
-      runner1.tick
-      runner2.tick
-      runner2.tick
-
-      assert_equal [{:deleg_from_test_access_1_1_x_0=>"1",:priv=>"Read",:plist=>PList.new(["test_access","p1"].to_set)}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"Read",:plist=>PList.new(["test_access","p1"].to_set)}],
-        runner2.tables[:deleg_from_test_access_1_1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:deleg_from_test_access_2_1_x_0=>"1",:priv=>"Read",:plist=>PList.new(["test_access","p1"].to_set)}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"Read",:plist=>PList.new(["test_access","p1"].to_set)}],
-        runner2.tables[:deleg_from_test_access_2_1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [{:deleg_from_test_access_3_1_x_0=>"1",:priv=>"Read",:plist=>PList.new(["test_access","p1"].to_set)}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"Read",:plist=>PList.new(["test_access","p1"].to_set)}],
-        runner2.tables[:deleg_from_test_access_3_1_ext_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-
 
       #test_access doesn't have write privs, so the relation should still be empty
       assert_equal [],
@@ -351,12 +328,12 @@ end
       runner2.tick
       runner2.tick
 
-      assert_equal [{:atom1=>"1", :priv=>"Read",:plist=>Omega.new}, {:atom1=>"2",:priv=>"Read",:plist=>Omega.new}],
+      assert_equal [{:atom1=>"1", :priv=>"Read",:plist=>Omega.new}, {:atom1=>"2",:priv=>"Read",:plist=>Omega.new}, {:atom1=>"1", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"2", :priv=>"Grant", :plist=>Omega.new}],
         runner2.tables[:delegated1_ext_at_p1].map{|t| Hash[t.each_pair.to_a]}
       #because this is an extensional-head relation, without grant privs on p1's local1 the result should still be empty
       assert_equal [], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       
-      #test_access does not have privs to read local1@p1 so no results
+      #test_access does not have privs to grant local1@p1 so no results
       assert_equal [],
         runner1.tables[:local3_ext_at_test_access].map{|t| Hash[t.each_pair.to_a]}
 
@@ -373,9 +350,9 @@ end
       runner2.tick
       runner1.tick
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"1", :atom2=>"3", :priv=>"Grant", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Grant", :plist=>Omega.new}], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"1", :atom2=>"3", :priv=>"Grant", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Grant", :plist=>Omega.new}], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)

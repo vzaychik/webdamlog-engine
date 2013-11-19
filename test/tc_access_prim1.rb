@@ -95,6 +95,7 @@ end
   end
 end
 
+
 class TcAccessCapc < Test::Unit::TestCase
   include MixinTcWlTest
 
@@ -233,7 +234,7 @@ end
   end
 end
 
-=begin
+
 class TcAccessExtensionalRulesOptim1 < Test::Unit::TestCase
   include MixinTcWlTest
 
@@ -337,9 +338,14 @@ end
       runner2.update_acl("delegated1_at_p1","test_access","Write")
       runner2.update_acl("delegated_join_at_p1","test_access","Write")
       runner2.tick
+      runner1.tick
+      runner2.tick
+      runner1.tick
+      runner2.tick
+      runner1.tick
       runner2.tick
 
-      assert_equal [{:atom1=>"1", :priv=>"Read",:plist=>Omega.new}, {:atom1=>"2",:priv=>"Read",:plist=>Omega.new}],
+      assert_equal [{:atom1=>"1", :priv=>"Read",:plist=>Omega.new}, {:atom1=>"2",:priv=>"Read",:plist=>Omega.new},{:atom1=>"1", :priv=>"Grant",:plist=>Omega.new}, {:atom1=>"2",:priv=>"Grant",:plist=>Omega.new}],
         runner2.tables[:delegated1_ext_at_p1].map{|t| Hash[t.each_pair.to_a]}
       #because this is an extensional-head relation, without grant privs on p1's local1 the result should still be empty
       assert_equal [], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
@@ -361,9 +367,9 @@ end
       runner2.tick
       runner1.tick
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"1", :atom2=>"3", :priv=>"Grant", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Grant", :plist=>Omega.new}], runner2.tables[:delegated_join_ext_at_p1].map{ |t| Hash[t.each_pair.to_a] }
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new}], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Read", :plist=>Omega.new},{:atom1=>"1", :atom2=>"3", :priv=>"Grant", :plist=>Omega.new},{:atom1=>"2",:atom2=>"3", :priv=>"Grant", :plist=>Omega.new}], runner1.tables[:local3_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)
@@ -377,4 +383,4 @@ end
   end
 
 end
-=end
+

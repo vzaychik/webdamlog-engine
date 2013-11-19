@@ -436,8 +436,16 @@ In the string: #{line}
       @rule_mapping[wlrule.rule_id] << delegation
       @rule_mapping[delegation] << delegation
 
-      #as a last step, switch out the head
-      wlrule.head.relname = relation_name
+      #wlrule.head.relname = relation_name
+      rulestr = wlrule.show_wdl_format
+      rulestr.gsub!('_at_','@')
+      rulestr.gsub!(wlrule.head.relname, relation_name)
+      ru = parse(rulestr, true, true)
+      @rule_mapping[wlrule.rule_id] << ru.rule_id
+      @rule_mapping[ru.rule_id] << ru
+
+      #as a last step, remove the initial rel from list to avoid translation
+      @localrules.delete(wlrule)
     end
 
 
@@ -544,7 +552,7 @@ In the string: #{line}
             str_res << ", capchead, capcbody"
           end
           if (local?(wlrule.head) && wlrule.author != @peername && !@options[:optim1]) ||
-              (@options[:optim1] && !local?(wlrule.head))
+              (@options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername)
             str_res << ", aclw"
           end
         end
@@ -563,16 +571,19 @@ In the string: #{line}
             str_res << " if "
           end
           #select just the Read tuples
-          str_res << "atom0.priv == \"Read\" && "
+          #str_res << "atom0.priv == \"Read\" && "
+          wlrule.body.each do |atom|
+            str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"Read\" && "
+          end
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                  (intensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                  (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 if !@options[:optim1]
                   str_res << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
                 end
-              elsif (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                  (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+              elsif (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                  (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 if !@options[:optim1]
                   str_res << "#{atom.relname}acl.priv == \"Grant\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
                 end
@@ -584,8 +595,8 @@ In the string: #{line}
           first_intersection = true
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                  (intensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                  (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 str_res << "("
                 str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
                 unless first_intersection
@@ -615,8 +626,8 @@ In the string: #{line}
           first_intersection = true
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                  (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+              if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                  (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 str_res << "("
                 str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
                 unless first_intersection
@@ -646,7 +657,7 @@ In the string: #{line}
           puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
           if wlrule.author != @peername && local?(wlrule.head) && !@options[:optim1]
             str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
-          elsif @options[:optim1] && !local?(wlrule.head)
+          elsif @options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername
             #FIXME - we need to check write on the final relation, not on intermediary
             if intermediary?(wlrule.head)
               headrule = nil
@@ -697,7 +708,7 @@ In the string: #{line}
 
         #figure out whether we have any "head" relations, i.e. those that preserve provenance
         preserve_proven = 0
-        if extensional?(wlrule.head)
+        if extensional_head?(wlrule)
           wlrule.body.each do |atom|
             if !atom.provenance.empty? && atom.provenance.type == :Preserve && local?(atom) && !intermediary?(atom)
               head_str << "(" if preserve_proven > 0
@@ -739,8 +750,8 @@ In the string: #{line}
           capc_str << " {|"
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                  (intensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                  (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 capc_str << "#{atom.relname}acl, "
               end
             end
@@ -750,8 +761,8 @@ In the string: #{line}
 
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                  (intensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                  (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 capc_str << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
               end
             end
@@ -770,8 +781,8 @@ In the string: #{line}
         grant_proven = 0
         wlrule.body.each do |atom|
           if local?(atom) && !intermediary?(atom)
-            if (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+            if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
               body_str << "(" if grant_proven > 0
               body_str << "#{atom.relname}acl.plist"
               body_str << ")" if grant_proven > 0
@@ -799,8 +810,8 @@ In the string: #{line}
           capc_str << " {|"
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                  (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+              if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                  (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 capc_str << "#{atom.relname}acl, "
               end
             end
@@ -810,8 +821,8 @@ In the string: #{line}
 
           wlrule.body.each do |atom|
             if local?(atom) && !intermediary?(atom)
-              if (extensional?(wlrule.head) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                  (intensional?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+              if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                  (intensional_head?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 capc_str << "#{atom.relname}acl.priv == \"Grant\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
               end
             end
@@ -1059,7 +1070,7 @@ In the string: #{line}
         str << "Omega.new"
 
         capc = false
-        if extensional?(wlrule.head)
+        if extensional_head?(wlrule)
           #only intersect those that have preserve on them
           wlrule.body.each do |atom|
             if !atom.provenance.empty? && atom.provenance.type == :Preserve
@@ -1187,9 +1198,12 @@ In the string: #{line}
         if @options[:optim1]
           str << " * capc_#{wlrule.rule_id}_at_#{@peername} * capc_#{wlrule.rule_id}_at_#{@peername}"
         end
+        #in regular access control check writeable at the source prior to writing
+        #with optimization 1 check only with the original rule using the writeable relation
+        #and assume no malicious peers
         if wlrule.author != @peername && local?(wlrule.head) && !@options[:optim1]
           str << " * acl_at_#{wlrule.head.peername}"
-        elsif @options[:optim1] && !local?(wlrule.head)
+        elsif @options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername
           str << " * writeable_at_#{@peername}"
         end
       end
@@ -1293,6 +1307,26 @@ In the string: #{line}
       end
     end
 
+    def extensional_head? (wlrule)
+      #we want to always check the rule head which for imtermediary relations means finding their parents
+      if intermediary?(wlrule.head)
+        headrule = nil
+        @rule_mapping.keys.each {|id|
+          headrule = @rule_mapping[id]
+          break if headrule.include?(wlrule.rule_id)
+          headrule = nil
+        }
+        if (headrule != nil)
+          return extensional?(headrule.first.head)
+        else
+          raise WLErrorProgram,
+          "Not good, can't locate the parent rule for this intermediary one #{wlrule}"
+        end
+      else
+        return extensional?(wlrule.head)
+      end
+    end      
+
     def extensional? (wlatom)
       if wlatom.is_a? WLBud::WLAtom
         if @wlcollections[wlatom.fullrelname] != nil
@@ -1308,8 +1342,8 @@ In the string: #{line}
       end
     end
 
-    def intensional? (wlatom)
-      !extensional? wlatom
+    def intensional_head? (wlatom)
+      !extensional_head? wlatom
     end
 
   end # class WLProgram

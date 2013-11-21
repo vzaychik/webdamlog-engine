@@ -1,6 +1,6 @@
 * Webdamlog engine
 
-Implementation of an engine for webdamlog evaluation. Webdamlog is
+Implementation of an engine for webdamlog evaluation with access control. Webdamlog is
 distributed datalog language.
 
 

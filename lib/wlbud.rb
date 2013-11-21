@@ -299,8 +299,8 @@ module WLBud
         @measure_obj.initialize_measures @budtime
       end
       if @fist_tick_after_make_program
-        @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){|key,oldv,newv| oldv<<newv}
-        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv<<newv}
+        @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){|key,oldv,newv| oldv+newv}
+        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv+newv}
         @fist_tick_after_make_program=false
         @fist_tick_after_make_program.freeze
       end
@@ -949,9 +949,9 @@ module WLBud
           localrules = @wl_program.flush_new_rewritten_local_rule_to_install
           raise WLError, "one local rule should have been generated while splitting a non-local rule instead of #{localrules.length}" unless localrules.length == 1
           local_rule = localrules.first
-          @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){|key,oldv,newv| oldv<<newv}
+          @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){|key,oldv,newv| oldv+newv}
         end
-        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv<<newv}
+        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv+newv}
       end
 
       if local_rule.nil? # if a fully non-local rule is parsed a empty local rule is the result

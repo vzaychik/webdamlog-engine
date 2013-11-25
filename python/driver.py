@@ -76,6 +76,13 @@ if __name__ == "__main__":
     for s in scenarioList[0:1]:
         scenario.generateScenarioFiles( s )    
     
+    # execute scenarios
+    
+    
+    # loadBenchmark files
+    # benchark_time_log_<peername>_<date and time of start>
+    
+    
     exit()
     
     

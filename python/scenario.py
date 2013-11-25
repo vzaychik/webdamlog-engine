@@ -16,7 +16,6 @@ def generateScenarioFiles( scenario ):
     # create directory with temporary name
     # tempDir = tempfile.mkdtemp(dir=scenarioPath)
     
-#    stamp = "{:.6f}".format((time.time()*1000000))
     stamp = int(time.time()*1000)
     print stamp
     tempDir = os.path.join(scenarioPath,str(stamp))
@@ -58,9 +57,9 @@ def generateScenarioFiles( scenario ):
     # TODO push output files to git
 
     # save scenario model instance with timestamp
-    x=scenario.save(force_insert=True)
-    print x
+    scenario.save(force_insert=True)
 
+    return scenario.scenID
 # execute scenario
 # enter execution record in database
 # use fabric; at each host:

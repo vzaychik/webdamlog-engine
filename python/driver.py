@@ -75,13 +75,16 @@ if __name__ == "__main__":
     # generate scenarios
     for s in scenarioList[0:1]:
         scenario.generateScenarioFiles( s )    
-    
-    # execute scenarios
-    
+        # need to get scenario IDs back ??
+
+    # execute scenarios, multiple times?
+        # need to have (execID, scenID) pairs 
     
     # loadBenchmark files
-    # benchark_time_log_<peername>_<date and time of start>
-    
+    # filename format is:  "benchark_time_log_<peername>_<date and time of start>"
+    # for each (execID, scenID) pair:
+    # construct path  --> scenDir = os.path.join(scenarioPath,str(scenID),'exec_'+str(stamp))
+    # iterate through all benchmark files, extract peername, call loadBenchmark
     
     exit()
     

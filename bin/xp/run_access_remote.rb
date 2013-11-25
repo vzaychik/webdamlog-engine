@@ -30,7 +30,7 @@ def run_access_remote!
   end
   runners = []
   xpfiles.each do |f|
-    runners << create_wl_runner(f)
+    runners << create_wl_runner(XP_FILE_DIR+"/"+f)
     p "#{runners.last.peername} created"
   end
   NUM_ITER.times do

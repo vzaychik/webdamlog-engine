@@ -7,7 +7,7 @@ package org.stoyanovich.webdam.datagen;
  */
 public class Constants {
 
-	public static enum PEER_TYPE {FOLLOWER, AGGREGATOR, MASTER};
+	public static enum PEER_TYPE {FOLLOWER, AGGREGATOR, MASTER, ALICE, BOB, SUE, PEER};
 	public static enum COL_TYPE {INT, EXT};
 	
 	// public policy says that all peers see all data
@@ -23,10 +23,13 @@ public class Constants {
 	
 	// In the UNION_OF_JOINS scenario, master takes a union of the aggregators, while aggregators take a join of the followers.
 	// In the JOIN_OF_UNIONS scenario, master takes a join of the aggregators, while aggregators take a union of the followers.
-	public static enum SCENARIO {UNION_OF_JOINS, JOIN_OF_UNIONS}
+	public static enum SCENARIO {UNION_OF_JOINS, JOIN_OF_UNIONS, ALBUM}
 	
 	public static boolean MASTER_ONLY_RULES = true;
 	
 	public static boolean DO_FILE_IO = true;
-		
+	
+	public static float PROB_ALICE_OR_BOB_IN_PHOTO = 0.5f;
+	public static float PROB_OTHER_PEER_IN_PHOTO = 0.1f;
+
 }

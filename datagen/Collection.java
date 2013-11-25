@@ -1,6 +1,7 @@
 package org.stoyanovich.webdam.datagen;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Random;
 
 import org.stoyanovich.webdam.datagen.Constants.COL_TYPE;
@@ -20,8 +21,8 @@ public class Collection {
 	public ArrayList<String> _keys;
 	public ArrayList<String> _nonKeys;
 	public int _isPersistent = 0;
-	public ArrayList<Integer> _facts;
-	
+	public HashSet<String> _facts;
+
 	public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys) {
 		_name = name;
 		_peerName = peerName;
@@ -35,15 +36,15 @@ public class Collection {
 		}
 		_keys = new ArrayList<String>();
 		_nonKeys = new ArrayList<String>();
-		_facts = new ArrayList<Integer>();
+		_facts = new HashSet<String>();
 		
-		String[] tmp = keys.trim().split(" ");
+		String[] tmp = keys.trim().split(",");
 		for (int i=0; i<tmp.length; i++) {
 			_keys.add(tmp[i]);
 		}
 		
 		if (nonKeys.length() > 0) {
-			tmp = nonKeys.trim().split(" ");
+			tmp = nonKeys.trim().split(",");
 			_nonKeys = new ArrayList<String>();
 			for (int i=0; i<tmp.length; i++) {
 				_nonKeys.add(tmp[i]);
@@ -91,7 +92,7 @@ public class Collection {
 		return _facts.size();
 	}
 	
-	public ArrayList<Integer> getFacts() {
+	public HashSet<String> getFacts() {
 		return _facts;
 	}
 	
@@ -99,7 +100,7 @@ public class Collection {
 		StringBuffer res = new StringBuffer();
 		for (String key : _keys) {
 			if (res.length() > 0) {
-				res.append(", ");
+				res.append(",");
 			}
 			res.append(key + "*");
 		}
@@ -118,12 +119,12 @@ public class Collection {
 		StringBuffer res = new StringBuffer();
 		for (String key : _keys) {
 			if (res.length() > 0) {
-				res.append(", ");
+				res.append(",");
 			}
 			res.append("$" + key);
 		}		
 		for (String key : _nonKeys) {
-			res.append(", $" + key);
+			res.append(",$" + key);
 		}
 		return res.toString();
 	}
@@ -136,8 +137,13 @@ public class Collection {
 		if (_type == COL_TYPE.EXT) {
 			Random rand = new Random();
 			for (int i=0; i<numFacts; i++) {
-				_facts.add(rand.nextInt(Constants.VAL_RANGE));
+				_facts.add("" + rand.nextInt(Constants.VAL_RANGE));
 			}
 		}
 	}
+	
+	public void addFact(String fact) {
+		_facts.add(fact);
+	}
+	
 }

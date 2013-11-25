@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import org.stoyanovich.webdam.datagen.Constants.COL_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.PEER_TYPE;
@@ -17,30 +18,47 @@ import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
  */
 public class Peer {
 	private int _id;
+	private int _auxId;
 	private PEER_TYPE _type;
 	private POLICY _policy;
 	private SCENARIO _scenario;
 	
 	private ArrayList<Peer> _masters;
 	private ArrayList<Peer> _slaves;
-	private ArrayList<Peer> _knownPeers;
+	private HashSet<Peer> _knownPeers;
 	private ArrayList<Collection> _collections;
 
 	public Peer(int id, PEER_TYPE type) {
 		_id = id;
+		_auxId = id;
 		_type = type;
 		_slaves = new ArrayList<Peer>();
 		_masters = new ArrayList<Peer>();
-		_knownPeers = new ArrayList<Peer>();
+		_knownPeers = new HashSet<Peer>();
 		_collections = new ArrayList<Collection>();
 	}
+
+	public void setAuxId(int auxId) {
+		_auxId = auxId;
+	}
 	
+	public int getAuxId() {
+		return _auxId; 
+	}
+	
+	public PEER_TYPE getType() {
+		return _type;
+	}
+	
+	public void setType(PEER_TYPE type) {
+		_type = type;
+	}
 	public int getId() {
 		return _id;
 	}
 
 	public String getName() {
-		return _type.toString().toLowerCase() + _id;
+		return _type.toString().toLowerCase() + _auxId;
 	}
 	
 	public String getAddress() {
@@ -83,6 +101,10 @@ public class Peer {
 		_knownPeers.add(p);
 	}
 	
+	public HashSet<Peer> getKnownPeers() {
+		return _knownPeers;
+	}
+	
 	public void addCollection(Collection c) {
 		_collections.add(c);
 	}
@@ -114,7 +136,7 @@ public class Peer {
 	public String outputFacts() {
 		StringBuffer prog = new StringBuffer("// facts\n");
 		for (Collection c : _collections) {
-			for (int fact : c.getFacts()) {
+			for (String fact : c.getFacts()) {
 				prog.append("fact " +  c.getName() + c.getSuffix() +"@" + this.getName() + "(" + fact  + ");\n");				
 			}
 		}
@@ -202,7 +224,27 @@ public class Peer {
 					prog.append("rule " + headC.getSchemaWithVars() + " :- " + bodyC.getSchemaWithVars() + ";\n");
 				}
 			}
+		} else if (_scenario == SCENARIO.ALBUM) {
+		
+			if (_type == PEER_TYPE.SUE) {
+				Peer alice = Album._peersList.get(0);
+				Peer bob = Album._peersList.get(1);
+				
+				// compute a union of friends@alice and friends@bob, store in all_friends@sue
+				Collection allFriends = this.getCollectionByName("all_friends");
+				Collection friendsAlice = alice.getCollectionByName("friends");
+				Collection friendsBob = bob.getCollectionByName("friends");
+				prog.append("rule " + allFriends.getSchemaWithVars() + " :- " + friendsAlice.getSchemaWithVars() + ";\n");
+				prog.append("rule " + allFriends.getSchemaWithVars() + " :- " + friendsBob.getSchemaWithVars() + ";\n");
+
+				// compute the contents of album@sue($img,$peer)
+				Collection album = this.getCollectionByName("album");
+				prog.append("rule " + album.getSchemaWithVars() + " :- " + allFriends.getSchemaWithVars() + 
+							", photos@$id($img), tags@$id($img," + alice.getAuxId() + "), tags@$id($img," + bob.getAuxId() + ");\n");
+			}
 		}
+		
+		
 		return prog.toString();
 	}
 	

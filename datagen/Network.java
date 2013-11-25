@@ -16,7 +16,8 @@ import org.stoyanovich.webdam.datagen.Constants.POLICY;
 import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
 
 /**
- * This class generates access control annotated Webdamlog programs.
+ * This class generates access control annotated Webdamlog programs
+ * for the master / aggregators / followers scenario.
  * 
  * @author Julia Stoyanovich
  *
@@ -55,6 +56,7 @@ public class Network {
 				_netAddressMap.put(i++, host);
 				j++;
 			}
+			inFP.close();
 		} catch (IOException ioe) {
 			System.out.println(ioe.toString());
 		}
@@ -100,8 +102,9 @@ public class Network {
 	}
 	
 	public static void main(String[] args) {
-		if (args.length < 7) {
-			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
+		if (args.length < 6) {
+			//System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
+			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
 		
@@ -113,7 +116,7 @@ public class Network {
 		POLICY policy = POLICY.valueOf(args[3]);
 		int numFacts = Integer.parseInt(args[4].trim());
 		SCENARIO scenario = SCENARIO.valueOf(args[5]);
-		String dirPath = args[6].trim();
+		// String dirPath = args[6].trim();
 		
 		readmeComment.append("# followers=" + numFollowers);
 		readmeComment.append(", # aggregators=" + numAggregators);
@@ -122,9 +125,9 @@ public class Network {
 		readmeComment.append(", # facts per relation=" + numFacts);
 		readmeComment.append(", scenario=" + scenario.toString());
 				
-		if (args.length > 6) {
-			String instanceFile = args[7].trim();
-			int peersPerInstance = Integer.parseInt(args[8]);
+		if (args.length > 5) {
+			String instanceFile = args[6].trim();
+			int peersPerInstance = Integer.parseInt(args[7]);
 			initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
 		} else {
 			initNetAddressMap(1+numAggregators+numFollowers);
@@ -208,11 +211,19 @@ public class Network {
 
 					if (XPFile.exists()) {
 						BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS", true));
-						outFP.write("," + dirPath + "/run_" + p.getName());
+						//if (Constants.FULL_PATHS) {
+						//	outFP.write("," + dirPath + "/run_" + p.getName());
+						//} else {
+						outFP.write(",run_" + p.getName());							
+						//}
 						outFP.close();						
 					} else {
 						BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS"));
-						outFP.write(dirPath + "/run_" + p.getName());
+						//if (Constants.FULL_PATHS) {
+						//	outFP.write(dirPath + "/run_" + p.getName());
+						//} else {
+						outFP.write("run_" + p.getName());	
+						//}
 						outFP.close();
 					}
 					

@@ -11,20 +11,6 @@ scenarioPath = os.path.join(pathToRepository, 'webdamlog-engine/exp/MAF')
 #tempPath = pathToRepository + 'webdamlog-engine/python/temp'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
-def iterate():
-    scenario = models.Scenario( \
-#        scenID = 9999, \
-        numFollowers = 6, \
-        numAggregators = 3, \
-        aggPerFollower = 1, \
-        policy = 'KNOWN', \
-        numFacts = 10, \
-        ruleScenario = 'UNION_OF_JOINS', \
-#        hosts = ['localhost','localhost','localhost','localhost'], \
-        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
-        numPeersPerHost = 3 )
-    return scenario
-
 def generateScenarioFiles( scenario ):
 
     # create directory with temporary name

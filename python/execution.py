@@ -10,7 +10,6 @@ database = SqliteDatabase(None)  # Create a database instance.
 
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 scenarioPath = os.path.join(pathToRepository, 'webdamlog-engine/exp/MAF')
-sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
 def executeScenario( scenID, accessBool, opt1Bool, ticks, sleep ):
 
@@ -41,7 +40,7 @@ def executeScenario( scenID, accessBool, opt1Bool, ticks, sleep ):
 
     # execute ruby
     # does it mattet what the cwd is?
-    call(javaString)
+    call(rubyList)
 
     # TODO push benchmark files to git
 

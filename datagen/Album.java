@@ -77,7 +77,7 @@ public class Album {
 			if (Album._netAddressMap.containsKey(i)) {
 				host = Album._netAddressMap.get(i);
 			}
-			res.append(_peersList.get(i).getName() + "=" + host + ":" + (Constants.PORT_OFFSET + i) + ";\n");
+			res.append("peer " + _peersList.get(i).getName() + "=" + host + ":" + (Constants.PORT_OFFSET + i) + ";\n");
 		}
 		return res.toString();
 	}
@@ -188,11 +188,11 @@ public class Album {
 						
 							if ((taggedPeer.getType().equals(Constants.PEER_TYPE.PEER)) && (rnd < Constants.PROB_OTHER_PEER_IN_PHOTO)) {
 
-								tags.addFact(img+","+taggedPeer.getAuxId());
+								tags.addFact(img+",\""+taggedPeer.getName() + "\"");
 								
 							} else if ( (taggedPeer.getType().equals(PEER_TYPE.ALICE) || taggedPeer.getType().equals(PEER_TYPE.BOB)) && 
 										(rnd < Constants.PROB_ALICE_OR_BOB_IN_PHOTO)) {
-									tags.addFact(img+","+taggedPeer.getAuxId());									
+									tags.addFact(img+",\""+taggedPeer.getName() + "\"");									
 							}
 						}
 					}						
@@ -211,9 +211,9 @@ public class Album {
 				Collection album = new Collection("album", p.getName(), COL_TYPE.INT, 1, "img,peer");
 				p.addCollection(album);
 
-				Collection friends = new Collection("friends", p.getName(), COL_TYPE.EXT, 1, "id");
+				Collection friends = new Collection("friends", p.getName(), COL_TYPE.EXT, 1, "peer");
 				for (Peer f : p.getKnownPeers()) {
-					friends.addFact("" + f.getAuxId());
+					friends.addFact("\"" + f.getName() + "\"");
 				}
 				p.addCollection(friends);
 				
@@ -221,7 +221,7 @@ public class Album {
 			}
 			
 			// set up sue's collections
-			Collection allFriends = new Collection("all_friends", sue.getName(), COL_TYPE.INT, 1, "id");
+			Collection allFriends = new Collection("all_friends", sue.getName(), COL_TYPE.INT, 1, "peer");
 			sue.addCollection(allFriends);
 						
 			// output to program files

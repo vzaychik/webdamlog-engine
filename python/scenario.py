@@ -3,23 +3,18 @@ from datetime import date
 import os, time
 import sys
 from subprocess import call
-import tempfile
-import models
+#import tempfile
+import models, driver
 
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
-scenarioPath = os.path.join(pathToRepository, 'webdamlog-engine/exp/MAF')
-#tempPath = pathToRepository + 'webdamlog-engine/python/temp'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
-def generateScenarioFiles( scenario ):
-
-    # create directory with temporary name
-    # tempDir = tempfile.mkdtemp(dir=scenarioPath)
+def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)
-    print stamp
-    tempDir = os.path.join(scenarioPath,str(stamp))
+    tempDir = os.path.join(rootPath, scenario.scenType, str(stamp))
     os.makedirs(tempDir)
+    os.chdir(tempDir)
     
     # write out NetAddr file
     f = open(os.path.join(tempDir,'netAddr.txt'), "w")
@@ -27,6 +22,7 @@ def generateScenarioFiles( scenario ):
         f.write(host + '\n')
     f.close()
 
+    # TODO change below to cover case where scenType = PA
     # construct java execution list (in format for subprocess.call)
     javaString = ['java']
     javaString.append('-cp')
@@ -42,17 +38,11 @@ def generateScenarioFiles( scenario ):
     javaString.append(str(scenario.numPeersPerHost))
 
     # execute java
-    os.chdir(tempDir)
-    print 'Going to run dataGen in:'
+    print 'Running dataGen in:'
     print os.getcwd()
     call(javaString)
 
-    # grab ID from output directories timestamps
-    #res = [d for d in os.listdir(tempDir) if 'out' in d]
-    # assert len(res) > 0
-#     timestamp = res[0].split('_')[2]
     scenario.scenID = stamp    
-    # os.rename(tempDir,os.path.join(os.path.split(tempDir)[0],str(timestamp))) # rename temDir
 
     # TODO push output files to git
 
@@ -60,26 +50,14 @@ def generateScenarioFiles( scenario ):
     scenario.save(force_insert=True)
 
     return scenario.scenID
-# execute scenario
-# enter execution record in database
-# use fabric; at each host:
-#   pull from git
-#   construct ruby execution string and execute
-#   push benchmark files to git when done
-
-
-# LOCAL
-# pull from git
-# iterate through directories, check if parsed.
-# if not, parse and add to database.
-# parse result and enter in database
-
 
 if __name__ == "__main__":
 
+    rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
+
     models.setupDatabaseTest()
-    generateScenarioFiles( iterate() )
-#    for s in models.Scenario.select():
-#        print s.scenID, s.hosts
+    scenarios = driver.simple()
+    for s in scenarios:
+        generateScenarioFiles( s, rootPath )
     
     exit()

@@ -10,6 +10,7 @@ env.parallel = False
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
+    'avid.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
     'miklau1':'/state/partition2/miklau', \
     'miklau2':'/state/partition2/miklau', \
     'miklau3':'/state/partition2/miklau', \
@@ -24,11 +25,14 @@ def test():
     run('pwd')
     run('echo %s' % env.host )
 
-@hosts(['avid.cs.umass.edu'])
-def test():
-    run('hostname -f')
-    run('pwd')
-    run('echo %s' % env.host )
+@hosts(['dbcluster.cs.umass.edu'])
+def refreshDB():
+    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine')):
+        run('git pull')
+    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-exp')):
+        run('svn up')
+    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine/python')):
+        run('python loadBenchmark.py')
 
 
 def pull_both(rootPath):
@@ -54,7 +58,7 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         run("""svn commit -m '' """)
 
 if __name__ == '__main__':
-    execute(test)
+    execute(refreshDB)
 #   execute(pull_both, rootPath='/nfs/avid/users1/miklau/webdamlog')
 
 

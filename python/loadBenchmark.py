@@ -114,7 +114,7 @@ def refreshFromFileSystem( startPath ):
 
 if __name__ == "__main__":
 
-    models.setupDatabase(clearDatabase=True)
+    models.setupDatabase(clearDatabase=False)
     refreshFromFileSystem('/Users/miklau/Documents/Projects/Webdam/webdamlog-exp')
 
     # execID = 1001

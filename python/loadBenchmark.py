@@ -98,7 +98,6 @@ def processScenarios( scenType, startPath):
 
 def processScenTypes( startPath ):
     dirList = glob.glob(os.path.join(startPath, '*'))
-    print dirList
     for dir in dirList:
         scenType = os.path.split(dir)[1]
         print scenType

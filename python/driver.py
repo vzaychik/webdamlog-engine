@@ -50,7 +50,7 @@ def simple():
         numFollowers = 6, \
         numAggregators = 3, \
         aggPerFollower = 1, \
-        policy = 'PUB', \
+        policy = 'PRIV', \
         numFacts = 100, \
         ruleScenario = 'UNION_OF_JOINS', \
 #        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
@@ -91,7 +91,7 @@ def case1():
     
 if __name__ == "__main__":
 
-    models.setupDatabaseTest()
+#    models.setupDatabaseTest()
 
     # create scenario instances
     scenarioList = simple()

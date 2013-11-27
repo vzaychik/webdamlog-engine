@@ -9,7 +9,6 @@ import models, driver
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
-
 def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)

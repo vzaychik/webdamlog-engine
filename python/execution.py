@@ -72,7 +72,6 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
     
     execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
 
-    exit()
 
     # 3) push at each host
 
@@ -80,25 +79,13 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
     # ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
 
     #   and put all benchmark files into bench_files folder in the directory where the script was executed from. There will be one benchmark file per peer per execution, with the following filename schema: benchark_time_log_<peername>_<date and time of start>
-    
-    
-    
-    exit() ###############################################
 
-    # execute ruby
-    # does it matter what the cwd is?
-    call(rubyList)
-
-    # TODO push benchmark files to git
-
-    # save execution model instance with timestamp
-    execution.save(force_insert=True)
     return execution.execID
 
 if __name__ == "__main__":
 
 #    models.setupDatabaseTest()
-    execID = executeScenario( 1385545593351, 'MAF', False, False, 10, 0.25 )
-#    print execID
+    for r in range(5):
+        execID = executeScenario( 1385557597962, 'MAF', True, False, 20, 0.25 )
     
     exit()

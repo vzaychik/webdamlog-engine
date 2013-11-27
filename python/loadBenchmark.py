@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     # for dbcluster running
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem(fab.rootPathDict['dbcluster.cs.umass.edu'])
+    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'))
 
     # execID = 1001
     # scenID = 9999

@@ -44,11 +44,11 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
     os.makedirs(localExecPath)
     with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
         pickle.dump(execution, f)
-    driver.localCommit(localScenPath)
+    driver.localSVNCommit(localScenPath)
 #    os.chdir(localExecPath)
 
     outs = glob.glob( os.path.join(localScenPath,'out_*'))
-    outKey = os.path.split(outs[0]).split('_')[2]
+    outKey = os.path.split(outs[0])[1].split('_')[2]
     hosts = [os.path.split(out)[1].split('_')[1] for out in outs]
     print outKey
     print hosts
@@ -57,24 +57,22 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
     # 1)   pull from git -- both code and exp !!
     env.parallel = True
     env.hosts=hosts
-    execute(pull_both, rootPath='/nfs/avid/users1/miklau/webdamlog')
+    execute(fab.pull_both, rootPath='/nfs/avid/users1/miklau/webdamlog')
 
     #2)   chdir to exec_
     #   execute ruby providing path to proper out_ directory based on host
-    execStringPre = 'ruby %s ' os.path.join() 
-    execStringPost
-    exit()
     # outDir = os.path.join(scenarioPath,str(scenID),'out_localhost_1385388824526')
 
     paramString = str(ticks) + ' '
-    paramString.append(str(sleep) + ' ')
+    paramString += str(sleep) + ' '
     if accessBool:
-        paramString.append('access'+' ')
+        paramString += 'access'+' '
     if (optim1Bool and accessBool):
-        paramString.append('optim1'+' ')
+        paramString += 'optim1'+' '
     
-    execute(run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
+    execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
 
+    exit()
 
     # 3) push at each host
 
@@ -100,7 +98,7 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 if __name__ == "__main__":
 
 #    models.setupDatabaseTest()
-    execID = executeScenario( 1385438179398, 'MAF', False, False, 10, 0.5 )
+    execID = executeScenario( 1385545593351, 'MAF', False, False, 10, 0.25 )
 #    print execID
     
     exit()

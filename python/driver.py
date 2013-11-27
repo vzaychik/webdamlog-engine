@@ -22,6 +22,16 @@ import itertools
 
 # 
 #
+def localSVNCommit( commitPath ):
+    cwd = os.getcwd()
+    os.chdir(commitPath)
+    callString = ['svn','add','--force','.']
+    call(callString)
+    callString = ['svn', 'commit', '-m', """ "" """]
+    call(callString)
+    os.chdir(cwd)
+
+
 def localCommit( commitPath ):
     cwd = os.getcwd()
     os.chdir(commitPath)
@@ -44,7 +54,7 @@ def simple():
         numFacts = 100, \
         ruleScenario = 'UNION_OF_JOINS', \
 #        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
-        hosts = ['localhost','localhost','localhost','localhost'], \
+        hosts = ['dbcluster.cs.umass.edu'] * 4, \
         numHosts = 4, \
         numPeersPerHost = 3 )
     
@@ -66,6 +76,7 @@ def case1():
         print tup
         scenario = models.Scenario( \
             # scenID = ?? filled in later
+            scenType = 'MAF', \
             numFollowers = 6, \
             numAggregators = 3, \
             aggPerFollower = 1, \
@@ -80,10 +91,6 @@ def case1():
     
 if __name__ == "__main__":
 
-    localCommit()
-    exit()
-
-
     models.setupDatabaseTest()
 
     # create scenario instances
@@ -94,6 +101,8 @@ if __name__ == "__main__":
     for s in scenarioList:
         scenario.generateScenarioFiles( s )    
         # need to get scenario IDs back ??
+
+    localSVNCommit()
 
     # execute scenarios, multiple times?
         # need to have (execID, scenID) pairs 

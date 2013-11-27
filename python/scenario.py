@@ -1,13 +1,14 @@
 from peewee import *
 from datetime import date
 import os, time
-import sys
+import sys, pickle
 from subprocess import call
 #import tempfile
 import models, driver
 
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
+
 
 def generateScenarioFiles(scenario, rootPath):
     
@@ -47,17 +48,20 @@ def generateScenarioFiles(scenario, rootPath):
     # TODO push output files to git
 
     # save scenario model instance with timestamp
-    scenario.save(force_insert=True)
-
+    with open(os.path.join(tempDir,str(stamp)+'.pckl'), 'w') as f:
+        pickle.dump(scenario, f)
+    
     return scenario.scenID
 
 if __name__ == "__main__":
 
     rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
 
-    models.setupDatabaseTest()
+#    models.setupDatabaseTest()
     scenarios = driver.simple()
     for s in scenarios:
         generateScenarioFiles( s, rootPath )
+    
+    driver.localSVNCommit( rootPath )
     
     exit()

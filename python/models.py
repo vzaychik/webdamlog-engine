@@ -1,10 +1,12 @@
 from peewee import *
+from peewee import drop_model_tables
 from datetime import date
 import os
 
-# database = SqliteDatabase(None)  # Create a database instance.
-
+#database = SqliteDatabase(None)  # Create a database instance.
 database = MySQLDatabase("webdamlog", host="avid.cs.umass.edu", port=3306, user="miklau", passwd="ilovedb")
+
+#database = MySQLDatabase(None)
 
 class BaseModel(Model):
     class Meta:
@@ -60,9 +62,20 @@ def setupDatabaseTest():
     if not Tick.table_exists():
         Tick.create_table()
 
-if __name__ == "__main__":
-#    setupDatabaseTest()
+def setupDatabase(clearDatabase):
+    if clearDatabase:
+        drop_model_tables([Tick, Execution, Scenario])
+        
+    if not Scenario.table_exists():
+        Scenario.create_table()
+    if not Execution.table_exists():
+        Execution.create_table()
+    if not Tick.table_exists():
+        Tick.create_table()
 
+if __name__ == "__main__":
+    setupDatabase(False)
+    
     database.connect()
 
     exit()

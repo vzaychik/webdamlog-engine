@@ -2,7 +2,7 @@ from peewee import *
 from peewee import drop_model_tables
 from datetime import date
 import sys, os, glob, pickle
-import models
+import models, fab
 from subprocess import call
 
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
@@ -114,8 +114,9 @@ def refreshFromFileSystem( startPath ):
 
 if __name__ == "__main__":
 
+    # for dbcluster running
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem('/Users/miklau/Documents/Projects/Webdam/webdamlog-exp')
+    refreshFromFileSystem(fab.rootPathDict['dbcluster.cs.umass.edu'])
 
     # execID = 1001
     # scenID = 9999

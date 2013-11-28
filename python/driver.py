@@ -52,6 +52,7 @@ def simple():
         aggPerFollower = 1, \
         policy = 'PUB', \
         numFacts = 100, \
+        valRange = 10, \
         ruleScenario = 'UNION_OF_JOINS', \
 #        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
         hosts = ['dbcluster.cs.umass.edu'] * 4, \
@@ -69,7 +70,7 @@ def case1():
     scenarioList = []
     
     policyList = ['PUB','PRIV','KNOWN']
-    numFactsList = [10, 100, 1000, 10000]
+    numFactsList = [1000]
     ruleScenarioList = ['UNION_OF_JOINS','JOIN_OF_UNIONS']
     
     for tup in itertools.product(policyList, numFactsList, ruleScenarioList):
@@ -83,7 +84,8 @@ def case1():
             policy = tup[0], \
             numFacts = tup[1], \
             ruleScenario = tup[2], \
-            hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
+            valRange = 1000, \
+            hosts = ['dbcluster.cs.umass.edu']*4, \
             numPeersPerHost = 3 )
         scenarioList.append(scenario)
     
@@ -92,17 +94,17 @@ def case1():
 if __name__ == "__main__":
 
 #    models.setupDatabaseTest()
+    rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
 
     # create scenario instances
-    scenarioList = simple()
+    scenarioList = case1()
     print len(scenarioList)
-    
     # generate scenarios
     for s in scenarioList:
-        scenario.generateScenarioFiles( s )    
+        scenario.generateScenarioFiles( s, rootPath )    
         # need to get scenario IDs back ??
 
-    localSVNCommit()
+    localSVNCommit(rootPath)
 
     # execute scenarios, multiple times?
         # need to have (execID, scenID) pairs 

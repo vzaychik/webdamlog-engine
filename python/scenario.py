@@ -34,6 +34,7 @@ def generateScenarioFiles(scenario, rootPath):
     javaString.append(scenario.policy)
     javaString.append(str(scenario.numFacts))
     javaString.append(scenario.ruleScenario)
+    javaString.append(str(scenario.valRange))
     javaString.append('netAddr.txt')
     javaString.append(str(scenario.numPeersPerHost))
 

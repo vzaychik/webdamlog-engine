@@ -84,8 +84,10 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
 if __name__ == "__main__":
 
-#    models.setupDatabaseTest()
-    for r in range(5):
-        execID = executeScenario( 1385569244486, 'MAF', True, True, 20, 0.1 )
+    runs = 5
+    for scenID in [1385605955733,1385605956192,1385605956623,1385605957054,1385605957412,1385605957753]:
+        for r in range(runs):
+            executeScenario( scenID, 'MAF', False, False, 20, 0.01 )
+            executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
+            executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
     
-    exit()

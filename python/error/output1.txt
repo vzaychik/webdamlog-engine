@@ -1,0 +1,531 @@
+A         exec_1385606567727
+A         exec_1385606567727/1385606567727.pckl
+Adding         exec_1385606567727
+Adding         exec_1385606567727/1385606567727.pckl
+Transmitting file data .
+Committed revision 87.
+1385605956077
+['dbcluster.cs.umass.edu']
+[dbcluster.cs.umass.edu] Executing task 'pull_both'
+[dbcluster.cs.umass.edu] run: git pull
+[dbcluster.cs.umass.edu] out: remote: Counting objects: 29, done.[K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects:  16% (1/6)   [K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects:  33% (2/6)   [K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects:  50% (3/6)   [K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects:  66% (4/6)   [K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects:  83% (5/6)   [K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects: 100% (6/6)   [K
+[dbcluster.cs.umass.edu] out: remote: Compressing objects: 100% (6/6), done.[K
+[dbcluster.cs.umass.edu] out: Unpacking objects:   6% (1/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  13% (2/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  20% (3/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  26% (4/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  33% (5/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  40% (6/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  46% (7/15)   
+[dbcluster.cs.umass.edu] out: remote: Total 15 (delta 10), reused 14 (delta 9)[K
+[dbcluster.cs.umass.edu] out: Unpacking objects:  53% (8/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  60% (9/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  66% (10/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  73% (11/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  80% (12/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  86% (13/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects:  93% (14/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects: 100% (15/15)   
+[dbcluster.cs.umass.edu] out: Unpacking objects: 100% (15/15), done.
+[dbcluster.cs.umass.edu] out: From github.com:vzaychik/webdamlog-engine
+[dbcluster.cs.umass.edu] out:    19811f6..deba935  master     -> origin/master
+[dbcluster.cs.umass.edu] out: Updating 19811f6..deba935
+[dbcluster.cs.umass.edu] out: Fast-forward
+[dbcluster.cs.umass.edu] out:  datagen/Album.java      |  16 [32m+++++++++[m[31m-------[m
+[dbcluster.cs.umass.edu] out:  datagen/Collection.java |   8 [32m++++[m[31m----[m
+[dbcluster.cs.umass.edu] out:  datagen/Constants.java  |   2 [32m+[m[31m-[m
+[dbcluster.cs.umass.edu] out:  datagen/Network.java    |  16 [32m++++++++++[m[31m------[m
+[dbcluster.cs.umass.edu] out:  datagen/dataGen.jar     | Bin [31m31547[m -> [32m31691[m bytes
+[dbcluster.cs.umass.edu] out:  python/driver.py        |   2 [32m+[m[31m-[m
+[dbcluster.cs.umass.edu] out:  python/execution.py     |   2 [32m+[m[31m-[m
+[dbcluster.cs.umass.edu] out:  7 files changed, 26 insertions(+), 20 deletions(-)
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn up
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/netAddr.txt
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_master0
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_follower4
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_follower5
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_follower6
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_follower7
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/XP_NOACCESS
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_follower8
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_follower9
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_aggregator1
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_aggregator2
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/out_dbcluster.cs.umass.edu_1385605958009/run_aggregator3
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957753/1385605957753.pckl
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/1385605957412.pckl
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/netAddr.txt
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_master0
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_follower4
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_follower5
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_follower6
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_follower7
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/XP_NOACCESS
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_follower8
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_follower9
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_aggregator1
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_aggregator2
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957412/out_dbcluster.cs.umass.edu_1385605957667/run_aggregator3
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/netAddr.txt
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_master0
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_follower4
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_follower5
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_follower6
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_follower7
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/XP_NOACCESS
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_follower8
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_follower9
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_aggregator1
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_aggregator2
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/out_dbcluster.cs.umass.edu_1385605957344/run_aggregator3
+[dbcluster.cs.umass.edu] out: A    MAF/1385605957054/1385605957054.pckl
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/netAddr.txt
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/1385605956623.pckl
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_master0
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_follower4
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_follower5
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_follower6
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_follower7
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/XP_NOACCESS
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_follower8
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_follower9
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_aggregator1
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_aggregator2
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956623/out_dbcluster.cs.umass.edu_1385605956939/run_aggregator3
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/netAddr.txt
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/exec_1385606567727
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/exec_1385606567727/1385606567727.pckl
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_master0
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower4
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower5
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower6
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower7
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/XP_NOACCESS
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower8
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower9
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator1
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator2
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator3
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/1385605955733.pckl
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/netAddr.txt
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_master0
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_follower4
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_follower5
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_follower6
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_follower7
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/XP_NOACCESS
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_follower8
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_follower9
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_aggregator1
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_aggregator2
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/out_dbcluster.cs.umass.edu_1385605956518/run_aggregator3
+[dbcluster.cs.umass.edu] out: A    MAF/1385605956192/1385605956192.pckl
+[dbcluster.cs.umass.edu] out: Updated to revision 87.
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] Executing task 'run_ruby'
+[dbcluster.cs.umass.edu] run: ruby /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077 20 0.01 
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:8: warning: already initialized constant NUM_ITER
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:7: warning: previous definition of NUM_ITER was here
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:10: warning: already initialized constant SLEEP_TIME
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:9: warning: previous definition of SLEEP_TIME was here
+[dbcluster.cs.umass.edu] out: "starting experiment with access control off"
+[dbcluster.cs.umass.edu] out: "Start experiments with [\"run_master0\", \"run_aggregator1\", \"run_aggregator2\", \"run_aggregator3\", \"run_follower4\", \"run_follower5\", \"run_follower6\", \"run_follower7\", \"run_follower8\", \"run_follower9\"]"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_master0
+[dbcluster.cs.umass.edu] out: creating peer master0 on dbcluster.cs.umass.edu:10000
+[dbcluster.cs.umass.edu] out: "master0 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator1
+[dbcluster.cs.umass.edu] out: creating peer aggregator1 on dbcluster.cs.umass.edu:10001
+[dbcluster.cs.umass.edu] out: "aggregator1 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator2
+[dbcluster.cs.umass.edu] out: creating peer aggregator2 on dbcluster.cs.umass.edu:10002
+[dbcluster.cs.umass.edu] out: "aggregator2 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator3
+[dbcluster.cs.umass.edu] out: creating peer aggregator3 on dbcluster.cs.umass.edu:10003
+[dbcluster.cs.umass.edu] out: "aggregator3 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower4
+[dbcluster.cs.umass.edu] out: creating peer follower4 on dbcluster.cs.umass.edu:10004
+[dbcluster.cs.umass.edu] out: "follower4 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower5
+[dbcluster.cs.umass.edu] out: creating peer follower5 on dbcluster.cs.umass.edu:10005
+[dbcluster.cs.umass.edu] out: "follower5 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower6
+[dbcluster.cs.umass.edu] out: creating peer follower6 on dbcluster.cs.umass.edu:10006
+[dbcluster.cs.umass.edu] out: "follower6 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower7
+[dbcluster.cs.umass.edu] out: creating peer follower7 on dbcluster.cs.umass.edu:10007
+[dbcluster.cs.umass.edu] out: "follower7 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower8
+[dbcluster.cs.umass.edu] out: creating peer follower8 on dbcluster.cs.umass.edu:10008
+[dbcluster.cs.umass.edu] out: "follower8 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower9
+[dbcluster.cs.umass.edu] out: creating peer follower9 on dbcluster.cs.umass.edu:10009
+[dbcluster.cs.umass.edu] out: "follower9 created"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower9 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower8 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower7 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower6 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower5 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower4 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator3 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator2 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator1 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of master0 : 20"
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn add --force .
+[dbcluster.cs.umass.edu] out: A         bench_files
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower8_2013-11-27 21:42:46 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_aggregator2_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower6_2013-11-27 21:42:45 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower4_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower7_2013-11-27 21:42:45 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_aggregator1_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower9_2013-11-27 21:42:47 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_aggregator3_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_master0_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower5_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn commit -m '' 
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_aggregator1_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_aggregator2_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_aggregator3_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_follower4_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_follower5_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_follower6_2013-11-27 21:42:45 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_follower7_2013-11-27 21:42:45 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_follower8_2013-11-27 21:42:46 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_follower9_2013-11-27 21:42:47 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606567727/bench_files/benchark_time_log_master0_2013-11-27 21:42:44 -0500
+[dbcluster.cs.umass.edu] out: Transmitting file data ..........
+[dbcluster.cs.umass.edu] out: Committed revision 88.
+[dbcluster.cs.umass.edu] out: 
+
+A         exec_1385606630761
+A         exec_1385606630761/1385606630761.pckl
+Adding         exec_1385606630761
+Adding         exec_1385606630761/1385606630761.pckl
+Transmitting file data .
+Committed revision 89.
+1385605956077
+['dbcluster.cs.umass.edu']
+[dbcluster.cs.umass.edu] Executing task 'pull_both'
+[dbcluster.cs.umass.edu] run: git pull
+[dbcluster.cs.umass.edu] out: Already up-to-date.
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn up
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/exec_1385606630761
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/exec_1385606630761/1385606630761.pckl
+[dbcluster.cs.umass.edu] out: Updated to revision 89.
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] Executing task 'run_ruby'
+[dbcluster.cs.umass.edu] run: ruby /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077 20 0.01 access 
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:8: warning: already initialized constant NUM_ITER
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:7: warning: previous definition of NUM_ITER was here
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:10: warning: already initialized constant SLEEP_TIME
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:9: warning: previous definition of SLEEP_TIME was here
+[dbcluster.cs.umass.edu] out: "starting experiment with access control on"
+[dbcluster.cs.umass.edu] out: "Start experiments with [\"run_master0\", \"run_aggregator1\", \"run_aggregator2\", \"run_aggregator3\", \"run_follower4\", \"run_follower5\", \"run_follower6\", \"run_follower7\", \"run_follower8\", \"run_follower9\"]"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_master0
+[dbcluster.cs.umass.edu] out: creating peer master0 on dbcluster.cs.umass.edu:10000
+[dbcluster.cs.umass.edu] out: adding to acl Omega for t_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for t_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s1_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s1_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s2_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s2_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s3_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s3_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: "master0 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator1
+[dbcluster.cs.umass.edu] out: creating peer aggregator1 on dbcluster.cs.umass.edu:10001
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: "aggregator1 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator2
+[dbcluster.cs.umass.edu] out: creating peer aggregator2 on dbcluster.cs.umass.edu:10002
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: "aggregator2 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator3
+[dbcluster.cs.umass.edu] out: creating peer aggregator3 on dbcluster.cs.umass.edu:10003
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: "aggregator3 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower4
+[dbcluster.cs.umass.edu] out: creating peer follower4 on dbcluster.cs.umass.edu:10004
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower4 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower4 for priv Write
+[dbcluster.cs.umass.edu] out: "follower4 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower5
+[dbcluster.cs.umass.edu] out: creating peer follower5 on dbcluster.cs.umass.edu:10005
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower5 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower5 for priv Write
+[dbcluster.cs.umass.edu] out: "follower5 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower6
+[dbcluster.cs.umass.edu] out: creating peer follower6 on dbcluster.cs.umass.edu:10006
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower6 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower6 for priv Write
+[dbcluster.cs.umass.edu] out: "follower6 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower7
+[dbcluster.cs.umass.edu] out: creating peer follower7 on dbcluster.cs.umass.edu:10007
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower7 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower7 for priv Write
+[dbcluster.cs.umass.edu] out: "follower7 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower8
+[dbcluster.cs.umass.edu] out: creating peer follower8 on dbcluster.cs.umass.edu:10008
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower8 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower8 for priv Write
+[dbcluster.cs.umass.edu] out: "follower8 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower9
+[dbcluster.cs.umass.edu] out: creating peer follower9 on dbcluster.cs.umass.edu:10009
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower9 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower9 for priv Write
+[dbcluster.cs.umass.edu] out: "follower9 created"
+[dbcluster.cs.umass.edu] out: Unexpected Bud error: #<MessagePack::StackError: stack level too deep>
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud/server.rb:14:in `feed_each'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud/server.rb:14:in `receive_data'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/eventmachine-1.0.3/lib/eventmachine.rb:187:in `run_machine'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/eventmachine-1.0.3/lib/eventmachine.rb:187:in `run'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud.rb:942:in `block in start_reactor'
+[dbcluster.cs.umass.edu] out: "Final tick step of follower9 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower8 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower7 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower6 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower5 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower4 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator3 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator2 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator1 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of master0 : 20"
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn add --force .
+[dbcluster.cs.umass.edu] out: A         bench_files
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower9_2013-11-27 21:43:48 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower7_2013-11-27 21:43:47 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_aggregator3_2013-11-27 21:43:45 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_master0_2013-11-27 21:43:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower6_2013-11-27 21:43:46 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower8_2013-11-27 21:43:47 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower5_2013-11-27 21:43:46 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_aggregator2_2013-11-27 21:43:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_aggregator1_2013-11-27 21:43:44 -0500
+[dbcluster.cs.umass.edu] out: A         bench_files/benchark_time_log_follower4_2013-11-27 21:43:45 -0500
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn commit -m '' 
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_aggregator1_2013-11-27 21:43:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_aggregator2_2013-11-27 21:43:44 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_aggregator3_2013-11-27 21:43:45 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_follower4_2013-11-27 21:43:45 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_follower5_2013-11-27 21:43:46 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_follower6_2013-11-27 21:43:46 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_follower7_2013-11-27 21:43:47 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_follower8_2013-11-27 21:43:47 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_follower9_2013-11-27 21:43:48 -0500
+[dbcluster.cs.umass.edu] out: Adding         exec_1385606630761/bench_files/benchark_time_log_master0_2013-11-27 21:43:44 -0500
+[dbcluster.cs.umass.edu] out: Transmitting file data ..........
+[dbcluster.cs.umass.edu] out: Committed revision 90.
+[dbcluster.cs.umass.edu] out: 
+
+A         exec_1385606671748
+A         exec_1385606671748/1385606671748.pckl
+Adding         exec_1385606671748
+Adding         exec_1385606671748/1385606671748.pckl
+Transmitting file data .
+Committed revision 91.
+1385605956077
+['dbcluster.cs.umass.edu']
+[dbcluster.cs.umass.edu] Executing task 'pull_both'
+[dbcluster.cs.umass.edu] run: git pull
+[dbcluster.cs.umass.edu] out: Already up-to-date.
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] run: svn up
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/exec_1385606671748
+[dbcluster.cs.umass.edu] out: A    MAF/1385605955733/exec_1385606671748/1385606671748.pckl
+[dbcluster.cs.umass.edu] out: Updated to revision 91.
+[dbcluster.cs.umass.edu] out: 
+
+[dbcluster.cs.umass.edu] Executing task 'run_ruby'
+[dbcluster.cs.umass.edu] run: ruby /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077 20 0.01 access optim1 
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:8: warning: already initialized constant NUM_ITER
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:7: warning: previous definition of NUM_ITER was here
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:10: warning: already initialized constant SLEEP_TIME
+[dbcluster.cs.umass.edu] out: /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:9: warning: previous definition of SLEEP_TIME was here
+[dbcluster.cs.umass.edu] out: "starting experiment with access control on"
+[dbcluster.cs.umass.edu] out: "optimization 1 is on"
+[dbcluster.cs.umass.edu] out: "Start experiments with [\"run_master0\", \"run_aggregator1\", \"run_aggregator2\", \"run_aggregator3\", \"run_follower4\", \"run_follower5\", \"run_follower6\", \"run_follower7\", \"run_follower8\", \"run_follower9\"]"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_master0
+[dbcluster.cs.umass.edu] out: creating peer master0 on dbcluster.cs.umass.edu:10000
+[dbcluster.cs.umass.edu] out: adding to acl Omega for t_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for t_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s1_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s1_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s2_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s2_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s3_i_at_master0 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s3_i_at_master0 for priv Write
+[dbcluster.cs.umass.edu] out: "master0 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator1
+[dbcluster.cs.umass.edu] out: creating peer aggregator1 on dbcluster.cs.umass.edu:10001
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator1 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator1 for priv Write
+[dbcluster.cs.umass.edu] out: "aggregator1 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator2
+[dbcluster.cs.umass.edu] out: creating peer aggregator2 on dbcluster.cs.umass.edu:10002
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r6_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator2 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r9_i_at_aggregator2 for priv Write
+[dbcluster.cs.umass.edu] out: "aggregator2 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_aggregator3
+[dbcluster.cs.umass.edu] out: creating peer aggregator3 on dbcluster.cs.umass.edu:10003
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for s_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r4_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r5_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r7_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator3 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r8_i_at_aggregator3 for priv Write
+[dbcluster.cs.umass.edu] out: "aggregator3 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower4
+[dbcluster.cs.umass.edu] out: creating peer follower4 on dbcluster.cs.umass.edu:10004
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower4 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower4 for priv Write
+[dbcluster.cs.umass.edu] out: "follower4 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower5
+[dbcluster.cs.umass.edu] out: creating peer follower5 on dbcluster.cs.umass.edu:10005
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower5 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower5 for priv Write
+[dbcluster.cs.umass.edu] out: "follower5 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower6
+[dbcluster.cs.umass.edu] out: creating peer follower6 on dbcluster.cs.umass.edu:10006
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower6 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower6 for priv Write
+[dbcluster.cs.umass.edu] out: "follower6 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower7
+[dbcluster.cs.umass.edu] out: creating peer follower7 on dbcluster.cs.umass.edu:10007
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower7 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower7 for priv Write
+[dbcluster.cs.umass.edu] out: "follower7 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower8
+[dbcluster.cs.umass.edu] out: creating peer follower8 on dbcluster.cs.umass.edu:10008
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower8 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower8 for priv Write
+[dbcluster.cs.umass.edu] out: "follower8 created"
+[dbcluster.cs.umass.edu] out: creating peer from file /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077/run_follower9
+[dbcluster.cs.umass.edu] out: creating peer follower9 on dbcluster.cs.umass.edu:10009
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower9 for priv Read
+[dbcluster.cs.umass.edu] out: adding to acl Omega for r_at_follower9 for priv Write
+[dbcluster.cs.umass.edu] out: "follower9 created"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower9 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower8 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower7 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower6 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower5 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of follower4 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator3 : 20"
+[dbcluster.cs.umass.edu] out: "Final tick step of aggregator2 : 20"
+[dbcluster.cs.umass.edu] out: Unexpected Bud error: #<MessagePack::StackError: stack level too deep>
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud/server.rb:14:in `feed_each'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud/server.rb:14:in `receive_data'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/eventmachine-1.0.3/lib/eventmachine.rb:187:in `run_machine'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/eventmachine-1.0.3/lib/eventmachine.rb:187:in `run'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud.rb:942:in `block in start_reactor'
+[dbcluster.cs.umass.edu] out: /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:72:in `sleep': No live threads left. Deadlock?	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:72:in `block (2 levels) in wait'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:68:in `handle_interrupt'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:68:in `block in wait'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:66:in `handle_interrupt'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:66:in `wait'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:196:in `block (2 levels) in pop'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:188:in `synchronize'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:188:in `block in pop'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:187:in `handle_interrupt'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/2.0.0/thread.rb:187:in `pop'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud.rb:971:in `schedule_and_wait'
+[dbcluster.cs.umass.edu] out: 	from /share/apps/ruby-2.0.0/lib/ruby/gems/2.0.0/gems/bud-0.9.7/lib/bud.rb:800:in `sync_do'
+[dbcluster.cs.umass.edu] out: 	from /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:44:in `block in run_access_remote!'
+[dbcluster.cs.umass.edu] out: 	from /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:43:in `reverse_each'
+[dbcluster.cs.umass.edu] out: 	from /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:43:in `run_access_remote!'
+[dbcluster.cs.umass.edu] out: 	from /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb:79:in `<main>'
+[dbcluster.cs.umass.edu] out: 
+
+
+Fatal error: run() received nonzero return code 1 while executing!
+
+Requested: ruby /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077 20 0.01 access optim1 
+Executed: /bin/bash -l -c "cd /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/exec_1385606671748 && ruby /nfs/avid/users1/miklau/webdamlog/webdamlog-engine/bin/xp/run_access_remote.rb /nfs/avid/users1/miklau/webdamlog/webdamlog-exp/MAF/1385605955733/out_dbcluster.cs.umass.edu_1385605956077 20 0.01 access optim1 "
+
+Aborting.
+
+Fatal error: One or more hosts failed while executing task 'run_ruby'
+
+Aborting.

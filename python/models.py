@@ -21,6 +21,7 @@ class Scenario(BaseModel):
     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
     ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
+    valRange = IntegerField(null=True)
     numHosts = IntegerField(null=True)  # number of hosts
     hosts = CharField(null=True) # optional argument; name of the file (on the local system) that lists names or IP addresses of the instances, one name or IP address per line
     numPeersPerHost = IntegerField(null=True) 

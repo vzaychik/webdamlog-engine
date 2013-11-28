@@ -1,8 +1,12 @@
 from peewee import *
+from peewee import drop_model_tables
 from datetime import date
 import os
 
-database = SqliteDatabase(None)  # Create a database instance.
+#database = SqliteDatabase(None)  # Create a database instance.
+database = MySQLDatabase("webdamlog", host="avid.cs.umass.edu", port=3306, user="miklau", passwd="ilovedb")
+
+#database = MySQLDatabase(None)
 
 class BaseModel(Model):
     class Meta:
@@ -10,12 +14,14 @@ class BaseModel(Model):
 
 class Scenario(BaseModel):
     scenID = BigIntegerField(primary_key=True)
+    scenType = CharField(null=True) # MAF or PA
     numFollowers = IntegerField(null=True)  # numFollowers - number of peers at the lowest layer
     numAggregators = IntegerField(null=True) # numAggregators - number of aggregators (middle layer)
     aggPerFollower = IntegerField(null=True) # aggregatorsPerFollower - degree of follower nodes
     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
     ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
+    numHosts = IntegerField(null=True)  # number of hosts
     hosts = CharField(null=True) # optional argument; name of the file (on the local system) that lists names or IP addresses of the instances, one name or IP address per line
     numPeersPerHost = IntegerField(null=True) 
 
@@ -56,6 +62,20 @@ def setupDatabaseTest():
     if not Tick.table_exists():
         Tick.create_table()
 
+def setupDatabase(clearDatabase):
+    if clearDatabase:
+        drop_model_tables([Tick, Execution, Scenario])
+        
+    if not Scenario.table_exists():
+        Scenario.create_table()
+    if not Execution.table_exists():
+        Execution.create_table()
+    if not Tick.table_exists():
+        Tick.create_table()
+
 if __name__ == "__main__":
-    setupDatabaseTest()
+    setupDatabase(False)
+    
+    database.connect()
+
     exit()

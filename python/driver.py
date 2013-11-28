@@ -3,7 +3,6 @@ from datetime import date
 import os
 import sys
 from subprocess import call
-import tempfile
 import models, scenario
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
@@ -21,17 +20,42 @@ import itertools
 # LOCAL
 # for each execution, parse all benchmark files
 
+# 
+#
+def localSVNCommit( commitPath ):
+    cwd = os.getcwd()
+    os.chdir(commitPath)
+    callString = ['svn','add','--force','.']
+    call(callString)
+    callString = ['svn', 'commit', '-m', """ "" """]
+    call(callString)
+    os.chdir(cwd)
+
+
+def localCommit( commitPath ):
+    cwd = os.getcwd()
+    os.chdir(commitPath)
+    callString = ['git','add','.']
+    call(callString)
+    callString = ['git', 'commit', '-m', 'local commit']
+    call(callString)
+    callString = ['git', 'push', 'origin', 'master']
+    call(callString)
+    os.chdir(cwd)
 
 def simple():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
+        scenType = 'MAF', \
         numFollowers = 6, \
         numAggregators = 3, \
         aggPerFollower = 1, \
-        policy = 'PUB', \
+        policy = 'PRIV', \
         numFacts = 100, \
         ruleScenario = 'UNION_OF_JOINS', \
-        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
+#        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
+        hosts = ['dbcluster.cs.umass.edu'] * 4, \
+        numHosts = 4, \
         numPeersPerHost = 3 )
     
     return [scenario]
@@ -52,6 +76,7 @@ def case1():
         print tup
         scenario = models.Scenario( \
             # scenID = ?? filled in later
+            scenType = 'MAF', \
             numFollowers = 6, \
             numAggregators = 3, \
             aggPerFollower = 1, \
@@ -66,16 +91,18 @@ def case1():
     
 if __name__ == "__main__":
 
-    models.setupDatabaseTest()
+#    models.setupDatabaseTest()
 
     # create scenario instances
     scenarioList = simple()
     print len(scenarioList)
     
     # generate scenarios
-    for s in scenarioList[0:1]:
+    for s in scenarioList:
         scenario.generateScenarioFiles( s )    
         # need to get scenario IDs back ??
+
+    localSVNCommit()
 
     # execute scenarios, multiple times?
         # need to have (execID, scenID) pairs 

@@ -86,6 +86,6 @@ if __name__ == "__main__":
 
 #    models.setupDatabaseTest()
     for r in range(5):
-        execID = executeScenario( 1385557597962, 'MAF', True, False, 20, 0.25 )
+        execID = executeScenario( 1385569244486, 'MAF', True, True, 20, 0.1 )
     
     exit()

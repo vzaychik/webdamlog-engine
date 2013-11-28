@@ -60,9 +60,9 @@ public class Collection {
 		this (name, peerName, type, isPersistent, keys, "");
 	}
 
-	public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys,int numFacts) {
+	public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys,int numFacts, int valRange) {
 		this (name, peerName, type, isPersistent, keys);
-		this.addFacts(numFacts);
+		this.addFacts(numFacts, valRange);
 	}
 
 	public String getType() {
@@ -133,11 +133,11 @@ public class Collection {
 	 * It's only allowed to explicitly add facts to extensional collections.
 	 * We are adding a give number of facts, that are simply random numbers between 0 and range-1.
 	 */
-	public void addFacts(int numFacts) {
+	public void addFacts(int numFacts, int valRange) {
 		if (_type == COL_TYPE.EXT) {
 			Random rand = new Random();
 			for (int i=0; i<numFacts; i++) {
-				_facts.add("" + rand.nextInt(Constants.VAL_RANGE));
+				_facts.add("" + rand.nextInt(valRange));
 			}
 		}
 	}

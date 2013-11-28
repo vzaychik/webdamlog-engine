@@ -16,7 +16,7 @@ public class Constants {
 	public static enum POLICY {PUB, PRIV, KNOWN}
 	
 	// the range of values for the facts in the relations
-	public static int VAL_RANGE = 10000;
+	// public static int VAL_RANGE = 100;
 	
 	// offset for port numbering
 	public static int PORT_OFFSET = 10000;

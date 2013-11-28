@@ -96,8 +96,8 @@ public class Album {
 	
 	public static void main(String[] args) {
 		
-		if (args.length < 3) {
-			System.out.println("Not enough arguments: Album networkFile policy numFacts [instanceFile] [numPeersPerInstance]");
+		if (args.length < 4) {
+			System.out.println("Not enough arguments: Album networkFile policy numFacts valRange [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
 
@@ -108,11 +108,13 @@ public class Album {
 			String networkFileName = args[0].trim();
 			POLICY policy = POLICY.valueOf(args[1]);
 			int numFacts = Integer.parseInt(args[2].trim());
+			int valRange = Integer.parseInt(args[3].trim());
 			
 			readmeComment.append("network file=" + networkFileName);
 			readmeComment.append(", policy=" + policy.toString());
 			readmeComment.append(", # facts per relation=" + numFacts);
-								
+			readmeComment.append(", value range=" + valRange);
+			
 			int numPeers=0;
 			String line;
 			BufferedReader inFP = new BufferedReader(new FileReader(networkFileName));
@@ -144,9 +146,9 @@ public class Album {
 			}
 			inFP.close();
 			
-			if (args.length > 3) {
-				String instanceFile = args[3].trim();
-				int peersPerInstance = Integer.parseInt(args[4]);
+			if (args.length > 4) {
+				String instanceFile = args[4].trim();
+				int peersPerInstance = Integer.parseInt(args[5]);
 				initNetAddressMap(instanceFile, peersPerInstance, numPeers);
 			} else {
 				initNetAddressMap(numPeers);
@@ -171,7 +173,7 @@ public class Album {
 				if (p.getType().equals(PEER_TYPE.PEER)) {
 
 					// on peers other than alice, bob and sue, photos and tags contain data
-					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img", numFacts); 
+					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img", numFacts, valRange); 
 					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
 
 					for (String img : photos.getFacts()) {

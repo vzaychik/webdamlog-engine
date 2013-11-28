@@ -102,9 +102,9 @@ public class Network {
 	}
 	
 	public static void main(String[] args) {
-		if (args.length < 6) {
+		if (args.length < 7) {
 			//System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
-			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario [instanceFile] [numPeersPerInstance]");
+			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
 		
@@ -116,6 +116,9 @@ public class Network {
 		POLICY policy = POLICY.valueOf(args[3]);
 		int numFacts = Integer.parseInt(args[4].trim());
 		SCENARIO scenario = SCENARIO.valueOf(args[5]);
+		int valRange = Integer.parseInt(args[6].trim()); 
+		
+		
 		// String dirPath = args[6].trim();
 		
 		readmeComment.append("# followers=" + numFollowers);
@@ -124,10 +127,11 @@ public class Network {
 		readmeComment.append(", policy=" + policy.toString());
 		readmeComment.append(", # facts per relation=" + numFacts);
 		readmeComment.append(", scenario=" + scenario.toString());
+		readmeComment.append(", value range=" + valRange);
 				
-		if (args.length > 5) {
-			String instanceFile = args[6].trim();
-			int peersPerInstance = Integer.parseInt(args[7]);
+		if (args.length > 7) {
+			String instanceFile = args[7].trim();
+			int peersPerInstance = Integer.parseInt(args[8]);
 			initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
 		} else {
 			initNetAddressMap(1+numAggregators+numFollowers);
@@ -155,7 +159,7 @@ public class Network {
 		for (int i=0; i<numFollowers; i++) {
 			Peer p = new Peer(currentId++, PEER_TYPE.FOLLOWER);
 			p.addKnownPeer(master);
-			p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts));
+			p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
 			
 			HashSet<Integer> aggsToFollow = new HashSet<Integer>();
 			for (int j=0; j <aggregators.size(); j++) {

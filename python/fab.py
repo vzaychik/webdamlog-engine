@@ -62,6 +62,7 @@ if __name__ == '__main__':
 #    parser = argparse.ArgumentParser()
 #    parser.parse_args()
 
+    env.hosts=['localhost']
     execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])
     execute(test)
 

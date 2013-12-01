@@ -55,7 +55,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     env.parallel = True     # execute on each host in parallel
 
     # each host should pull latest code from git (ruby script, soon fab)
-    execute(fab.pull_both, rootPath='/nfs/avid/users1/miklau/webdamlog')
+    execute(fab.pull_both)
 
     # prepare parameters for ruby script
     paramString = str(ticks) + ' '
@@ -72,9 +72,6 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
 if __name__ == "__main__":
 
     rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
-
-#    env.hosts=['localhost']
-#    execute(fab.pull_both, rootPath=rootPath)
 
     runs = 1
     for scenID in [1385926410650]:

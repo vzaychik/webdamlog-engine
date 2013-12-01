@@ -32,8 +32,9 @@ def run_execution():
 
 if __name__ == '__main__':
 
+    env.parallel = False
     env.hosts=['dbcluster.cs.umass.edu']
-    execute(fab.pull_both, rootPath=fab.rootPathDict['dbcluster.cs.umass.edu'])
+    execute(fab.pull_both)
 
 #    env.hosts=['localhost']
     execute(run_execution)

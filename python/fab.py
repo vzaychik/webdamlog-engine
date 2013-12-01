@@ -35,7 +35,8 @@ def refreshDB():
         run('python loadBenchmark.py')
 
 
-def pull_both(rootPath):
+def pull_both():
+    rootPath = rootPathDict[env.host]
     with cd(os.path.join(rootPath, 'webdamlog-engine')):
         run('git pull')
     with cd(os.path.join(rootPath, 'webdamlog-exp')):

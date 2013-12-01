@@ -23,7 +23,13 @@ def run_fab():
     with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
         run('python fab.py')
 
+@hosts(['dbcluster.cs.umass.edu'])
+def run_execution():
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+        run('python execution.py')
+
+
 if __name__ == '__main__':
 
 #    env.hosts=['localhost']
-    execute(run_fab)
+    execute(run_execution)

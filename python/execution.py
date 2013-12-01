@@ -73,12 +73,12 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
 if __name__ == "__main__":
 
-    runs = 5
-    for scenID in [1385807909955, 1385807910423, 1385807910735, 1385807911082, 1385807911396, 1385807911720]:
+    runs = 1
+    for scenID in [1385926410650]:
         for r in range(runs):
             executeScenario( scenID, 'MAF', False, False, 20, 0.01 )
-            executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
-            executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
+#            executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
+#            executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
     
     # runs = 1
     # for scenID in [1385605955733]:

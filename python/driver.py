@@ -55,7 +55,8 @@ def simple():
         valRange = 10, \
         ruleScenario = 'UNION_OF_JOINS', \
 #        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
-        hosts = ['dbcluster.cs.umass.edu'] * 4, \
+#        hosts = ['dbcluster.cs.umass.edu'] * 4, \
+        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
         numHosts = 4, \
         numPeersPerHost = 3 )
     

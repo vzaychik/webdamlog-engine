@@ -18,7 +18,6 @@ rootPathDict = { \
     'miklau4':'/state/partition2/miklau', \
     'miklau5':'/state/partition2/miklau', }
 
-
 #@task
 @hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu','miklau1'])
 def test():
@@ -65,10 +64,3 @@ if __name__ == '__main__':
     env.hosts=['localhost']
     execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])
     execute(test)
-
-
-
-        # 
-        # run('git add .')
-        # run("""git commit -a --allow-empty-message""")
-        # run('git push origin master')

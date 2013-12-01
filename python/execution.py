@@ -8,14 +8,12 @@ from fabric.tasks import execute
 
 #database = SqliteDatabase(None)  # Create a database instance.
 
-pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
-scenarioPath = os.path.join(pathToRepository, 'webdamlog-exp/MAF')
-
-remotePathToRepository = '/state/partition2/miklau'
-# runs locally, executes webdamlog remotely, writes to database
+#pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
+#scenarioPath = os.path.join(pathToRepository, 'webdamlog-exp/MAF')
 
 
-def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
+# Now executed at dbcluster.cs
+def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
     stamp = int(time.time()*1000)
 
@@ -73,13 +71,15 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
 if __name__ == "__main__":
 
-    env.hosts=['localhost']
-    execute(fab.pull_both, rootPath=fab.rootPathDict['dbcluster.cs.umass.edu'])
+    rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
+
+#    env.hosts=['localhost']
+#    execute(fab.pull_both, rootPath=rootPath)
 
     runs = 1
     for scenID in [1385926410650]:
         for r in range(runs):
-            executeScenario( scenID, 'MAF', False, False, 20, 0.01 )
+            executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.01 )
 #            executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
 #            executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
     

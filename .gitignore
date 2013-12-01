@@ -9,3 +9,4 @@
 /.yardoc/
 /bin/xp_files/
 /bin/bench_files/
+/python/*.pyc

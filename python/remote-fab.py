@@ -4,6 +4,7 @@ import argparse
 from fabric.api import *
 from fabric.tasks import execute
 import os, sys
+import fab
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
@@ -30,6 +31,9 @@ def run_execution():
 
 
 if __name__ == '__main__':
+
+    env.hosts=['dbcluster.cs.umass.edu']
+    execute(fab.pull_both, rootPath=fab.rootPathDict['dbcluster.cs.umass.edu'])
 
 #    env.hosts=['localhost']
     execute(run_execution)

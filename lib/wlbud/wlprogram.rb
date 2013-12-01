@@ -591,6 +591,9 @@ In the string: #{line}
           if @options[:optim1]
             str_res << ", capchead, capcbody"
           end
+          if @options[:optim2]
+            str_res << ", formul"
+          end
           if (local?(wlrule.head) && wlrule.author != @peername && !@options[:optim1]) ||
               (@options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername)
             str_res << ", aclw"
@@ -643,10 +646,8 @@ In the string: #{line}
                   str_res << ")"
                 end
                 str_res << ".intersect"
-                if local?(atom) && !intermediary?(atom)
-                  if !@options[:optim1]
-                    str_res << "(#{atom.relname}acl.plist).intersect"
-                  end
+                if !@options[:optim1]
+                  str_res << "(#{atom.relname}acl.plist).intersect"
                 end
                 first_intersection = false
               end
@@ -656,6 +657,10 @@ In the string: #{line}
           unless first_intersection
             if @options[:optim1]
               str_res << "(capchead.plist)).include?(\"#{wlrule.head.peername}\") && capchead.priv == \"Read\" && " 
+            elsif @options[:optim2]
+              str_res.slice!(-10..-1)
+              #FIXME - need to have a special case for Omega
+              str_res << ") == formul.id && formul.plist.include?(\"#{wlrule.head.peername}\" && "
             else
               str_res.slice!(-10..-1)
               str_res << ").include?(\"#{wlrule.head.peername}\") && "
@@ -698,7 +703,7 @@ In the string: #{line}
           if wlrule.author != @peername && local?(wlrule.head) && !@options[:optim1]
             str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
           elsif @options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername
-            #FIXME - we need to check write on the final relation, not on intermediary
+            #we need to check write on the final relation, not on intermediary
             if intermediary?(wlrule.head)
               headrule = nil
               @rule_mapping.keys.each {|id|
@@ -875,6 +880,48 @@ In the string: #{line}
       end #if optim1
 
       return capc_str
+    end
+
+    def translate_formula_str(wlrule)
+      unless wlrule.is_a?(WLBud::WLRule)
+        raise WLErrorTyping,
+          "wlrule should be of type WLBud::WLRule, not #{wlrule.class}"
+      end
+      unless (head_atom_peername = wlrule.head.peername)
+        raise WLErrorGrammarParsing,
+          "In this rule: #{wlrule.show}\n Problem: the name of the peer in the relation in the head cannot be extracted. Relation in the head #{wlrule.head.text_value}"
+      end
+      if @wlpeers[head_atom_peername].nil?
+        raise WLErrorPeerId,
+          "In #{wlrule.text_value} the peer name: #{head_atom_peername} cannot be found in the list of known peer: #{@wlpeers.inspect}"
+      end
+
+      formula_str = ""
+      wlrule.make_dictionaries unless wlrule.dic_made
+
+      if @options[:optim2] && !wlrule.body.empty?
+        #go through the intersections that are required and add them to the formulas relation
+        #due to self-join limit, do this in pairs
+        intersects = []
+        wlrule.body.each do |atom|
+          if local?(atom) && !intermediary?(atom)
+            if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              intersects << atom.fullrelname
+            end
+          end
+        end
+        unless intersects.empty?
+          #FIXME - make work for more than 2 relations. however, this is limited by bud's self-join limit
+          rel1 = intersects.pop
+          rel2 = intersects.pop
+          #FIXME - is this the right way to handle Omega?
+          formula_str << "formulas_at_#{peername} <= (formulas_at_#{peername}*formulas_at_#{peername}*#{atom.fullrelname}*aclf_at_#{peername}).combos {|x,y,z,f| [x.id+"*"+y.id,x.plist.intersect(y.plist)] if x.id == z.plist && y.id == f.plist && f.rel == #{atom.fullrelname} && z.plist != Omega.new && f.plist != Omega.new;"
+        end
+
+      end
+
+      return formula_str
     end
 
     # Generates the string representing the relation name
@@ -1237,12 +1284,19 @@ In the string: #{line}
       if @options[:accessc]
         wlrule.body.each do |atom|
           if local?(atom) && !intermediary?(atom) && !@options[:optim1]
-            str << " * acl_at_#{atom.peername}"
+            if @options[:optim2]
+              str << " * aclf_at_#{atom.peername}"
+            else
+              str << " * acl_at_#{atom.peername}"
+            end
           end
         end
         #instead of including acls directly, with optimization 1 we compute those in a special capc relation
         if @options[:optim1]
           str << " * capc_#{wlrule.rule_id}_at_#{@peername} * capc_#{wlrule.rule_id}_at_#{@peername}"
+        end
+        if @options[:optim2]
+          str << " * formulas_at_#{@peername}"
         end
         #in regular access control check writeable at the source prior to writing
         #with optimization 1 check only with the original rule using the writeable relation

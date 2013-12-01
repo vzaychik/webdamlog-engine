@@ -233,7 +233,7 @@ module WLBud
       end
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
       #   instance.
-      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1]} )
+      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1], :optim2 => @options[:optim2]} )
       @wl_program.flush_new_local_declaration
       @wlb_tmp_inc=0
       @need_rewrite_strata=false
@@ -655,6 +655,8 @@ module WLBud
       end
 
       rule << @wl_program.translate_capc_str(wlrule) #this will only work if optim1 is on, otherwise will be empty
+      #FIXME - this will take care of joins/intersections, but what about unions?
+      rule << @wl_program.translate_formula_str(wlrule) #this is for optim2
 
       str = build_string_rule_to_include(name, rule)
       fullfilename = File.join(@rule_dir,name)
@@ -875,6 +877,45 @@ module WLBud
         #now need to put in the rule
         #FIXME! - no way to write a bud rule with variable in the rule name
         #so at least for now just delegate to all my peers knowledge of what they can write to
+      end
+
+      if @options[:accessc] and @options[:optim2]
+        keys=[]
+        values=[]
+        keys << :"plist"
+        values << :"id"
+        formschema = {keys => values}
+        formulaschema = {values => keys}
+        self.scratch("formula_at_#{peername}".to_sym, formschema)
+        self.table("symbols_at_#{peername}".to_sym, formulaschema)
+        self.table("formulas_at_#{peername}".to_sym, formulaschema)
+        keys=[]
+        keys << :"rel"
+        keys << :"priv"
+        values=[]
+        values << :"plist"
+        aclschema = {keys => values}
+        self.scratch("aclf_at_#{peername}".to_sym, aclschema)
+
+        #FIXME - if I can figure out how to grab unique plists from acl, then no need for this intermediary step
+        #TODO - how can we make formula combinations? since we can only self-join once and cannot have the same relation in head and body...
+        str_res = "formula_at_#{peername} <= acl_at_#{peername}.reduce({}) {|memo,t| memo[t.plist.to_a] = 1; memo};"
+        str_res << "symbols_at_#{peername} <= formula_at_#{peername}.each_with_index {|t,i| [\"#{peername}_\"+i.to_s,t[0]]};"
+        str_res << "formulas_at_#{peername} <= symbols_at_#{peername};"
+        #str_res << "formulas_at_#{peername} <= (formulae2_at_#{peername}*formulae2_at_#{peername}).combos {|x,y| [x.id+\"*\"+y.id,x.plist&y.plist]};"
+        #str_res << "formulas_at_#{peername} <= (formulae2_at_#{peername}*formulae2_at_#{peername}).combos {|x,y| [x.id+\"+\"+y.idx.plist|y.plist]};"
+        #str_res << "formulas_at_#{peername} <= formulae2_at_#{peername};"
+
+        str_res << "aclf_at_#{peername} <= (symbols_at_#{peername} * acl_at_#{peername}).combos {|a,b| [b.rel, b.priv, a.id] if a.plist == b.plist.to_a && b.priv !=\"Write\"};"
+
+        #write out
+        formularulename = "webdamlog_#{peername}_formulas"
+        filestr = build_string_rule_to_include(formularulename, str_res)
+        fullfilename = File.join(@rule_dir, formularulename)
+        fout = File.new("#{fullfilename}", "w+")
+        fout.puts "#{filestr}"
+        fout.close
+        load fullfilename
       end
     end
 

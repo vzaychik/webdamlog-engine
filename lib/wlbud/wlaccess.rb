@@ -61,3 +61,36 @@ class Omega < PList
 
 end
 
+class FormulaList < Bud::Lattice
+  wrapper_name :formset
+
+  #cannot directly look up include
+
+  def initialize(i="")
+    reject_input(i) unless i.kind_of? String
+    @v = i
+  end
+
+  def to_a
+    self.reveal
+  end
+
+  def merge(other)
+    #simple way is to concatenate with a '+'
+    #TODO - do something smarter such as sorting
+    if (other.kind_of? Omega)
+      other
+    else
+      wrap_unsafe(@v + "+" + i.reveal)
+    end
+  end
+
+  def intersect(other)
+    #TODO - do something smarter such as sorting
+    if (other.kind_of? Omega)
+      self
+    else
+      wrap_unsafe(@v + "*" + i.reveal)
+    end
+  end
+end

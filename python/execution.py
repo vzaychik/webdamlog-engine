@@ -73,6 +73,9 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
 if __name__ == "__main__":
 
+    env.hosts=['localhost']
+    execute(fab.pull_both, rootPath=fab.rootPathDict['dbcluster.cs.umass.edu'])
+
     runs = 1
     for scenID in [1385926410650]:
         for r in range(runs):

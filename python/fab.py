@@ -24,7 +24,7 @@ rootPathDict = { \
 def test():
     run('hostname -f')
     run('pwd')
-    run('echo %s' % env.host )
+#    run('echo %s' % env.host )
 
 @hosts(['dbcluster.cs.umass.edu'])
 def refreshDB():

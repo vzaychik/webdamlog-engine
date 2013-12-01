@@ -4,8 +4,6 @@ import argparse
 from fabric.api import *
 from fabric.tasks import execute
 import os, sys
-import fab
-
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
@@ -22,8 +20,10 @@ env.parallel = False
 
 @hosts(['dbcluster.cs.umass.edu'])
 def run_fab():
-    run('python fab.py')
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+        run('python fab.py')
 
 if __name__ == '__main__':
 
-    run_fab()
+#    env.hosts=['localhost']
+    execute(run_fab)

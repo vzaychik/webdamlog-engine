@@ -3,11 +3,9 @@
 import argparse
 from fabric.api import *
 from fabric.tasks import execute
-import os
+import os, sys
+import fab
 
-env.parallel = False
-#env.hosts=['dbcluster.cs.umass.edu','avid.cs.umass.edu']
-#env.hosts=['dbcluster.cs.umass.edu']
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
@@ -18,9 +16,13 @@ rootPathDict = { \
     'miklau4':'/state/partition2/miklau', \
     'miklau5':'/state/partition2/miklau', }
 
+sys.path.append(os.path.join(rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-engine/python'))
+
+env.parallel = False
+
 
 #@task
-@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu','miklau1'])
+@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu','miklau1.cs.umass.edu'])
 def test():
     run('hostname -f')
     run('pwd')
@@ -57,14 +59,13 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         run('svn add --force .')
         run("""svn commit -m '' """)
 
+@hosts(['dbcluster.cs.umass.edu'])
+def run_fab():
+    run('python fab.py')
+
 if __name__ == '__main__':
 
-#    parser = argparse.ArgumentParser()
-#    parser.parse_args()
-
-    execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])
-    execute(test)
-
+    run_fab()
 
 
         # 

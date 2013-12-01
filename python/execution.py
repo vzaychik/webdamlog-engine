@@ -6,7 +6,7 @@ import models, driver, fab
 from fabric.api import *
 from fabric.tasks import execute
 
-database = SqliteDatabase(None)  # Create a database instance.
+#database = SqliteDatabase(None)  # Create a database instance.
 
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 scenarioPath = os.path.join(pathToRepository, 'webdamlog-exp/MAF')
@@ -19,7 +19,7 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
     stamp = int(time.time()*1000)
 
-    # construct execution record
+    # construct execution record, to be pickled
     execution = models.Execution( \
         execID = stamp, \
         scenID = scenID, \
@@ -40,29 +40,26 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
     execPath = os.path.join(scenPath,'exec_'+str(stamp))
     localExecPath = os.path.join( os.path.join(pathToRepository,execPath))
 
-    # create directory for execution within scenario dir, write out execution object, git add
+    # create directory for execution within scenario dir, pickle execution object, svn add and commit
     os.makedirs(localExecPath)
     with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
         pickle.dump(execution, f)
     driver.localSVNCommit(localScenPath)
-#    os.chdir(localExecPath)
 
+    # inspect scenario for 'out_' directories, infer hosts
     outs = glob.glob( os.path.join(localScenPath,'out_*'))
     outKey = os.path.split(outs[0])[1].split('_')[2]
     hosts = [os.path.split(out)[1].split('_')[1] for out in outs]
     print outKey
     print hosts
 
-    # at each host:
-    # 1)   pull from git -- both code and exp !!
-    env.parallel = True
     env.hosts=hosts
+    env.parallel = True     # execute on each host in parallel
+
+    # each host should pull latest code from git (ruby script, soon fab)
     execute(fab.pull_both, rootPath='/nfs/avid/users1/miklau/webdamlog')
 
-    #2)   chdir to exec_
-    #   execute ruby providing path to proper out_ directory based on host
-    # outDir = os.path.join(scenarioPath,str(scenID),'out_localhost_1385388824526')
-
+    # prepare parameters for ruby script
     paramString = str(ticks) + ' '
     paramString += str(sleep) + ' '
     if accessBool:
@@ -72,22 +69,18 @@ def executeScenario( scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
     
     execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
 
-
-    # 3) push at each host
-
-    # ruby sample execution
-    # ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
-
-    #   and put all benchmark files into bench_files folder in the directory where the script was executed from. There will be one benchmark file per peer per execution, with the following filename schema: benchark_time_log_<peername>_<date and time of start>
-
     return execution.execID
 
 if __name__ == "__main__":
 
     runs = 5
-    for scenID in [1385605955733,1385605956192,1385605956623,1385605957054,1385605957412,1385605957753]:
+    for scenID in [1385807909955, 1385807910423, 1385807910735, 1385807911082, 1385807911396, 1385807911720]:
         for r in range(runs):
             executeScenario( scenID, 'MAF', False, False, 20, 0.01 )
             executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
             executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
     
+    # runs = 1
+    # for scenID in [1385605955733]:
+    #     for r in range(runs):
+    #         executeScenario( scenID, 'MAF', True, True, 20, 0.01 )

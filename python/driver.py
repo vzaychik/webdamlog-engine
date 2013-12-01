@@ -70,7 +70,7 @@ def case1():
     scenarioList = []
     
     policyList = ['PUB','PRIV','KNOWN']
-    numFactsList = [1000]
+    numFactsList = [500]
     ruleScenarioList = ['UNION_OF_JOINS','JOIN_OF_UNIONS']
     
     for tup in itertools.product(policyList, numFactsList, ruleScenarioList):
@@ -84,7 +84,7 @@ def case1():
             policy = tup[0], \
             numFacts = tup[1], \
             ruleScenario = tup[2], \
-            valRange = 1000, \
+            valRange = 500, \
             hosts = ['dbcluster.cs.umass.edu']*4, \
             numPeersPerHost = 3 )
         scenarioList.append(scenario)

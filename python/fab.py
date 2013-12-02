@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 from fabric.api import *
 from fabric.tasks import execute
 import os
@@ -17,30 +18,36 @@ rootPathDict = { \
     'miklau4':'/state/partition2/miklau', \
     'miklau5':'/state/partition2/miklau', }
 
-
 #@task
-@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu'])
+@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu','miklau1'])
 def test():
     run('hostname -f')
     run('pwd')
-    run('echo %s' % env.host )
+#    run('echo %s' % env.host )
+
+@hosts(['dbcluster.cs.umass.edu'])
+def remote_run(filename):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+        run('git pull')
+        run('python %s' % filename)
+
 
 @hosts(['dbcluster.cs.umass.edu'])
 def refreshDB():
-    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine')):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine')):
         run('git pull')
-    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-exp')):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-exp')):
         run('svn up')
-    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine/python')):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
         run('python loadBenchmark.py')
 
 
-def pull_both(rootPath):
+def pull_both():
+    rootPath = rootPathDict[env.host]
     with cd(os.path.join(rootPath, 'webdamlog-engine')):
         run('git pull')
     with cd(os.path.join(rootPath, 'webdamlog-exp')):
         run('svn up')
-#        run('git pull')
         
 # ruby sample execution
 # ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
@@ -58,12 +65,10 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         run("""svn commit -m '' """)
 
 if __name__ == '__main__':
-    execute(refreshDB)
-#   execute(pull_both, rootPath='/nfs/avid/users1/miklau/webdamlog')
 
+#    parser = argparse.ArgumentParser()
+#    parser.parse_args()
 
-
-        # 
-        # run('git add .')
-        # run("""git commit -a --allow-empty-message""")
-        # run('git push origin master')
+    env.hosts=['localhost']
+    execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])
+    execute(test)

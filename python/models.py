@@ -75,8 +75,7 @@ def setupDatabase(clearDatabase):
         Tick.create_table()
 
 if __name__ == "__main__":
-    setupDatabase(False)
-    
-    database.connect()
 
+    setupDatabase(False)    
+    database.connect()
     exit()

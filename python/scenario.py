@@ -57,7 +57,6 @@ if __name__ == "__main__":
 
     rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
 
-#    models.setupDatabaseTest()
     scenarios = driver.simple()
     for s in scenarios:
         generateScenarioFiles( s, rootPath )

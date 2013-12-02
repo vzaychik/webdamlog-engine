@@ -76,15 +76,14 @@ module WLBud
     attr_reader :peername
     # The name of the file to read with the program
     attr_reader :filename
-    attr_reader :options, :wl_program, :rules_to_delegate, :relation_to_declare, :program_loaded
+    attr_reader :options, :wl_program, :rules_to_delegate, :relation_to_declare, :program_loaded, :seed_to_sprout, :new_sprout_rules, :sprout_rules
     # the directory where the peer write its rules
     attr_reader :rule_dir
     attr_reader :filter_delegations, :pending_delegations
 
-    # TODO: define the following attributes only if options[:wl_test]
-
-    # @return the content returned by read_packet_channel at the beginning of
-    #   the tick (an array of WLPacketData)
+    # TODO: define the following attributes only if options[:wl_test] @return
+    #   the content returned by read_packet_channel at the beginning of the tick
+    #   (an array of WLPacketData)
     attr_reader :test_received_on_chan
     # A copy of the packet send on the channel in its serialized form that is an
     #   array as described in WLChannel serialize for channel that is: [[@dest,[@peer_name.to_s,@src_time_stamp.to_s,{'facts'=>@facts,'rules'=>@rules,'declarations'=>@declarations}]]]
@@ -152,6 +151,8 @@ module WLBud
       # It represents the list of new relation declarations to send at this
       # tick.
       #
+      # !@attributes [Hash] peer address => Set:(string wlgrammar collection
+      # declaration)
       # ===Details
       # New relations to declare on remote peers, these are the intermediary
       # ones appearing in one of the delegations in rules_to_delegate.
@@ -162,6 +163,17 @@ module WLBud
       # @!attributes [Hash] if filter_delegations is true, delegations received
       #   from other peers are put in this hash peername: timestamp: rule1 rule2
       @pending_delegations = Hash.new{ |h,k| h[k]=Hash.new{ |h2,k2| h2[k2]=Array.new } }
+      # List of rules installed and currently evaluated by the engine
+      @rule_installed = []
+      # The list of array containing seeds to sprout in the third step. Its
+      # content comes from wl_program.new_seed_rule_to_install with a new fifth
+      # field that is the name of the intermediary relation in bud
+      # array [seeder, interm_rel_in_rule, seedtemplate, wlrule, rel_name_in_bud]
+      @seed_to_sprout = []      
+      # New rules generated from a seed to install
+      @new_sprout_rules = {}
+      # Rules generated from a seed
+      @sprout_rules = {}
 
       if options[:wl_test]
         @test_received_on_chan = []
@@ -173,7 +185,7 @@ module WLBud
           :callback_step_write_on_chan,
           :callback_step_write_on_chan_2,
           :callback_step_end_tick ]
-      end      
+      end
       # ### WLBud:End adding to Bud
       options[:dump_rewrite] ||= ENV["BUD_DUMP_REWRITE"].to_i > 0
       options[:dump_ast]     ||= ENV["BUD_DUMP_AST"].to_i > 0
@@ -231,14 +243,12 @@ module WLBud
       if @options[:measure]
         @measure_obj = WlMeasure.new @budtime, @peername, @options[:measure_file]
       end
+      @need_rewrite_strata=false
+      @done_rewrite={}
+      @collection_added=false
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
       #   instance.
       @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1], :optim2 => @options[:optim2]} )
-      @wl_program.flush_new_local_declaration
-      @wlb_tmp_inc=0
-      @need_rewrite_strata=false
-      @done_rewrite={}
-      @collection_added=false      
 
       # XXX : added comments on budlib (unofficial):
       # - wlbud => initialize
@@ -271,6 +281,62 @@ module WLBud
       # ### WLBud:End alternative to Bud
     end
 
+    private
+
+    # Make program is called in the initializer of the WL instance. Its role is
+    # to create the bud structure corresponding to the wl_program instance
+    # loaded.
+    #
+    # In detail, it create and add methods to this class. The methods created
+    # have a name that correspond at a pattern that will be recognized by bud
+    # such as __bootstrap__... or __bloom__... It also call the table or scratch
+    # methods needed to declare the bud collection to use for this program
+    #
+    # TODO: add in schema init support for channel to declare new channel other
+    # than the builtin :chan
+    #
+    def make_bud_program
+      local_colls = @wl_program.wlcollections.map { |name,coll| coll }
+      local_colls.each { |lcol| add_collection lcol }
+      # :delay_fact_loading is used in application to delay facts loading when
+      # wrappers needs to be defined and bind before we can add facts
+      if @options[:delay_fact_loading]
+        @program_loaded = false
+      else
+        generate_bootstrap(@wl_program.wlfacts,@wl_program.wlcollections)
+        @program_loaded = true
+      end
+
+      local_rules = @wl_program.rule_mapping.map { |id,arr_rules| arr_rules.first }
+      local_rules.each { |lrule| install_rule lrule }
+
+      if @options[:accessc]
+        #apply policies
+        @wl_program.wlpolicies.each {|p| apply_policy(p)}
+        @extended_collections_to_flush.each {|col|
+          @wl_program.wlcollections[col.fullrelname] = col
+        }
+        #Until this implementation can have variables for a peer name, have to do this manually
+        if @options[:optim1]
+          str_res = ""
+          @wl_program.wlpeers.each {|p|
+            if p[0] != @peername
+              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"Write\" && rel.plist.include?(\"#{p[0]}\")};"
+            end
+          }
+          optim1name = "webdamlog_#{@peername}_writeable"
+          filestr = build_string_rule_to_include(optim1name, str_res)
+          fullfilename = File.join(@rule_dir, optim1name)
+          fout = File.new("#{fullfilename}", "w+")
+          fout.puts "#{filestr}"
+          fout.close
+          load fullfilename
+        end
+      end
+    end
+
+    public
+
     # if :delay_fact_loading is true you should call this to evaluate facts in
     # the bootstrap program. This will insert all the facts parsed by the
     # program from the beginning.
@@ -298,12 +364,14 @@ module WLBud
       if @options[:measure]
         @measure_obj.initialize_measures @budtime
       end
-      if @fist_tick_after_make_program
-        @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){|key,oldv,newv| oldv+newv}
-        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv+newv}
-        @fist_tick_after_make_program=false
-        @fist_tick_after_make_program.freeze
+      # Send the delegation issued by the bootstrap program
+      if @first_tick_after_make_program
+        @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){|key,oldv,newv| oldv += newv}
+        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv += newv}
+        @first_tick_after_make_program=false
+        @first_tick_after_make_program.freeze
       end
+      
       # already in bud but I moved receive_inbound before all the stuff about
       # app_tables, push_sorted_elements, ...
       receive_inbound
@@ -314,7 +382,8 @@ module WLBud
         starttime = Time.now if @options[:metrics]
         if @options[:metrics] and not @endtime.nil?
           @metrics[:betweentickstats] ||= initialize_stats
-          @metrics[:betweentickstats] = running_stats(@metrics[:betweentickstats], starttime - @endtime)
+          @metrics[:betweentickstats] = running_stats(@metrics[:betweentickstats],
+            starttime - @endtime)
         end
 
         @inside_tick = true
@@ -339,6 +408,7 @@ module WLBud
             end
           end
         end
+        # add updates of facts and rules
         read_packet_channel.each do |packet_value|
           if @options[:debug]
             puts "Process packets received from #{packet_value.print_meta_data}"
@@ -363,7 +433,9 @@ module WLBud
             add_facts(packet_value.facts) unless packet_value.facts.nil?
           end
         end
-
+        # add new rules from seeds
+        @new_sprout_rules.each_key { |key| add_rule(key) }
+        
         if @options[:measure]
           @measure_obj.append_measure @budtime
         end
@@ -373,6 +445,7 @@ module WLBud
           do_bootstrap
           do_wiring
         else
+          # ### WLBud:Begin adding to Bud
           if @need_rewrite_strata
             rewrite_strata
             @done_wiring=false
@@ -384,6 +457,7 @@ module WLBud
             update_app_tables
             @collection_added = false
           end
+          # ### WLBud:End adding to Bud
 
           # inform tables and elements about beginning of tick.
           @app_tables.each {|t| t.tick}
@@ -459,24 +533,24 @@ module WLBud
 
         # part 3: transition
         #
-        # WLBud:Begin adding to Bud
+        # ##WLBud:Begin adding to Bud
         #
         if @options[:measure]
           @measure_obj.append_measure @budtime
         end
-        # diplay the content of dbm
+        # display the content of dbm
         if @options[:debug] and @options[:trace]
           puts "-----see viz logtab dbm-----"
           # #logtab = @viz.class.send(:logtab) #dbm = logtab.class.send(:dbm)
           logtab = @viz.instance_eval{ @logtab }
-          #dbm = logtab.instance_eval{ @dbm }
-          # #dbm.each{ |o| puts "#{o.class} : #{o}" } #logtab.each_storage{ |s|
-          # puts s }
+          # #dbm = logtab.instance_eval{ @dbm } #dbm.each{ |o| puts "#{o.class}
+          # : #{o}" } #logtab.each_storage{ |s| puts s }
           logtab.to_a.sort_by{ |t| [t[0],t[1]] }.each{|s| puts s}
           # #logtab.to_a.sort{ |t1,t2| [t1[0],t1[1]] <=> [t2[0],t2[1]]
           # }.each{|s| puts s} # same result as above
           puts "----end of viz logtab-----"
         end
+        @new_sprout_rules.merge! make_seed_sprout
         # There is the moment in the tick where I should fill the channel with
         # my own structure that is the facts, the delegated rules along with the
         # newly created relations (declaration of new collections)
@@ -511,6 +585,7 @@ module WLBud
           end
         end
       end
+
       if @options[:metrics]
         @endtime = Time.now
         @metrics[:tickstats] ||= initialize_stats
@@ -550,7 +625,7 @@ module WLBud
     #
     # Extend bud method
     #
-    def builtin_state      
+    def builtin_state
       super
       # Contains the times nodes informations TODO: facts should be the list of
       # facts used to derive head: define field to use(some kind of id)
@@ -617,8 +692,8 @@ module WLBud
       @app_tables = @app_tables.to_a
     end
 
-    # override do_wiring to force all merge target to accumulate tick delta for
-    # callbacks in applications
+    # WLBud:Begin alternative to Bud override do_wiring to force all merge
+    # target to accumulate tick delta for callback in applications
     def do_wiring
       super
       @merge_targets.each_with_index do |stratum_targets, stratum|
@@ -639,6 +714,8 @@ module WLBud
     # dynamically created.
     #
     def translate_rule(wlrule)
+      raise "Impossible to add in bud a rule that is either unbound or non-local" unless @wl_program.bound_n_local?(wlrule)
+      puts "Adding a rule: #{wlrule}" if @options[:debug]
       @wl_program.disamb_peername!(wlrule)
       if @options[:optim1]
         add_capc wlrule
@@ -660,7 +737,9 @@ module WLBud
 
       str = build_string_rule_to_include(name, rule)
       fullfilename = File.join(@rule_dir,name)
-      fout = File.new("#{fullfilename}", "w+")
+      raise WLErrorPeerId, "there must be an error in unique id: #{wlrule.rule_id} of this rule: #{wlrule} \n \
+engine is trying to write this new rule in an existing file: #{fullfilename}" if File.exists?(fullfilename)
+      fout = File.new("#{fullfilename}", "a")
       fout.puts "#{str}"
 
       fout.close
@@ -668,8 +747,10 @@ module WLBud
         puts "Content of the tmp file is:\n#{File.readlines(fullfilename).each{|f| f }}\n"
       end
       load fullfilename
-      # extract from how bud creates name for its block
-      return "__bloom__#{name}"
+      @rule_installed << wlrule
+      @need_rewrite_strata = true
+      # the last element is the bud name for the block created
+      return wlrule.rule_id, wlrule.show_wdl_format, "__bloom__#{name}"
     end
 
     # Build the bloom block to insert in bud with the given rule inside and as
@@ -739,7 +820,7 @@ module WLBud
       if wl_facts.is_a? Hash
         valid, msg = WLPacketData.valid_hash_of_facts wl_facts
         if valid
-          facts, err = insert_updates(wl_facts)          
+          facts, err = insert_updates(wl_facts)
         else
           raise WLErrorTyping, msg
         end
@@ -985,104 +1066,42 @@ module WLBud
 
     private
 
-    # rewrite a parsed wlrule and install it in the engine
+    # rewrite a parsed wlrule and install it in the engine !@attributes
+    # [WBud::WLRule] rule as an object
     def install_rule wlrule
-      # rewrite
-      if @wl_program.local?(wlrule)
-        local_rule = wlrule
-      else
+      puts "installing rule #{wlrule} whose author is #{wlrule.author}"
+      if @wl_program.bound_n_local?(wlrule) && (!@options[:accessc] || !@wl_program.nonlocalheadrules.include?(wlrule) || @options[:optim1])
+        return translate_rule(wlrule)
+      else # rewrite
         @wl_program.rewrite_rule(wlrule)
         localcolls = @wl_program.flush_new_local_declaration
-        if wlrule.seed? # if seed install the seed and setup offshoot spawn
-          raise WLError, "exactly one seed relation should be declared if variables has been detected" unless localcolls.length == 1
+        if localcolls.empty? # if a fully non-local rule has been parsed
+          @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv += newv}
+        else
+          raise WLError, "one intermediary collection should have been generated while splitting a non-local rule instead of #{localcolls.length}" unless localcolls.length == 1
           intercoll = localcolls.first
-          add_collection(intercoll)
-          seedarray = @wl_program.flush_new_seed_rule_to_install
-          raise WLError, "exactly one seed could be generated if variables has been detected" unless seedarray.length == 1
-          seeder, interm_rel_in_rule, rule = seedarray.first
-          wlrule = seeder
-          # TODO setup offshoot spawn
-        elsif localcolls.empty?
-          wlrule = nil
-        elsif wlrule.split # if it is not a fully non-local install the local part
-          raise WLError, "exactly one intermediary collection should have been generated while splitting a non-local rule instead of #{localcolls.length}" unless localcolls.length == 1
-          intercoll = localcolls.first
-          add_collection(intercoll)
+          rel_name, rel_schema = add_collection(intercoll)
           localrules = @wl_program.flush_new_rewritten_local_rule_to_install
-          raise WLError, "exactly one local rule should have been generated while splitting a non-local rule instead of #{localrules.length}" unless localrules.length == 1
-          wlrule = localrules.first
-          @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){ |key,oldv,newv| oldv+newv }
-        end
-        @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv+newv}
-      end
-
-      # adds local part: if a fully non-local rule is parsed a empty local rule
-      # is the result and there is nothing to install locally
-      unless wlrule.nil?
-        puts "Adding a rule: #{wlrule}" if @options[:debug]
-        translate_rule(wlrule)
-        @need_rewrite_strata = true
-        return wlrule.rule_id, wlrule.show_wdl_format
-      end
-    end
-
-    # Make program is called in the initializer of the WL instance. Its role is
-    # to create the bud structure corresponding to the wl_program instance
-    # loaded.
-    #
-    # In detail, it create and add methods to this class. The methods created
-    # have a name that correspond at a pattern that will be recognized by bud
-    # such as __bootstrap__... or __bloom__... It also call the table or scratch
-    # methods needed to declare the bud collection to use for this program
-    #
-    # TODO: add in schema init support for channel to declare new channel other
-    # than the builtin :chan
-    #
-    def make_bud_program
-      @wl_program.wlcollections.each_value {|s| add_collection(s)}
-      if @options[:accessc]
-        #apply policies
-        @wl_program.wlpolicies.each {|p| apply_policy(p)}
-        @extended_collections_to_flush.each {|col|
-          @wl_program.wlcollections[col.fullrelname] = col
-        }
-        #Until this implementation can have variables for a peer name, have to do this manually
-        if @options[:optim1]
-          str_res = ""
-          @wl_program.wlpeers.each {|p|
-            if p[0] != @peername
-              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"Write\" && rel.plist.include?(\"#{p[0]}\")};"
-            end
-          }
-          optim1name = "webdamlog_#{@peername}_writeable"
-          filestr = build_string_rule_to_include(optim1name, str_res)
-          fullfilename = File.join(@rule_dir, optim1name)
-          fout = File.new("#{fullfilename}", "w+")
-          fout.puts "#{filestr}"
-          fout.close
-          load fullfilename
+          localseeds = @wl_program.flush_new_seed_rule_to_install
+          if not localrules.empty?
+            raise WLError, "exactly one local rule should have been generated while splitting a non-local rule instead of #{localrules.length}" unless localrules.length == 1
+            raise WLError, "if the rule is rewritable into bud it cannot contains seeds" unless localseeds.empty?            
+            local_rule = localrules.first
+            @relation_to_declare.merge!(@wl_program.flush_new_relations_to_declare_on_remote_peer){ |key,oldv,newv| oldv += newv }
+            @rules_to_delegate.merge!(@wl_program.flush_new_delegations_to_send){|key,oldv,newv| oldv += newv}
+            return translate_rule(local_rule)            
+          elsif not localseeds.empty?
+            raise WLError, "exactly one local rule should have been generated while splitting a non-local rule instead of #{localrules.length}" unless localseeds.length == 1
+            localseed = localseeds.first
+            local_rule = localseed.first
+            localseed << rel_name
+            @seed_to_sprout << localseed
+            return translate_rule(local_rule)
+          else
+            raise WLError, ""
+          end
         end
       end
-      if @options[:debug]
-        WLTools::Debug_messages.h3 "make_program start generate_facts"
-      end
-
-      # :delay_fact_loading is used in application to delay facts loading when
-      # wrappers needs to be defined and bind before we can add facts
-      if @options[:delay_fact_loading]
-        @program_loaded = false
-      else
-        generate_bootstrap(@wl_program.wlfacts,@wl_program.wlcollections)
-        @program_loaded = true
-      end
-      # XXX hacky way to remove the new declaration, since everything is new
-      # here the delta with previous program as no sense
-      localcolls = @wl_program.flush_new_local_declaration
-      localrules = @wl_program.flush_new_rewritten_local_rule_to_install
-      # add rules already parsed
-      @wl_program.localrules.each {|wlrule| install_rule wlrule }
-      @wl_program.nonlocalrules.each {|wlrule| install_rule wlrule}
-      # #create_rule_blocks
     end
 
     # The generate_bootstrap method creates an array containing all extensional
@@ -1112,27 +1131,6 @@ module WLBud
       meth_name = "__bootstrap__#{self.class.to_s}".to_sym
       self.class.send(:define_method, meth_name, block)
     end
-
-    # The create_rule_blocks_rules method creates Bloom blocks from previously
-    # parsed rules in @wl_program, for each local rules ie.
-    # * the rules in +wl_program#localrules+
-    # * the rules in +wl_program#rewrittenlocal+
-    #
-    # @deprecated use the generic method install_rule instead
-    #    def create_rule_blocks
-    #      WLTools::Debug_messages.h2(WLTools::Debug_messages.begin_comment comment="Peer #{@peername} translate wlvocabulary internal representation into bud rules") if @options[:debug]
-    #      if @wl_program.localrules.nil? || @wl_program.localrules.empty?
-    #        puts 'no local rule to translate' if @options[:debug]
-    #      else
-    #        @wl_program.localrules.each {|wlrule| translate_rule wlrule }
-    #      end
-    #      if @wl_program.rewrittenlocal.nil? || @wl_program.rewrittenlocal.empty?
-    #        puts 'no rewritten rule to translate' if @options[:debug]
-    #      else
-    #        @wl_program.rewrittenlocal.each {|wlrule| translate_rule wlrule}
-    #      end
-    #      WLTools::Debug_messages.h2(WLTools::Debug_messages.end_comment comment) if @options[:debug]
-    #    end
 
     # Insert or delete facts in collections according to messages received from
     # channel. facts should respect {WLPacketData.valid_hash_of_facts} format
@@ -1176,7 +1174,7 @@ module WLBud
                     }
                   end
                   tables[relation_name.to_sym] <+ [tuple]
-                  (valid[relation_name] ||= []) << tuple                  
+                  (valid[relation_name] ||= []) << tuple
                 rescue StandardError => error
                   err[[k,tuple]]=error.inspect
                 end
@@ -1205,11 +1203,6 @@ module WLBud
           err[[k,tuples]] = "relation name #{k} translated to #{relation_name} has not been declared previously"
         end
       end # end facts.each_pair
-      if @options[:debug]
-        valid.each do |rel, fcts|
-          puts "Add in relation #{rel} facts: \n #{fcts}"
-        end
-      end
       return valid, err
     end # end insert_updates
 
@@ -1222,15 +1215,40 @@ module WLBud
       return chan.read_channel(@options[:debug])
     end
 
+    # generate the new rules from seed that have been bounded
+    def make_seed_sprout
+      new_rules = {}
+      # for each seeds entry
+      @seed_to_sprout.each do |sts|
+        bud_coll_name = sts[4]
+        coll = @tables[bud_coll_name.to_sym]
+        template = @wl_program.parse sts[2]
+        new_rule = nil
+        var_to_bound = template.body.first.variables[2]
+        # for each tuple in intermediary relation
+        coll.pro do |tuple|
+          new_rule = String.new template.show_wdl_format
+          var_to_bound.each_index do |ind_var|
+            # FIXME take care if tuple value requires quotes
+            new_rule = new_rule.gsub var_to_bound[ind_var], tuple[ind_var]
+          end
+          # add new rules only if it has not already been derived
+          unless @sprout_rules.has_key?(new_rule)
+            new_rules[new_rule]=new_rule
+          end
+        end
+      end
+      return new_rules
+    end
+
     # This method aggregates all the fact, rules and declarations of each peer
     # in a single packet for this peer. This method allow to be sure that facts
     # and rules deduce at the same timestep will be received in the remote peer
     # at the same timestep.
     #
-    # TODO: optimization this fact aggregation is a useless overhead that can be
+    # FIXME optimization this fact aggregation is a useless overhead that can be
     # avoid if I create as many sbuffer collection as non-local relation in head
     # of rules.
-    #
     def write_packet_on_channel
       packets_to_send = []
       facts_to_send = aggregate_facts(sbuffer)
@@ -1306,9 +1324,6 @@ module WLBud
             data = packet[1]
             wlpacketdata = WLPacketData.new data[0], data[1], data[2]
             wlpacketdata.pretty_print
-            # puts "Sample of ten first keys #{chan.pending.keys[0..9].inspect}"
-            # puts "chan.pending.inspect: " puts chan.pending.inspect puts "chan
-            # in yaml" #y chan.pending
           end
         end
         puts "END"
@@ -1385,21 +1400,20 @@ module WLBud
     #
     def create_rule_dir(rule_dir)
       if rule_dir.nil? or not File.directory?(rule_dir) or not File.writable?(rule_dir)
-        rule_dir ||= "wlrdir_#{@peername}_#{Time.now}_#{self.class}_#{@peername.object_id}"
+        returned_dir = rule_dir || "wlrdir_#{@peername}_#{Time.now}_#{self.class}_#{@peername.object_id}"
         base_dir = WL::get_path_to_rule_dir
         unless (File::directory?(base_dir))
           Dir.mkdir(base_dir)
         end
-        rule_dir = File.join(base_dir,WLTools.friendly_filename(rule_dir))
-        unless (File::directory?(rule_dir))
-          Dir.mkdir(rule_dir)
+        returned_dir = File.join(base_dir,WLTools.friendly_filename(returned_dir))
+        unless (File::directory?(returned_dir))
+          Dir.mkdir(returned_dir)
         end
       end # unless File.directory?(rule_dir)
-      return rule_dir
+      return returned_dir
     end # create_rule_dir
 
     # Clear the content of the rule dir for this peer
-    #
     def clear_rule_dir
       unless @rule_dir.nil?
         Dir.foreach(@rule_dir) do |filename|
@@ -1475,13 +1489,12 @@ module WLBud
   end
 end
 
-module Bud
-  def self.done_rewrite= (d)
-    @done_rewrite = d
-  end
-
-  def self.done_rewrite
-    @done_rewrite
-  end
-end
-
+# #module Bud
+#  def self.done_rewrite= (d)
+#    @done_rewrite = d
+#  end
+#
+#  def self.done_rewrite
+#    @done_rewrite
+#  end
+# #end

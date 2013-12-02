@@ -222,6 +222,7 @@ end
 
       #now let's set that and see results finally materialize at p1
       runner2.update_acl("local1_at_p1","test_access","Read")
+      runner1.update_acl("local3_i_at_test_access","p1","Write")
       runner1.tick
       runner1.tick
 
@@ -240,7 +241,6 @@ end
 
   end
 end
-
 
 class TcAccessExtensionalRules < Test::Unit::TestCase
   include MixinTcWlTest
@@ -347,6 +347,7 @@ end
 
       #now let's set grant and finally should see results
       runner2.update_acl("local1_at_p1","test_access","Grant")
+      runner1.update_acl("local3_at_test_access","p1","Write")
       runner2.tick
       runner1.tick
 
@@ -366,3 +367,4 @@ end
   end
 
 end
+

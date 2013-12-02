@@ -249,10 +249,9 @@ rule local1@p1($X):-local2@p1($X);
       assert_kind_of WLBud::WLCollection, rel
       assert_equal "myself", rel.peername
       fact = program.wlfacts
-      assert_not_nil fact
-      # #assert_kind_of WLBud::WLFacts, fact
-      assert_equal ["picture_at_myself( sigmod, myself, 12347, http://www.seeklogo.com/images/A/Acm_Sigmod-logo-F12330F5BD-seeklogo.com.gif ) ;",
-        "picture_at_myself( webdam, myself, 12348, http://www.cs.tau.ac.il/workshop/modas/webdam3.png ) ;"],
+      assert_not_nil fact      
+      assert_equal ["picture@myself( sigmod, myself, 12347, http://www.seeklogo.com/images/A/Acm_Sigmod-logo-F12330F5BD-seeklogo.com.gif ) ;",
+        "picture@myself( webdam, myself, 12348, http://www.cs.tau.ac.il/workshop/modas/webdam3.png ) ;"],
         fact.map { |fact| fact.show_wdl_format }
       assert_equal [["sigmod",
           "myself",
@@ -262,7 +261,6 @@ rule local1@p1($X):-local2@p1($X);
           "myself",
           "12348",
           "http://www.cs.tau.ac.il/workshop/modas/webdam3.png"]], fact.map { |fact| fact.content }
-
     ensure
       File.delete('test_060_fact_disamb') if File.exists?('test_060_fact_disamb')
     end
@@ -360,17 +358,15 @@ end
     begin
       File.open('test_program_2',"w"){ |file| file.write prog}
       program = nil
-      # #assert_nothing_raised do
       program = WLBud::WLProgram.new(
         'the_peername',
         'test_program_2',
         'localhost',
         '11111',
-        {:debug => true} )
-      # #end
+        {:debug => true})
       assert_equal 5, program.wlcollections.length
       assert_equal 4, program.wlfacts.length
-      assert_equal 2, program.rule_mapping.size
+      assert_equal 1, program.rule_mapping.size
     ensure
       File.delete('test_program_2') if File.exists?('test_program_2')
     end
@@ -461,21 +457,26 @@ end
   
     File.open('test_program_2',"w"){ |file| file.write prog}
     program = nil
-    # #assert_nothing_raised do
     program = WLBud::WLProgram.new(
       'the_peername',
       'test_program_2',
       'localhost',
       '11111',
       {:debug => true} )
-    # #end
-    assert_equal 2, program.rule_mapping.size
-    local = "rule contact_at_the_peername($username, $peerlocation, $online, \"asnwer@email.com\") :- contact_at_sigmod_peer($username, $peerlocation, $online, \"email@email.com\");"
+    assert_equal 1, program.rule_mapping.size
+    local = "rule contact@the_peername($username, $peerlocation, $online, \"asnwer@email.com\") :- contact@sigmod_peer($username, $peerlocation, $online, \"email@email.com\");"
     delegation = "rule contact@the_peername($username, $peerlocation, $online, \"asnwer@email.com\") :- contact@sigmod_peer($username, $peerlocation, $online, \"email@email.com\");"
-    keys = program.rule_mapping.keys
-    assert_equal 1, keys[0]
+    assert_equal 1, program.rule_mapping.first.first, "one rule with index 1 should have been added"
     assert_equal local, program.rule_mapping.first[1].first.show_wdl_format
-    assert_equal delegation, keys[1]
+
+    #test rewriting of non local rule
+    test_rule = program.rule_mapping.first[1].first
+    assert_kind_of Fixnum, program.rule_mapping.first[0], "index of rule_mapping should be a Fixnum"
+    assert_equal local, test_rule.show_wdl_format, "first element of the array in value of the first field of rule_mapping should be the oringinal rule"
+    assert_equal 1, program.rule_mapping.size, "only one rule for now and no rewriting"
+    program.rewrite_rule test_rule
+    assert_equal local, program.rule_mapping.first[1].first.show_wdl_format, "first element of the array in value of the first field of rule_mapping should be the original rule"
+    assert_equal delegation, program.rule_mapping.first[1][1], "second element of the array in value of the first field of rule_mapping should be the delegation"
 
     values = program.rule_mapping.values
     assert_equal 2, values[0].size

@@ -6,6 +6,7 @@ require 'test/unit'
 
 # Test pending delegations attribute when options[:filter_delegations]
 class TcWl1PendingDelegations < Test::Unit::TestCase
+  include MixinTcWlTest
 
   def setup
     @pg = <<-EOF
@@ -29,8 +30,12 @@ end
     File.open(@pg_file,"w"){ |file| file.write @pg }
   end
 
-  def teardown    
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+  def teardown
+    File.delete(@pg_file) if File.exists?(@pg_file)
+    ObjectSpace.each_object(WLRunner) do |obj|
+      clean_rule_dir obj.rule_dir
+      obj.delete
+    end
     ObjectSpace.garbage_collect
   end
 
@@ -58,7 +63,7 @@ end
             }]]]
     }
     # force another tick to flush chan
-    runner.sync_do { }
+    runner.sync_do {  }
     # two pending delegations
     assert_equal({:p0=>
           {0=>
@@ -66,7 +71,7 @@ end
             ["rule local2@test_pending_delegation_content('15') :- local@test_pending_delegation_content('4');"]]}},
       runner.pending_delegations)
 
-    assert_equal(["rule local2_at_test_pending_delegation_content($x) :- local_at_test_pending_delegation_content($x);"],
+    assert_equal(["rule local2@test_pending_delegation_content($x) :- local@test_pending_delegation_content($x);"],
       runner.wl_program.rule_mapping.values.map{ |ar| ar.first.show_wdl_format} )
 
     assert_equal({:p0=>
@@ -78,5 +83,5 @@ end
   ensure
     runner.stop
     File.delete(@pg_file) if File.exists?(@pg_file)
-  end  
+  end
 end

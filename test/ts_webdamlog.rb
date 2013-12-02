@@ -41,7 +41,6 @@ Dir.chdir(File.dirname(__FILE__)) do
   end
 end
 
-
 # Invoke with ./ts_webdamlog.rb ordered
 if ARGV.include?("ordered")
   ARGV.delete("ordered")
@@ -71,8 +70,6 @@ else
   # puts files.map { |file| "require \"#{File.basename file}\"" }
 end
 
-
 # clean rule dir created during tests
 require 'fileutils'
 FileUtils.rm_rf(WLBud::WL.get_path_to_rule_dir, secure: true)
-

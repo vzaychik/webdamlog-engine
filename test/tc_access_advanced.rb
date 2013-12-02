@@ -60,6 +60,7 @@ end
   end  
 end
 
+
 class TcAccessAdvancedRules < Test::Unit::TestCase
   include MixinTcWlTest
 
@@ -132,6 +133,8 @@ end
 
       runner2.update_acl("s_at_p1","p","Read")
       runner3.update_acl("s_at_p2","p","Read")
+      runner1.update_acl("r2_i_at_p","p2","Write");
+      runner1.update_acl("r2_i_at_p","p1","Write");
 
       assert_equal [{:atom1=>"5", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"5", :priv=>"Grant", :plist=>Omega.new}, {:atom1=>"6", :priv=>"Read", :plist=>Omega.new}, {:atom1=>"6", :priv=>"Grant", :plist=>Omega.new}], runner3.tables[:s_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
 
@@ -161,6 +164,7 @@ end
 
   end
 end
+
 
 class TcAccessDelegProven < Test::Unit::TestCase
   include MixinTcWlTest
@@ -209,10 +213,10 @@ end
     begin
       runner1 = nil
       runner2 = nil
-      #assert_nothing_raised do
+      assert_nothing_raised do
         runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true })
         runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => true })
-      #end
+      end
 
 
       runner2.tick
@@ -221,6 +225,9 @@ end
       runner1.update_acl("local_at_p","p1","Read")
       runner2.update_acl("s_at_p1","p","Read")
       runner2.update_acl("s_at_p1","p2","Read")
+      runner1.update_acl("r_i_at_p","p1","Write")
+      runner1.update_acl("r2_i_at_p","p1","Write")
+      runner1.update_acl("r3_i_at_p","p1","Write")
 
       runner2.tick
       runner2.tick
@@ -301,7 +308,7 @@ end
       assert_equal [{:atom1=>"1", :priv=>"Read", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2", :priv=>"Read", :plist=>PList.new(["test_access","p1","p2"].to_set)}, {:atom1=>"1", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)},  {:atom1=>"3", :priv=>"Grant", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"3", :priv=>"Read", :plist=>PList.new(["test_access","p2"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
 
     ensure
-       #runner.stop
+       runner.stop
        File.delete(@pg_file) if File.exists?(@pg_file)
     end
     

@@ -16,7 +16,7 @@ module WLBud
   #
   class WLProgram
     attr_reader :wlcollections, :peername, :wlpeers, :wlfacts, :wlpolicies
-    attr_accessor :localrules, :nonlocalrules, :delegations, :rewrittenlocal, :rule_mapping
+    attr_accessor :rule_mapping, :nonlocalheadrules
 
     # The initializer for the WLBud program takes in a filename corresponding to
     # a WebdamLog file (.wl) and parses each line in the file either as a
@@ -50,26 +50,22 @@ module WLBud
       @port.freeze
       # A counter for this program to name rule with a uniq ID
       #
-      @next=1
+      @rule_id_seed=0
       @make_binary_rules=make_binary_rules #Use binary rule format (use Bloom pairs keyword instead of combos).
-      my_address = "#{ip}:#{port}"
       # @!attribute [Hash] !{name => WLCollection} List of the webdamlog
-      # relation inserted in that peer
+      #   relation inserted in that peer
       @wlcollections={}
       # Define here some std alias for local peer
       # * @peername
       # * 'localhost'
       # * 'me'
-      #
       @localpeername = Set.new([@peername,'local','me'])
       # List of known peers
-      #
       @wlpeers={}
       @wlpeers[@peername]="#{@ip}:#{@port}"
       # List of bootstrap facts ie. the facts given in the program file
       # === data struct
       # Array:(WLBud:WLFact)
-      #
       @wlfacts=[]
       # List of access control policies in the program file
       # Array: (WLBud::WLPolicy)
@@ -80,14 +76,14 @@ module WLBud
       #
       # Original rules id are stored as key and value is an array with first the
       # original rule as a WLBud::WLRule then the id of rules rewritten or
-      # string representing the rewriting.
+      # string representing the rewriting if the rewriting is non-local since
+      # rule id are given by the peer which install the rule.
       @rule_mapping = Hash.new{ |h,k| h[k]=Array.new }
       # The local rules straightforward to convert into bud (simple syntax
       # translation)
       # === data struct
       # Array:(WLBud:WLRule)
-      #
-      @localrules=[]
+      #@localrules=[]
       # Nonlocal rules in WL are never converted into Bloom rules directly (as
       # opposed to previous types of rules). They are split in two part one
       # stored in delegation that must be send to a remote peer and another part
@@ -96,8 +92,6 @@ module WLBud
       # only the head was not local.
       # === data struct
       # Array:(WLBud:WLRule)
-      #
-      @nonlocalrules=[]
       # The list of rules which have a non-local head - this only matters
       # in access control on mode
       @nonlocalheadrules=[]
@@ -106,84 +100,59 @@ module WLBud
       # start with an intermediary relation that control it triggering.
       #
       # Array:(WLBud:WLRule)
-      #
-      @delegations = Hash.new{ |h,k| h[k]=Array.new }
+      # @delegations = Hash.new{ |h,k| h[k]=Array.new }
       # This is the list of rules which contains the local rules after a
       # non-local rule of the wlprogram at initialization has been rewritten.
       # This kind of rule have a intermediary relation in their head that
       # control the corresponding delegated part of the rule on the remote peer.
       # === data struct
       # Array:(WLBud:WLRule)
-      #
       @rewrittenlocal=[]
       # Keep the new relation to declare on remote peer (typically intermediary
       # relation created when rewrite) due to processing of of a wlgrammar line
       # in rewrite_non_local.
       # === data struct
       # Hash:(peer address, Set:(string wlgrammar collection declaration) )
-      #
       @new_relations_to_declare_on_remote_peer = Hash.new{|h,k| h[k]=Set.new }
       # The list of all the new delegations to be send due to processing of a
       # wlgrammar line in rewrite_non_local. It contains the non-local part of
       # the rule that have been splitted.
       # === data struct
       # Hash:(peer address, Set:(string wlgrammar rule) )
-      #
       @new_delegations_to_send = Hash.new{|h,k| h[k]=Set.new }
       # The list of all the new local collection to create due to processing of
       # a wlgrammar line in rewrite_non_local. It contains the intermediary
       # relation declaration.
       # === data struct
       # Array:(string wlgrammar collection)
-      #
       @new_local_declaration = []
       # The list of all the new local rule to create due to processing of a
       #   wlgrammar line in rewrite_non_local. It contains the local part of the
-      #   rule that have been split.
+      #   rule that have been splitted.
       # === data struct
       # Array:(WLBud::WLRule)
       @new_rewritten_local_rule_to_install = []
       # The list of all the new local seeds to create due to processing of a
-      #   wlgrammar line in rewrite_unbound_rules. It contains the bound part of
-      #   the rule that have been split.
+      # wlgrammar line in rewrite_unbound_rules. It contains the bound part of
+      # the rule that have been split.
+      #
       # === data struct
-      # Array:[[WRule:seeder,String:interm_rel_in_rule,WLRule:wlrule],...]
+      # Array:[[WRule:seeder,String:interm_rel_in_rule,String:seedtemplate,WLRule:wlrule],...]
       # * seeder is the new rule to install
       # * interm_rel_in_rule is the string with the atom where the seed appear
       #   in the rule with the correct variables assignation
+      # * seedtemplate is the string of the rule used as a template to generate
+      #   new rules once tuple will be added in interm_rel_in_rule
       # * wlrule is the original rule before rewriting that leads to create this
       #   rewriting
       @new_seed_rule_to_install = []
       options[:debug] ||= false
       @options=options.clone
 
-      # Parse lines to be read
-      parse_lines(IO.readlines(@programfile, ';'), true)
-      # process non-local rules
-      @nonlocalrules.each do |rule|
-        rewrite_rule rule
-      end
-      #VZM access control
-      @nonlocalheadrules.each do |rule|
-        rewrite_non_local_head_rule rule
-      end
-    end
+      # Parse lines to be read and add them to wlprogram
+      io_pg = IO.readlines @programfile, ';'
+      parse_lines io_pg, true
 
-    public
-
-    # The print_content method prints the content of the relations declarations,
-    # extensional facts and rules of the program to the screen.
-    #
-    def print_content
-      puts "-----------------------RELATIONS------------------------"
-      @wlcollections.each_value {|wl| wl.show}
-      puts "\n\n------------------------FACTS---------------------------"
-      @wlfacts.each {|wl| wl.show}
-      puts "\n\n------------------------RULES---------------------------"
-      @localrules.each {|wl| wl.show}
-      puts "\n\n----------------------POLICIES--------------------------"
-      @wlpolicies.each {|wl| wl.show}
-      puts "\n\n--------------------------------------------------------"
     end
 
     # Returns true if no rules are loaded for evaluation.
@@ -218,7 +187,6 @@ module WLBud
     # ===parameter
     # * +lines+ is an array of string, each cell containing a line of the file.
     #   Usually lines is the result of IO.readlines.
-    #
     def parse_lines (lines, add_to_program=false)
       ans=[]
       current=""
@@ -229,7 +197,7 @@ module WLBud
           current << splitted[0] << ';'
           rest = ""
           splitted[(1..-1)].each{ |r| rest << r }
-          ans << parse(current, add_to_program, false, {:line_nb=>i+1})
+          ans << parse(current, add_to_program, {:line_nb=>i+1})
           current = rest || "" # reset current line after parsing
         else
           current << line
@@ -251,7 +219,8 @@ module WLBud
     # been declared. The atoms in the head that are not local should also be
     # declared but I can also make my parser declare them automatically since
     # the type is not important.
-    def parse(line, add_to_program=false, rewritten=false, options={})
+    # FIXME: remove rewritten is useless now
+    def parse(line, add_to_program=false, options={})
       raise WLErrorTyping, "I could only parse string not #{line.class}" unless line.is_a?(String)
       unless (output=@parser.parse(line))
         line_nb = options[:line_nb] ||= "unknown"
@@ -286,15 +255,10 @@ In the string: #{line}
             #assign current peer as the rule author by default
             result.author = @peername
             @rule_mapping[result.rule_id] << result
-            if local?(result)
-              @localrules << result
-            else
-              @nonlocalrules << result
-            end
             #VZM access control - need to do additional special processing
             #if the head is not local but the body is local, then need to
             #rewrite to delegate since we need to check write permissions
-            if @options[:accessc] && !@options[:optim1] && !local?(result.head) && !result.head.relname.start_with?("deleg_") && local?(result)
+            if @options[:accessc] && !@options[:optim1] && !bound_n_local?(result.head) && !result.head.relname.start_with?("deleg_") && bound_n_local?(result)
               @nonlocalheadrules << result
             end
           when WLBud::WLPolicy
@@ -317,118 +281,31 @@ In the string: #{line}
     end
 
     # The whole rewrite process to compile webdamlog into bud + delegation and
-    # seeds Delegation and seeds are handled latter in tick internal
+    # seeds. If the rule needs to be split it will create a new intermediary
+    # relation that is accessible with flush_new_local_declaration. Then the
+    # rule could be a simple rewriting or a seed. According to the case it will
+    # populate array accessible respectively by
+    # flush_new_rewritten_local_rule_to_install and
+    # flush_new_seed_rule_to_install
     def rewrite_rule wlrule
-
+      raise WLErrorTyping, "rewrite_rule accepts only WLBud::WLRule but received #{wlrule.class}" unless wlrule.kind_of?(WLBud::WLRule)
+      raise WLErrorProgram, "local peername:#{@peername} is not defined yet while rewrite rule:#{wlrule}" if @peername.nil?
       split_rule wlrule
-
-      if wlrule.seed?
+      if wlrule.seed
         rewrite_unbound_rules(wlrule)
       elsif wlrule.split
         rewrite_non_local(wlrule)
+      elsif @nonlocalheadrules.include?(wlrule)
+        puts "rule #{wlrule} is nonlocalhead, rewriting"
+        rewrite_non_local_head_rule(wlrule)
       end
-      
     end
-
-    private
-
-    # This methods extract the local part without variables and generate the
-    # seed to evaluate the rest of the rule
-    def rewrite_unbound_rules(wlrule)
-      raise WLErrorProgram, "local peername:#{@peername} is not defined yet while rewrite rule:#{wlrule}" if @peername.nil?
-
-      split_rule wlrule
-      interm_seed_name = generate_intermediary_seed_name(wlrule.rule_id)
-      interm_rel_decla, local_seed_rule, interm_rel_in_rule = wlrule.create_intermediary_relation_from_bound_atoms(interm_seed_name, @peername)
-      interm_rel_declaration_for_local_peer = "collection inter #{interm_rel_decla};"
-      # Declare the new intermediary seed for the local peer and add it to the
-      # program
-      @new_local_declaration << parse(interm_rel_declaration_for_local_peer,true,true)    
-      # Add local rule to the program and register into the set of seed
-      # generator
-      seeder = parse(local_seed_rule, true, true)
-      @new_seed_rule_to_install << [seeder,interm_rel_in_rule,wlrule]
-      @rule_mapping[wlrule.rule_id] << seeder.rule_id
-      @rule_mapping[seeder.rule_id] << seeder
-      # TODO install the content of new_seed_rule_to_install and create the
-      # offshoot when new facts are inserted in in seed_rule in tick_internal
-    end
-
-    # This method creates a body-local rule with destination peer p and a fully
-    # non-local rule that should be delegated to p.
-    #
-    # === Remark
-    # The intermediary relation created to link the delegated rule with the
-    # rewritten local is automatically added
-    #
-    # RULE REWRITING If local atoms are present at the beginning of the non
-    # local rule, then we have to add a local rule to the program. Otherwise,
-    # the nonlocal rule can be sent as is to its destination. Create a relation
-    # for intermediary relation that has the arity corresponding to the number
-    # of distinct variables present in the bound atoms.
-    #
-    # ===return [do not use prefer the instance variable @new_local_declaration]
-    # +intermediary_relation_declaration_for_local_peer+ if it exists that is
-    # when splitting the rule has been necessary. That is the relation
-    # declaration that should be created into bud to store intermediary local
-    # results of non-local rules rewritten
-    def rewrite_non_local(wlrule)
-      raise WLErrorProgram, "local peername:#{@peername} is not defined yet while rewrite rule:#{wlrule}" if @peername.nil?
-      raise WLErrorProgram, "trying to rewrite a seed instead of a static rule" if wlrule.seed?
-      
-      split_rule wlrule
-      if wlrule.unbound.empty?
-        raise WLErrorProgram, "rewrite_non_local : You are trying to rewrite a local rule. There may be an error in your rule filter"
-      else
-        # The destination peer is the peer of the first nonlocal atom.
-        destination_peer = wlrule.unbound.first.peername
-        unless wlrule.head.variable?
-          if @wlpeers[destination_peer].nil?
-            raise WLErrorProgram, "In #{wlrule.unbound.first.text_value} peer is unknown it should have been declared: #{destination_peer}"
-          end
-        end
-        addr_destination_peer = @wlpeers[destination_peer]
-
-        if wlrule.bound.empty? # the whole body is non-local, no rewriting are needed just delegate all the rule
-          delegation = wlrule.show_wdl_format
-          # FIXME hacky substitute of _at_ by @ to be parsed correctly by the
-          # receiver
-          delegation.gsub!(/_at_/, '@')
-          
-        else # if the rule must be cut in two part
-          
-          interm_relname = generate_intermediary_relation_name(wlrule.rule_id)
-          interm_rel_decla, local_rule_delegate_facts, interm_rel_in_rule = wlrule.create_intermediary_relation_from_bound_atoms(interm_relname, destination_peer)
-          interm_rel_declaration_for_remote_peer = "collection inter persistent #{interm_rel_decla};"
-          interm_rel_declaration_for_local_peer = interm_rel_declaration_for_remote_peer.gsub("persistent ", "")
-          
-          # Declare the new remote relation as a scratch for the local peer and
-          # add it to the program
-          @new_local_declaration << parse(interm_rel_declaration_for_local_peer,true,true)
-          @new_relations_to_declare_on_remote_peer[addr_destination_peer] << interm_rel_declaration_for_remote_peer
-          # Add local rule to the set of rewritten local rules
-          @new_rewritten_local_rule_to_install << ru = parse(local_rule_delegate_facts, true, true)
-          @rule_mapping[wlrule.rule_id] << ru.rule_id
-          @rule_mapping[ru.rule_id] << ru
-          # Create the delegation rule string
-          nonlocalbody="" ;
-          wlrule.unbound.each { |atom| nonlocalbody << "#{atom}," } ; nonlocalbody.slice!(-1)
-          delegation="rule #{wlrule.head}:-#{interm_rel_in_rule},#{nonlocalbody};"
-        end # if not wlrule.bound.empty? and not wlrule.unbound.empty? # if the rule must be cut in two part
-
-        # Register the delegation
-        @new_delegations_to_send[addr_destination_peer] << delegation
-        @rule_mapping[wlrule.rule_id] << delegation
-        @rule_mapping[delegation] << delegation
-      end # if wlrule.unbound.empty?
-    end # def rewrite_non_local(wlrule)    
 
     #For access control rewrite a local rule with non-local head to have an intermediary nonlocal head
     #plus a delegated rule to the other peer
     def rewrite_non_local_head_rule wlrule
       raise WLErrorProgram, "local peername:#{@peername} is not defined yet while rewrite rule:#{wlrule}" if @peername.nil?
-      raise WLErrorProgram, "trying to rewrite a seed instead of a static rule" if wlrule.seed?
-      raise WLErrorProgram, "trying to rewrite the remote head rule for a local-head rule" if local?(wlrule.head)
+      raise WLErrorProgram, "trying to rewrite the remote head rule for a local-head rule" if bound_n_local?(wlrule.head)
       
       intermediary_relation_declaration_for_remote_peer = nil
       destination_peer = wlrule.head.peername
@@ -448,7 +325,10 @@ In the string: #{line}
       end ; dec_fields.slice!(-1);var_fields.slice!(-1);
 
       intermediary_relation_declaration_for_remote_peer = "collection inter persistent #{relation_name}@#{destination_peer}(#{dec_fields});"
+      interm_rel_declaration_for_local_peer = intermediary_relation_declaration_for_remote_peer.gsub("persistent ", "")
+      @new_local_declaration << parse(interm_rel_declaration_for_local_peer,true)
       @new_relations_to_declare_on_remote_peer[addr_destination_peer] << intermediary_relation_declaration_for_remote_peer
+
       intermediary_relation_atom_in_rule = "#{relation_name}@#{destination_peer}(#{var_fields})"
       delegation = "rule #{wlrule.head} :- #{intermediary_relation_atom_in_rule};"
       @new_delegations_to_send[addr_destination_peer] << delegation
@@ -459,19 +339,114 @@ In the string: #{line}
       rulestr = wlrule.show_wdl_format
       rulestr.gsub!('_at_','@')
       rulestr.gsub!(wlrule.head.relname, relation_name)
-      ru = parse(rulestr, true, true)
+      @new_rewritten_local_rule_to_install << ru = parse(rulestr, true, true)
+      ru.author = wlrule.author
       @rule_mapping[wlrule.rule_id] << ru.rule_id
       @rule_mapping[ru.rule_id] << ru
-
-      #as a last step, remove the initial rel from list to avoid translation
-      @localrules.delete(wlrule)
     end
 
+    private
+
+    # This methods extract the local part without variables and generate the
+    # seed to evaluate the rest of the rule.  This method should be called by
+    # rewrite_rule only.
+    def rewrite_unbound_rules wlrule
+      split_rule wlrule
+      raise WLErrorProgram, "trying to rewrite a seed that is not one" unless wlrule.seed
+      
+      interm_seed_name = generate_intermediary_seed_name(wlrule.rule_id)
+      interm_rel_decla, local_seed_rule, interm_rel_in_rule = wlrule.create_intermediary_relation_from_bound_atoms(interm_seed_name, @peername)
+      interm_rel_declaration_for_local_peer = "collection inter #{interm_rel_decla};"
+      
+      # Declare the new intermediary seed for the local peer and add it to the
+      # program
+      @new_local_declaration << parse(interm_rel_declaration_for_local_peer,true)
+      # Add local rule to the program and register into the set of seed
+      # generator
+      seeder = parse(local_seed_rule, true)
+      seedtemplate = wlrule.build_seed_template(interm_rel_in_rule)
+      @new_seed_rule_to_install << [seeder,interm_rel_in_rule,seedtemplate,wlrule]
+      @rule_mapping[wlrule.rule_id] << seeder.rule_id
+      @rule_mapping[seeder.rule_id] << seeder
+      # TODO install the content of new_seed_rule_to_install and create the
+      # offshoot when new facts are inserted in in seed_rule in tick_internal
+    end # rewrite_unbound_rules
+    
+
+    # This method creates a body-local rule with destination peer p and a fully
+    # non-local rule that should be delegated to p.
+    #
+    # === Remark
+    # The intermediary relation created to link the delegated rule with the
+    # rewritten local is automatically added
+    #
+    # This method should be called by rewrite_rule only
+    #
+    # RULE REWRITING If local atoms are present at the beginning of the non
+    # local rule, then we have to add a local rule to the program. Otherwise,
+    # the nonlocal rule can be sent as is to its destination. Create a relation
+    # for intermediary relation that has the arity corresponding to the number
+    # of distinct variables present in the bound atoms.
+    #
+    # ===return [do not use prefer the instance variable @new_local_declaration]
+    # +intermediary_relation_declaration_for_local_peer+ if it exists that is
+    # when splitting the rule has been necessary. That is the relation
+    # declaration that should be created into bud to store intermediary local
+    # results of non-local rules rewritten
+    def rewrite_non_local wlrule
+      raise WLErrorProgram, "trying to rewrite a seed instead of a static rule" if wlrule.seed
+      
+      split_rule wlrule
+      if wlrule.unbound.empty?
+        raise WLErrorProgram, "rewrite_non_local : You are trying to rewrite a local rule. There may be an error in your rule filter"
+      else
+        # The destination peer is the peer of the first nonlocal atom.
+        destination_peer = wlrule.unbound.first.peername
+        unless wlrule.head.variable?
+          if @wlpeers[destination_peer].nil?
+            raise WLErrorProgram, "In #{wlrule.unbound.first.text_value} peer is unknown it should have been declared: #{destination_peer}"
+          end
+        end
+        addr_destination_peer = @wlpeers[destination_peer]
+
+        if wlrule.bound.empty? # the whole body is non-local, no rewriting are needed just delegate all the rule
+          delegation = wlrule.show_wdl_format
+          # FIXME hacky substitute of _at_ by @ to be parsed correctly by the
+          # receiver
+          delegation.gsub!(/_at_/, '@')
+
+        else # if the rule must be cut in two part
+          interm_relname = generate_intermediary_relation_name(wlrule.rule_id)
+          interm_rel_decla, local_rule_delegate_facts, interm_rel_in_rule = wlrule.create_intermediary_relation_from_bound_atoms(interm_relname, destination_peer)
+          interm_rel_declaration_for_remote_peer = "collection inter persistent #{interm_rel_decla};"
+          interm_rel_declaration_for_local_peer = interm_rel_declaration_for_remote_peer.gsub("persistent ", "")
+          
+          # Declare the new remote relation as a scratch for the local peer and
+          # add it to the program
+          @new_local_declaration << parse(interm_rel_declaration_for_local_peer,true)
+          @new_relations_to_declare_on_remote_peer[addr_destination_peer] << interm_rel_declaration_for_remote_peer
+          # Add local rule to the set of rewritten local rules
+          @new_rewritten_local_rule_to_install << ru = parse(local_rule_delegate_facts, true)
+          ru.author = wlrule.author
+          @rule_mapping[wlrule.rule_id] << ru.rule_id
+          @rule_mapping[ru.rule_id] << ru
+          # Create the delegation rule string
+          nonlocalbody="" ;
+          wlrule.unbound.each { |atom| nonlocalbody << "#{atom}," } ; nonlocalbody.slice!(-1)
+          delegation="rule #{wlrule.head}:-#{interm_rel_in_rule},#{nonlocalbody};"
+        end # if not wlrule.bound.empty? and not wlrule.unbound.empty? # if the rule must be cut in two part
+
+        # Register the delegation
+        @new_delegations_to_send[addr_destination_peer] << delegation
+        @rule_mapping[wlrule.rule_id] << delegation
+        @rule_mapping[delegation] << delegation
+      end # if wlrule.unbound.empty?
+    end # def rewrite_non_local(wlrule)
 
     # Split the rule by reading atoms from left to right until non local atom or
     # variable in relation name or peer name has been found.
     #
-    # Set the attributes @seed and @seed_pos respectively to true if there is an
+    # Set the attributes @seed and @split_pos respectively to true if there is an
     # atom with variable in relation or peer name ; and @seedpos with the
     # position of this atom in the body starting from 0 or -1 if the variable is
     # in the head.
@@ -489,11 +464,12 @@ In the string: #{line}
           unless wlrule.split
             if atom.variable?
               wlrule.unbound << atom
-              wlrule.seed_pos = index
+              wlrule.split_pos = index
               wlrule.seed = true
               wlrule.split = true
-            elsif not local?(atom)
+            elsif not bound_n_local?(atom)
               wlrule.unbound << atom
+              wlrule.split_pos = index
               wlrule.seed = false
               wlrule.split = true
             else
@@ -506,11 +482,11 @@ In the string: #{line}
         # if the body has not been split
         unless wlrule.split
           if wlrule.head.variable?
-            wlrule.seed_pos = -1
+            wlrule.split_pos = -1
             wlrule.seed = true
             wlrule.split = true
           else
-            wlrule.seed_pos = nil
+            wlrule.split_pos = nil
             wlrule.seed = false
             wlrule.split = false
           end
@@ -538,11 +514,10 @@ In the string: #{line}
           "In #{wlrule.text_value} the peer name: #{head_atom_peername} cannot be found in the list of known peer: #{@wlpeers.inspect}"
       end
       str_res = ""
-      str_self_join = ""
       body = wlrule.body
 
       # Generate rule head Send fact buffer if non-local head
-      unless local?(wlrule.head)
+      unless bound_n_local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
           str_res << "temp :#{wlrule.head.fullrelname} <= "
@@ -567,12 +542,7 @@ In the string: #{line}
         if body.length==1 && !@options[:accessc]
           str_res << body.first.fullrelname
         else
-          # #Generate rule collection names using pairs and combos keywords.
-          #          if @make_binary_rules
-          #            s , str_self_join = make_pairs(wlrule)
-          #          else
-          s , str_self_join = make_combos(wlrule)
-          #          end
+          s = make_combos(wlrule)
           str_res << s
         end
         str_res << " {|";
@@ -582,7 +552,7 @@ In the string: #{line}
         #VZM access control - need to add variable names for each acl we added
         if @options[:accessc]
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if !@options[:optim1]
                 str_res << ", #{atom.relname}acl"
               end
@@ -594,8 +564,8 @@ In the string: #{line}
           if @options[:optim2]
             str_res << ", formul"
           end
-          if (local?(wlrule.head) && wlrule.author != @peername && !@options[:optim1]) ||
-              (@options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername)
+          if (bound_n_local?(wlrule.head) && wlrule.author != @peername && !@options[:optim1]) ||
+              (@options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername)
             str_res << ", aclw"
           end
         end
@@ -619,7 +589,7 @@ In the string: #{line}
             str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"Read\" && "
           end
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                   (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 if !@options[:optim1]
@@ -637,7 +607,7 @@ In the string: #{line}
           ## check for read or grant for target peer on preserved relations only
           first_intersection = true
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                   (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 str_res << "("
@@ -670,7 +640,7 @@ In the string: #{line}
           ## check for grant for author peer on hide relations only
           first_intersection = true
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                   (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 str_res << "("
@@ -679,7 +649,7 @@ In the string: #{line}
                   str_res << ")"
                 end
                 str_res << ".intersect"
-                if local?(atom) && !intermediary?(atom) && !@options[:optim1]
+                if bound_n_local?(atom) && !intermediary?(atom) && !@options[:optim1]
                   str_res << "(#{atom.relname}acl.plist).intersect"
                 end
                 first_intersection = false
@@ -698,11 +668,11 @@ In the string: #{line}
             end
           end
 
-          puts "rule head is not local " if !local?(wlrule.head) if @options[:debug]
+          puts "rule head is not local " if !bound_n_local?(wlrule.head) if @options[:debug]
           puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
-          if wlrule.author != @peername && local?(wlrule.head) && !@options[:optim1]
+          if wlrule.author != @peername && bound_n_local?(wlrule.head) && !@options[:optim1]
             str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
-          elsif @options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername
+          elsif @options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername
             #we need to check write on the final relation, not on intermediary
             if intermediary?(wlrule.head)
               headrule = nil
@@ -710,7 +680,7 @@ In the string: #{line}
                 headrule = @rule_mapping[id]
                 break if headrule.include?(wlrule.rule_id)
               }
-              if !local?(headrule.first.head)
+              if !bound_n_local?(headrule.first.head)
                 str_res << " && aclw.rel == \"#{headrule.first.head.fullrelname}\" && aclw.peer == \"#{headrule.first.head.peername}\""
               end
             else
@@ -719,12 +689,6 @@ In the string: #{line}
           end
         end
         
-        #        unless wlrule.dic_wlconst.empty?
-        #          str_res << str_self_join.sub(/&&/,'if')
-        #        else
-        #          str_res << str_self_join
-        #        end
-
         str_res << "};"
       end
     end
@@ -755,7 +719,7 @@ In the string: #{line}
         preserve_proven = 0
         if extensional_head?(wlrule)
           wlrule.body.each do |atom|
-            if !atom.provenance.empty? && atom.provenance.type == :Preserve && local?(atom) && !intermediary?(atom)
+            if !atom.provenance.empty? && atom.provenance.type == :Preserve && bound_n_local?(atom) && !intermediary?(atom)
               head_str << "(" if preserve_proven > 0
               head_str << "#{atom.relname}acl.plist"
               head_str << ")" if preserve_proven > 0
@@ -765,7 +729,7 @@ In the string: #{line}
           end
         else
           wlrule.body.each do |atom|
-            if (atom.provenance.empty? || atom.provenance.type != :Hide) && local?(atom) && !intermediary?(atom)
+            if (atom.provenance.empty? || atom.provenance.type != :Hide) && bound_n_local?(atom) && !intermediary?(atom)
               head_str << "(" unless preserve_proven > 0
               head_str << "#{atom.relname}acl.plist"
               head_str << ")" unless preserve_proven > 0
@@ -794,7 +758,7 @@ In the string: #{line}
 
           capc_str << " {|"
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                   (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 capc_str << "#{atom.relname}acl, "
@@ -805,7 +769,7 @@ In the string: #{line}
           capc_str << "| [\"Read\", #{head_str}] if "
 
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                   (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 capc_str << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
@@ -825,7 +789,7 @@ In the string: #{line}
         #need to make another rule for capc for "body", i.e. where grant should be checked for rule author
         grant_proven = 0
         wlrule.body.each do |atom|
-          if local?(atom) && !intermediary?(atom)
+          if bound_n_local?(atom) && !intermediary?(atom)
             if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                 (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
               body_str << "(" if grant_proven > 0
@@ -854,7 +818,7 @@ In the string: #{line}
           
           capc_str << " {|"
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                   (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 capc_str << "#{atom.relname}acl, "
@@ -865,7 +829,7 @@ In the string: #{line}
           capc_str << "| [\"body\", #{body_str}] if "
 
           wlrule.body.each do |atom|
-            if local?(atom) && !intermediary?(atom)
+            if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                   (intensional_head?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 capc_str << "#{atom.relname}acl.priv == \"Grant\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
@@ -904,7 +868,7 @@ In the string: #{line}
         #due to self-join limit, do this in pairs
         intersects = []
         wlrule.body.each do |atom|
-          if local?(atom) && !intermediary?(atom)
+          if bound_n_local?(atom) && !intermediary?(atom)
             if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                 (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
               intersects << atom.fullrelname
@@ -1009,7 +973,8 @@ In the string: #{line}
       return flush
     end
 
-    # @return
+    # @return an array of array of 4 elements containing the
+    # new_seed_rule_to_install content
     def flush_new_seed_rule_to_install
       unless @new_seed_rule_to_install.empty?
         flush = @new_seed_rule_to_install.dup
@@ -1021,27 +986,34 @@ In the string: #{line}
     end
 
     # According to the type of wlword which should be a wlvocabulary object or a
-    # string of the peer name, it test if the given argument is local ie. match
-    # one of the alias name specified in @localpeername
+    # string of the peer name, it test if the given argument is bound(no
+    # variables) and local (match one of the alias name specified in
+    # @localpeername)
     #
     # Note that a rule is local if the body is local whatever the state of the
-    # head
+    # head, but the head must be bounded
     #
     # @return true if the given wlword is local
-    def local? (wlword)
+    def bound_n_local? (wlword)
       if wlword.is_a? WLBud::WLCollection or wlword.is_a? WLBud::WLAtom
-        if @localpeername.include?(wlword.peername)
+        if wlword.is_a? WLBud::WLAtom and wlword.variable?
+          return false
+        elsif @localpeername.include?(wlword.peername)
           return true
         else
           return false
         end
       elsif wlword.is_a? WLBud::WLRule
         wlword.body.each { |atom|
-          unless local?(atom.peername)
+          unless bound_n_local?(atom)
             return false
           end
         }
-        return true
+        if wlword.head.variable?
+          return false
+        else
+          return true
+        end       
       elsif wlword.is_a? String
         if @localpeername.include?(wlword)
           true
@@ -1123,7 +1095,7 @@ In the string: #{line}
 
       # add the remote peer and relation name which should receive the fact.
       #   conform to facts to be sent via sbuffer
-      unless local?(wlrule.head)
+      unless bound_n_local?(wlrule.head)
         destination = "#{@wlpeers[wlrule.head.peername]}"
         # #add location specifier
         raise WLErrorPeerId, "impossible to define the peer that should receive a message" if destination.nil? or destination.empty?
@@ -1168,7 +1140,7 @@ In the string: #{line}
           wlrule.body.each do |atom|
             if !atom.provenance.empty? && atom.provenance.type == :Preserve
               str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"              
-              if local?(atom) && !intermediary?(atom)
+              if bound_n_local?(atom) && !intermediary?(atom)
                 if @options[:optim1]
                   capc = true
                 else
@@ -1186,7 +1158,7 @@ In the string: #{line}
           wlrule.body.each do |atom|
             if atom.provenance.empty? || atom.provenance.type != :Hide
               str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"
-              if local?(atom) && !intermediary?(atom)
+              if bound_n_local?(atom) && !intermediary?(atom)
                 if @options[:optim1]
                   capc = true
                 else
@@ -1203,7 +1175,7 @@ In the string: #{line}
         str.slice!(-2..-1) unless fields.empty?
       end
 
-      unless local?(wlrule.head)
+      unless bound_n_local?(wlrule.head)
         str << "]"
       end
 
@@ -1211,8 +1183,8 @@ In the string: #{line}
       return str
     end
 
-    # define the if condition for each constant it assign its value return
-    # [String] the string to append to make the wdl rule
+    # define the if condition for each constant it assign its value.
+    # @return [String] the string to append to make the wdl rule
     def condition_bud_string wlrule
       str = ""
       wlrule.dic_wlconst.each do |key,value|
@@ -1228,7 +1200,8 @@ In the string: #{line}
       end
       return str
     end
-    
+
+    # @deprecated
     def make_pairs (wlrule)
       str = "(#{wlrule.body.first.fullrelname} * #{wlrule.body.last.fullrelname}).pairs(" ;
       pairs=false
@@ -1283,7 +1256,7 @@ In the string: #{line}
       #VZM access control - need to add acls for each relation that is local and not delegated 
       if @options[:accessc]
         wlrule.body.each do |atom|
-          if local?(atom) && !intermediary?(atom) && !@options[:optim1]
+          if bound_n_local?(atom) && !intermediary?(atom) && !@options[:optim1]
             if @options[:optim2]
               str << " * aclf_at_#{atom.peername}"
             else
@@ -1301,9 +1274,9 @@ In the string: #{line}
         #in regular access control check writeable at the source prior to writing
         #with optimization 1 check only with the original rule using the writeable relation
         #and assume no malicious peers
-        if wlrule.author != @peername && local?(wlrule.head) && !@options[:optim1]
+        if wlrule.author != @peername && bound_n_local?(wlrule.head) && !@options[:optim1]
           str << " * acl_at_#{wlrule.head.peername}"
-        elsif @options[:optim1] && !local?(wlrule.head) && wlrule.author == @peername
+        elsif @options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername
           str << " * writeable_at_#{@peername}"
         end
       end
@@ -1382,17 +1355,22 @@ In the string: #{line}
       return "deleg_from_#{@peername}_#{orig_rule_id}_#{@rule_mapping[orig_rule_id].size}"
     end
 
+    # Generate a new unique relation name for intermediary seed relation
+    #
+    # @param [Fixnum] the rule id used in @rule_mapping usually given by
+    # WLRule.rule_id
     def generate_intermediary_seed_name(orig_rule_id)
-      return "seed_rule_#{orig_rule_id}_#{@rule_mapping[orig_rule_id].size}"
+      return "seed_from_#{@peername}_#{orig_rule_id}_#{@rule_mapping[orig_rule_id].size}"
     end
 
     # Simple successor function useful to create id for rules in this WLprogram.
     #
     def rule_id_generator
-      while @rule_mapping.has_key? @next
-        @next+=1
+      @rule_id_seed += 1
+      while @rule_mapping.has_key? @rule_id_seed
+        @rule_id_seed += 1
       end
-      return @next
+      return @rule_id_seed
     end
 
     def intermediary? (wlatom)
@@ -1408,6 +1386,20 @@ In the string: #{line}
         raise WLErrorProgram,
         "Tried to determine if #{wlatom} is intermediary but it has wrong type #{wlatom.class}"
       end
+    end
+
+    public
+
+    # The print_content method prints the content of the relations declarations,
+    # extensional facts and rules of the program to the screen.
+    def print_content
+      puts "-----------------------RELATIONS------------------------"
+      @wlcollections.each_value { |wl| wl.show }
+      puts "\n\n------------------------FACTS---------------------------"
+      @wlfacts.each { |wl| wl.show }
+      puts "\n\n------------------------RULES---------------------------"
+      @rule_mapping.each { |id,rules| rules.first.show }
+      puts "\n\n--------------------------------------------------------"
     end
 
     def extensional_head? (wlrule)
@@ -1434,7 +1426,7 @@ In the string: #{line}
       if wlatom.is_a? WLBud::WLAtom
         if @wlcollections[wlatom.fullrelname] != nil
           return @wlcollections[wlatom.fullrelname].rel_type.extensional?
-       else #FIXME: it would be better to look this up in the delegated kind relation
+        else #FIXME: it would be better to look this up in the delegated kind relation
           return !wlatom.relname.end_with?("_i") && !wlatom.relname.start_with?("deleg_from")
         end
       elsif wlatom.is_a? WLBud::WLCollection

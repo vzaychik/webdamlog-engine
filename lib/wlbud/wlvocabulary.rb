@@ -48,7 +48,7 @@ module WLBud
 
     attr_accessor :has_self_join
     attr_reader :dic_made, :dic_relation_name, :dic_invert_relation_name, :dic_wlvar, :dic_wlconst
-    attr_accessor :split, :seed, :seed_pos, :bound, :unbound
+    attr_accessor :split, :seed, :split_pos, :bound, :unbound
 
     # Creates a new WLRule and instantiate empty dictionaries for that rule.
     #
@@ -93,7 +93,7 @@ module WLBud
       @seed = nil
       # nil until WLProgram.split_rule has been called, receive the position of
       # the last bound atom if there are unbound.
-      @seed_pos = nil
+      @split_pos = nil
       # atom to use for local rule
       @bound = []
       # atom left to further processing
@@ -134,40 +134,7 @@ module WLBud
         @body = array
       end
       return @body
-    end
-
-    # @deprecated use the generic wlprogram.split_rule
-    def seed?
-      if @seed.nil?
-        @bound = []
-        @unbound = []
-        @seed = false
-        # find seed in the body
-        body.each_with_index do |atom,index|
-          unless @seed
-            unless atom.variable?
-              @bound << atom
-            else
-              @seed_pos = index
-              @seed = true
-            end
-          else
-            @unbound << atom
-          end
-        end
-        # if no seeds appears in the body check in the head
-        unless @seed
-          if head.variable?
-            @seed_pos = -1
-            @seed = true
-          else
-            @seed_poes = nil
-            @seed = false
-          end
-        end
-      end
-      @seed
-    end
+    end    
 
     # The logical peer name ie. disambiguated according to the local program
     # knowledge.
@@ -232,7 +199,7 @@ module WLBud
     # Set a unique id for this rule for the peer which has parsed this rule
     def rule_id= int
       @rule_id = int
-      # #@rule_id.freeze
+      @rule_id.freeze
     end
 
     # Get the unique id for this rule
@@ -265,23 +232,40 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
 
     # Create a new rule with a new relation in the head that receive the
     # valuations of all the useful variable in the bound part of a wlrule
+    #
+    # Useful variable are the one appearing in the local part AND (in the
+    # unbound part OR in the head)
     def create_intermediary_relation_from_bound_atoms interm_relname, interm_peername
+      #select atom in the local part
       localbody = ""
-      local_vars=[]
+      local_vars = []
       @bound.each do |atom|
         local_vars += atom.variables.flatten
         localbody << "#{atom},"
       end
       local_vars = local_vars.flatten.compact.uniq
       localbody.slice!(-1)
+      #select atom in the remote part and in the head
+      remote_vars = []
+      @unbound.each do |atom|
+        remote_vars += atom.variables.flatten
+      end
+      remote_vars += head.variables.flatten
+      # select the intersection of local_vars and remote_vars
+      useful_vars = []
+      local_vars.each do |var|
+        if remote_vars.include? var
+          useful_vars << var
+        end
+      end
       # build the list of attributes for relation declaration (dec_fields)
       # removing the '$' of variable and create attributes names
       dec_fields=''
       var_fields=''
-      local_vars.each_index do |i|
-        local_var=local_vars[i]
-        dec_fields << local_var.gsub( /(^\$)(.*)/ , interm_relname+"_\\2_"+i.to_s+"\*," )
-        var_fields << local_var << ","
+      useful_vars.each_index do |ind|
+        useful_var = useful_vars[ind]
+        dec_fields << useful_var.gsub( /(^\$)(.*)/ , interm_relname+"_\\2_"+ind.to_s+"\*," )
+        var_fields << useful_var << ","
       end ; dec_fields.slice!(-1); var_fields.slice!(-1);
 
       # new collection declaration
@@ -292,6 +276,18 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
 
       return interm_rel_declaration, new_rule, interm_rel_in_rule
     end # def create_intermediary_relation_from_bound_atoms
+
+    def build_seed_template seedatom
+      raise "cannot build seed template from non seed rule" unless @seed
+      raise "building a seed template from seed without unbound atoms does not make sense" if unbound.nil? or unbound.empty?
+      
+      template = "#{head.show_wdl_format} :- #{seedatom},"
+      unbound.each do |ato|
+        template << "#{ato},"
+      end ; template.slice!(-1);
+      template = "rule #{template};"
+      return template
+    end # build_seed_template
 
     private
 
@@ -379,7 +375,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
 
     def show_wdl_format
       str = ""
-      str << fullrelname
+      str << "#{self.relname}@#{self.peername}"
       str << "( "
       items.get_items.each { |i| str << "#{i.item_text_value}, " }
       str.slice!(-2..-1)
@@ -698,8 +694,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       @peername = yield peername if block_given?
     end
 
-    # @return [Array] the variables included in the atom in an array format e.g.
-    # :
+    # @return [Array] the variables included in the atom in an array format 
     # [relation_var,peer_var,[field_var1,field_var2,...]]
     def variables
       if @variables.nil?
@@ -761,12 +756,12 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
 
     def show_wdl_format
       if self.rproven == nil || self.rproven.empty?
-        return "#{fullrelname}(#{self.rfields.show_wdl_format})"
+        return "#{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})"
       else
         if self.rproven.type == :Hide
-          return "[HIDE #{fullrelname}(#{self.rfields.show_wdl_format})]"
+          return "[HIDE #{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})]"
         elsif self.rproven.type == :Preserve
-          return "[PRESERVE #{fullrelname}(#{self.rfields.show_wdl_format})]"
+          return "[PRESERVE #{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})]"
         end
       end
     end
@@ -841,15 +836,12 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     def variables
       if @variables.nil?
         f = []
-        # self.rtokens.elements.each {|t| f <<
-        # t.elements.first.text_value.split(',').first unless
-        # !t.text_value.include?('$')} f << self.rtoken.text_value unless
-        # !self.rtoken.text_value.include?('$')
         get_rtokens.each { |t| f << t.text_value if t.variable? }
         @variables=f
       end
       return @variables
     end
+    
     # @return [Array] list of WLRToken
     def fields
       if @fields.nil?

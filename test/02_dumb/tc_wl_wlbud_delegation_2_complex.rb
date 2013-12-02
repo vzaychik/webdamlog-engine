@@ -19,7 +19,7 @@ class TcWlDelegation2Complex < Test::Unit::TestCase
   @@first_test=true
   NUMBER_OF_TEST_PG = 4
   TEST_FILENAME_VAR = "test_filename_"
-  CLASS_PEER_NAME = "PeerDeleg2Complex"
+  CLASS_PEER_NAME = "Test1complexdelegation"
   PREFIX_PORT_NUMBER = "1111"
 
   STR0 = <<EOF
@@ -93,10 +93,7 @@ EOF
       eval("File.delete @#{TEST_FILENAME_VAR}#{i} if File.exist? @#{TEST_FILENAME_VAR}#{i}")
     end
   end
-
-  # PENDING intensional not supported in non-local check with join collection
-  # int join_delegated@p0(atom1*);
-  #
+  
   def test_1_complex_delegation
     
     p "===START of test_1===" if $test_verbose
@@ -111,7 +108,7 @@ EOF
       p.tick
     end
     p "check table bootstrap content" if $test_verbose
-    assert_equal [["1"],["2"],["3"],["4"]], wl_peer.first.local_at_p0.to_a.sort
+    assert_equal [["1"],["2"],["3"],["4"]], wl_peer[0].local_at_p0.to_a.sort
     assert_equal [], wl_peer.first.join_delegated_at_p0.to_a.sort
     assert_equal [["2"],["3"],["4"],["5"]], wl_peer[1].delegated_at_p1.to_a.sort
     assert_equal [["3"],["4"],["5"],["6"]], wl_peer[2].delegated_at_p2.to_a.sort
@@ -121,32 +118,21 @@ EOF
       {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_1_at_p1", :fact=>["1"]},
       {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_1_at_p1", :fact=>["2"]},
       {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_1_at_p1", :fact=>["3"]},
-      {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_1_at_p1", :fact=>["4"]},
-      {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_3_at_p1", :fact=>["1"]},
-      {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_3_at_p1", :fact=>["2"]},
-      {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_3_at_p1", :fact=>["3"]},
-      {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_3_at_p1", :fact=>["4"]}],
+      {:dst=>"localhost:11111", :rel_name=>"deleg_from_p0_1_1_at_p1", :fact=>["4"]}],
       wl_peer[0].tables[:sbuffer].sort.map { |t| Hash[t.each_pair.to_a] },
-      "content of sbuffer: facts sent from p0 looks incorrect"
-    assert_equal 8, wl_peer[0].sbuffer.length
+      "content of sbuffer: facts sent from p0 to p1 looks incorrect"
+    assert_equal 4, wl_peer[0].sbuffer.length
     assert_equal [["1"], ["2"], ["3"], ["4"]], wl_peer[0].sbuffer.to_a.sort.map{ |obj| obj.fact }, "p0 send its local relation content to p1"
-
-    assert_equal 1, wl_peer[0].test_send_on_chan[0][1][2]['rules'].length
-    assert_equal 1, wl_peer[0].test_send_on_chan[0][1][2]['declarations'].length
-    new_declaration = wl_peer[0].test_send_on_chan[0][1][2]['declarations'].first.to_s
-    /(deleg.*)\(/ =~ new_declaration
-    new_rel_at_p1 = Regexp.last_match(1).gsub('@', '_at_')
-    assert_kind_of Bud::BudScratch, wl_peer[0].tables[new_rel_at_p1.to_sym], "check the type of the newly created relation Table or Scratch"
+    
     assert_equal 1, wl_peer[0].test_send_on_chan.length, "should have sent 1 packet"
     assert_equal [["localhost:11111",
-        ["p0", "0",
-          {"rules"=>
+        ["p0",
+          "0",
+          {"facts"=>{"deleg_from_p0_1_1_at_p1"=>[["1"], ["2"], ["3"], ["4"]]},
+            "rules"=>
               ["rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),delegated@p1($x),delegated@p2($x),delegated@p3($x);"],
-            "facts"=>
-              {"deleg_from_p0_1_1_at_p1"=>[["1"], ["2"], ["3"], ["4"]]},
             "declarations"=>
-              ["collection inter persistent deleg_from_p0_1_1@p1(deleg_from_p0_1_1_x_0*);"]
-          }]]],
+              ["collection inter persistent deleg_from_p0_1_1@p1(deleg_from_p0_1_1_x_0*);"]}]]],
       wl_peer[0].test_send_on_chan.map { |p| (WLBud::WLPacket.deserialize_from_channel_sorted(p)).serialize_for_channel },
       "p0 must have sent a packet with new rule declaration and facts"
     p "check inbound queue at p1" if $test_verbose
@@ -167,11 +153,8 @@ EOF
             ["collection inter persistent deleg_from_p0_1_1@p1(deleg_from_p0_1_1_x_0*);"]}]],
       packet.serialize_for_channel
 
+
     p "===all wl_peer tick 2===" if $test_verbose
-    #    wl_peer.reverse_each do |p|
-    #      p.tick
-    #      sleep 1
-    #    end
     p "p0 sent" if $test_verbose
     wl_peer[0].tick
     assert_equal [["localhost:11111",
@@ -180,11 +163,32 @@ EOF
             "declarations"=>[]}]]],
       wl_peer[0].test_send_on_chan.map { |p| (WLBud::WLPacket.deserialize_from_channel_sorted(p)).serialize_for_channel },
       "p0 should have sent again the list of facts but not the declarations or rules"
-
+    
+    sleep 0.3 # wait for the second to be receive
     assert(wait_inbound(wl_peer[1]), "TIMEOUT it seems that #{wl_peer[1].peername} is not receiving any message")
-    assert_equal 2, wl_peer[1].inbound[:chan].first.length, "two packets pending to be processed"
+    # #assert_equal 2, wl_peer[1].inbound[:chan].length, "two packets pending to
+    # be processed"
+    assert_equal [["localhost:11111",
+        ["p0",
+          "0",
+          {"facts"=>{"deleg_from_p0_1_1_at_p1"=>[["1"], ["2"], ["3"], ["4"]]},
+            "rules"=>
+              ["rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),delegated@p1($x),delegated@p2($x),delegated@p3($x);"],
+            "declarations"=>
+              ["collection inter persistent deleg_from_p0_1_1@p1(deleg_from_p0_1_1_x_0*);"]}]],
+      ["localhost:11111",
+        ["p0",
+          "1",
+          {"facts"=>{"deleg_from_p0_1_1_at_p1"=>[["1"], ["2"], ["3"], ["4"]]},
+            "rules"=>[],
+            "declarations"=>[]}]]], wl_peer[1].inbound[:chan], "the two packets of p1 should correspond to delegation rules and facts for this rules"
+
     p "data at p1" if $test_verbose
     wl_peer[1].tick
+    assert_equal [["1"], ["2"], ["3"], ["4"]], wl_peer[1].tables[:deleg_from_p0_1_1_at_p1].map { |t| t.values }, "lacks facts in delegated relation"
+    assert_equal ["sbuffer <= ((deleg_from_p0_1_1_at_p1 * delegated_at_p1).combos(deleg_from_p0_1_1_at_p1.deleg_from_p0_1_1_x_0 => (delegated_at_p1.atom1)) do |atom0, atom1|\n  [\"localhost:11112\", \"deleg_from_p1_1_1_at_p2\", [atom0[0]]]\nend)"],
+      wl_peer[1].t_rules.map{ |t| t.src },
+      "there should be a rule to propagate the join between p0 and p1 to p2"
     assert_equal [["localhost:11112",
         ["p1",
           "1",
@@ -235,7 +239,6 @@ EOF
     assert packet_data.declarations.empty?
     assert_equal( {"join_delegated_at_p0" => [["4"]]}, packet_data.facts )
     assert_equal 1, wl_peer[0].join_delegated_at_p0.length
-
   ensure
     wl_peer.each { |item| assert item.clear_rule_dir }
     if EventMachine::reactor_running?
@@ -264,15 +267,11 @@ collection ext persistent local@p0(atom1*);
 collection ext persistent copy1@p0(atom1*);
 collection ext persistent copy2@p0(atom1*);
 collection ext per join_delegated@p0(atom1*);
-fact local@p0(1);
-fact local@p0(2);
-fact local@p0(3);
-fact local@p0(4);
+fact local@p0(p0_1);
+fact local@p0(p0_2);
 fact local@p0("jointuple");
 rule join_delegated@p0($x):- local@p0($x),local@p1($x),local@p2($x); # test delegation
-rule copy1@p0($X):-local@p1($X); # test full non-local body delegation
-rule copy2@p0($X):-local@p2($X);
-rule extcopy@p2($X):-local@p1($X); # test full non-local rule
+rule extcopylocalatp1@p2($X):-local@p1($X); # test full non-local rule
 EOF
 
   STR1 = <<EOF
@@ -280,13 +279,11 @@ peer p0=localhost:11110;
 peer p1=localhost:11111;
 peer p2=localhost:11112;
 collection ext persistent local@p1(atom1*);
-collection ext persistent copy2@p1(atom1*);
+collection ext persistent copylocalatp2@p1(atom1*);
 fact local@p1("p1_2");
 fact local@p1("p1_3");
-fact local@p1("p1_4");
-fact local@p1("p1_5");
 fact local@p1("jointuple");
-rule copy2@p1($X):-local@p2($X);
+rule copylocalatp2@p1($X):-local@p2($X); # test body non-local delegation
 EOF
 
   STR2 = <<EOF
@@ -294,11 +291,9 @@ peer p0=localhost:11110;
 peer p1=localhost:11111;
 peer p2=localhost:11112;
 collection ext persistent local@p2(atom1*);
-collection ext per extcopy@p2(atom1*);
+collection ext per extcopylocalatp1@p2(atom1*);
 fact local@p2("p2_3");
 fact local@p2("p2_4");
-fact local@p2("p2_5");
-fact local@p2("p2_6");
 fact local@p2("jointuple");
 EOF
 
@@ -326,7 +321,8 @@ EOF
     wl_peer = []
     (0..NUMBER_OF_TEST_PG-1).each do |i|
       wl_peer << eval("@@#{CLASS_PEER_NAME}#{i}.new(\'p#{i}\', STR#{i}, @#{TEST_FILENAME_VAR}#{i}, Hash[@tcoption#{i}.each_pair.to_a])")
-    end    
+    end
+    
 
     # start p2 with nothing to do
     wl_peer[2].tick
@@ -335,13 +331,8 @@ EOF
       wl_peer[2].wl_program.rule_mapping.values.map{ |ar| ar.first.show_wdl_format})
     # check that all collection are empty
     assert_equal([{:chan=>[]},
-        {:extcopy_at_p2=>[]},
-        {:local_at_p2=>
-            [{:atom1=>"p2_3"},
-            {:atom1=>"p2_4"},
-            {:atom1=>"p2_5"},
-            {:atom1=>"p2_6"},
-            {:atom1=>"jointuple"}]},
+        {:extcopylocalatp1_at_p2=>[]},
+        {:local_at_p2=>[{:atom1=>"p2_3"}, {:atom1=>"p2_4"}, {:atom1=>"jointuple"}]},
         {:sbuffer=>[]}],
       wl_peer[2].app_tables.map { |item| item.tabname }.sort.map { |at|
         tab = wl_peer[2].tables[at].map { |t|
@@ -358,8 +349,9 @@ EOF
     # start p1 which send a delegation to p2
     wl_peer[1].tick
     # check that there is no local rules
-    assert_equal(["rule copy2_at_p1($X) :- local_at_p2($X);",
-        "rule copy2@p1($X) :- local@p2($X);"],
+    assert_equal([
+        "rule copylocalatp2@p1($X) :- local@p2($X);",
+        "rule copylocalatp2@p1($X) :- local@p2($X);"],
       wl_peer[1].wl_program.rule_mapping.values.map do |ar|
         if ar.first.is_a? WLBud::WLRule
           ar.first.show_wdl_format
@@ -369,13 +361,8 @@ EOF
       end)
     # check that all collection are empty except local@p1
     assert_equal([{:chan=>[]},
-        {:copy2_at_p1=>[]},
-        {:local_at_p1=>
-            [{:atom1=>"p1_2"},
-            {:atom1=>"p1_3"},
-            {:atom1=>"p1_4"},
-            {:atom1=>"p1_5"},
-            {:atom1=>"jointuple"}]},
+        {:copylocalatp2_at_p1=>[]},
+        {:local_at_p1=>[{:atom1=>"p1_2"}, {:atom1=>"p1_3"}, {:atom1=>"jointuple"}]},
         {:sbuffer=>[]}],
       wl_peer[1].app_tables.map { |item| item.tabname }.sort.map { |at|
         tab = wl_peer[1].tables[at].map { |t|
@@ -392,30 +379,27 @@ EOF
     # fire p2 to install the delegation
     wl_peer[2].tick
     # check that there is one new rule installed
-    assert_equal(["rule copy2_at_p1($X) :- local_at_p2($X);"],
+    assert_equal(["WLRULE: rule copylocalatp2@p1($X) :- local@p2($X);"],
       wl_peer[2].wl_program.rule_mapping.values.map do |ar|
         if ar.first.is_a? WLBud::WLRule
-          ar.first.show_wdl_format
+          "WLRULE: " + ar.first.show_wdl_format
         else
-          ar.first
+          "String: " + ar.first
         end
       end)
-    # check that all collection are empty
+    # check that the new rule makes p2 send facts
     assert_equal([{:chan=>[]},
-        {:extcopy_at_p2=>[]},
-        {:local_at_p2=>
-            [{:atom1=>"p2_3"},
-            {:atom1=>"p2_4"},
-            {:atom1=>"p2_5"},
-            {:atom1=>"p2_6"},
-            {:atom1=>"jointuple"}]},
+        {:extcopylocalatp1_at_p2=>[]},
+        {:local_at_p2=>[{:atom1=>"p2_3"}, {:atom1=>"p2_4"}, {:atom1=>"jointuple"}]},
         {:sbuffer=>
-            [{:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_3"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_4"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_5"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_6"]},
+            [{:dst=>"localhost:11111",
+              :rel_name=>"copylocalatp2_at_p1",
+              :fact=>["p2_3"]},
             {:dst=>"localhost:11111",
-              :rel_name=>"copy2_at_p1",
+              :rel_name=>"copylocalatp2_at_p1",
+              :fact=>["p2_4"]},
+            {:dst=>"localhost:11111",
+              :rel_name=>"copylocalatp2_at_p1",
               :fact=>["jointuple"]}]}],
       wl_peer[2].app_tables.map { |item| item.tabname }.sort.map { |at|
         tab = wl_peer[2].tables[at].map { |t|
@@ -433,29 +417,20 @@ EOF
     # and sent to p1
     wl_peer[1].tick
     # there is no new rules only the remember that we made a delegation
-    assert_equal(["rule copy2_at_p1($X) :- local_at_p2($X);",
-        "rule copy2@p1($X) :- local@p2($X);"],
+    assert_equal(["WLRULE: rule copylocalatp2@p1($X) :- local@p2($X);",
+        "String: rule copylocalatp2@p1($X) :- local@p2($X);"],
       wl_peer[1].wl_program.rule_mapping.values.map do |ar|
         if ar.first.is_a? WLBud::WLRule
-          ar.first.show_wdl_format
+          "WLRULE: " + ar.first.show_wdl_format
         else
-          ar.first
+          "String: " + ar.first
         end
       end)
     # but there are new facts thanks to the result of evaluating the delegation
     assert_equal([{:chan=>[]},
-        {:copy2_at_p1=>
-            [{:atom1=>"p2_3"},
-            {:atom1=>"p2_4"},
-            {:atom1=>"p2_5"},
-            {:atom1=>"p2_6"},
-            {:atom1=>"jointuple"}]},
-        {:local_at_p1=>
-            [{:atom1=>"p1_2"},
-            {:atom1=>"p1_3"},
-            {:atom1=>"p1_4"},
-            {:atom1=>"p1_5"},
-            {:atom1=>"jointuple"}]},
+        {:copylocalatp2_at_p1=>
+            [{:atom1=>"p2_3"}, {:atom1=>"p2_4"}, {:atom1=>"jointuple"}]},
+        {:local_at_p1=>[{:atom1=>"p1_2"}, {:atom1=>"p1_3"}, {:atom1=>"jointuple"}]},
         {:sbuffer=>[]}],
       wl_peer[1].app_tables.map { |item| item.tabname }.sort.map { |at|
         tab = wl_peer[1].tables[at].map { |t|
@@ -465,94 +440,132 @@ EOF
           h
         }
         Hash[at, tab]
-      }
-    )
+      })
 
-
-    # fire p0 to send all the delegation
+    # fire p0 to send the complex 2 hops delegation
     wl_peer[0].tick
-    # fire p1 and p2 to process the delegation
-    wl_peer[1].tick
-    wl_peer[2].tick
-    # check the status of p0
-    wl_peer[0].tick
-    # there is no new rules only the remember that we made a delegation
-    assert_equal(["rule join_delegated_at_p0($x) :- local_at_p0($x), local_at_p1($x), local_at_p2($x);",
-        "rule copy1_at_p0($X) :- local_at_p1($X);",
-        "rule copy2_at_p0($X) :- local_at_p2($X);",
-        "rule extcopy_at_p2($X) :- local_at_p1($X);",
-        "rule deleg_from_p0_1_1_at_p1($x) :- local_at_p0($x);",
-        "rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),local@p1($x),local@p2($x);",
-        "rule copy1@p0($X) :- local@p1($X);",
-        "rule copy2@p0($X) :- local@p2($X);",
-        "rule extcopy@p2($X) :- local@p1($X);"],
+    assert_equal(["WLRULE: rule join_delegated@p0($x) :- local@p0($x), local@p1($x), local@p2($x);",
+        "WLRULE: rule extcopylocalatp1@p2($X) :- local@p1($X);",
+        "WLRULE: rule deleg_from_p0_1_1@p1($x) :- local@p0($x);",
+        "String: rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),local@p1($x),local@p2($x);",
+        "String: rule extcopylocalatp1@p2($X) :- local@p1($X);"],
       wl_peer[0].wl_program.rule_mapping.values.map do |ar|
         if ar.first.is_a? WLBud::WLRule
-          ar.first.show_wdl_format
+          "WLRULE: " + ar.first.show_wdl_format
         else
-          ar.first
+          "String: " + ar.first
+        end
+      end)
+
+    # fire p1 to process the delegation
+    assert(wait_inbound(wl_peer[1]), "You have lost message")
+    wl_peer[1].tick
+    assert_equal(["WLRULE: rule copylocalatp2@p1($X) :- local@p2($X);",
+        "String: rule copylocalatp2@p1($X) :- local@p2($X);",
+        "WLRULE: rule join_delegated@p0($x) :- deleg_from_p0_1_1@p1($x), local@p1($x), local@p2($x);",
+        "WLRULE: rule deleg_from_p1_2_1@p2($x) :- deleg_from_p0_1_1@p1($x), local@p1($x);",
+        "String: rule join_delegated@p0($x):-deleg_from_p1_2_1@p2($x),local@p2($x);",
+        "WLRULE: rule extcopylocalatp1@p2($X) :- local@p1($X);"],
+      wl_peer[1].wl_program.rule_mapping.values.map do |ar|
+        if ar.first.is_a? WLBud::WLRule
+          "WLRULE: " + ar.first.show_wdl_format
+        else
+          "String: " + ar.first
+        end
+      end)
+    assert_equal([{:deleg_from_p0_1_1_x_0=>"p0_1"},
+        {:deleg_from_p0_1_1_x_0=>"p0_2"},
+        {:deleg_from_p0_1_1_x_0=>"jointuple"}],
+      wl_peer[1].tables[:deleg_from_p0_1_1_at_p1].map do |t|
+        h = Hash[t.each_pair.to_a]
+        h
+      end)
+    assert_equal([{:dst=>"localhost:11112",
+          :rel_name=>"deleg_from_p1_2_1_at_p2",
+          :fact=>["jointuple"]},
+        {:dst=>"localhost:11112",
+          :rel_name=>"extcopylocalatp1_at_p2",
+          :fact=>["jointuple"]},
+        {:dst=>"localhost:11112",
+          :rel_name=>"extcopylocalatp1_at_p2",
+          :fact=>["p1_2"]},
+        {:dst=>"localhost:11112",
+          :rel_name=>"extcopylocalatp1_at_p2",
+          :fact=>["p1_3"]}],
+      wl_peer[1].tables[:sbuffer].sort.map do |t|
+        h = Hash[t.each_pair.to_a]
+        h
+      end)
+
+    # fire p2 to process the following of the delegation
+    assert(wait_inbound(wl_peer[2]), "You have lost message")
+    wl_peer[2].tick
+    assert_equal(["WLRULE: rule copylocalatp2@p1($X) :- local@p2($X);",
+        "WLRULE: rule join_delegated@p0($x) :- deleg_from_p1_2_1@p2($x), local@p2($x);"],
+      wl_peer[2].wl_program.rule_mapping.values.map do |ar|
+        if ar.first.is_a? WLBud::WLRule
+          "WLRULE: " + ar.first.show_wdl_format
+        else
+          "String: " + ar.first
+        end
+      end)
+    assert_equal([{:deleg_from_p1_2_1_x_0=>"jointuple"}],
+      wl_peer[2].tables[:deleg_from_p1_2_1_at_p2].map do |t|
+        h = Hash[t.each_pair.to_a]
+        h
+      end)
+
+    # check the status of p0
+    assert(wait_inbound(wl_peer[0]), "You have lost message")
+    wl_peer[0].tick
+    # there is no new rules only the remember that we made a delegation
+    assert_equal(["WLRULE: rule join_delegated@p0($x) :- local@p0($x), local@p1($x), local@p2($x);",
+        "WLRULE: rule extcopylocalatp1@p2($X) :- local@p1($X);",
+        "WLRULE: rule deleg_from_p0_1_1@p1($x) :- local@p0($x);",
+        "String: rule join_delegated@p0($x):-deleg_from_p0_1_1@p1($x),local@p1($x),local@p2($x);",
+        "String: rule extcopylocalatp1@p2($X) :- local@p1($X);"],
+      wl_peer[0].wl_program.rule_mapping.values.map do |ar|
+        if ar.first.is_a? WLBud::WLRule
+          "WLRULE: " + ar.first.show_wdl_format
+        else
+          "String: " + ar.first
         end
       end)
     # but there are new facts thanks to the result of evaluating the delegation
     assert_equal([{:chan=>[]},
-        {:copy1_at_p0=> # delegation to p1
-          [{:atom1=>"p1_2"},
-            {:atom1=>"p1_3"},
-            {:atom1=>"p1_4"},
-            {:atom1=>"p1_5"},
-            {:atom1=>"jointuple"}]},
-        {:copy2_at_p0=> # delegation to p2
-          [{:atom1=>"p2_3"},
-            {:atom1=>"p2_4"},
-            {:atom1=>"p2_5"},
-            {:atom1=>"p2_6"},
-            {:atom1=>"jointuple"}]},
-        {:deleg_from_p0_1_1_at_p1=>[]}, # intermediary for delegation
-        {:join_delegated_at_p0=>[{:atom1=>"jointuple"}]}, # join across two peers
-        {:local_at_p0=> # base fact at p0
-          [{:atom1=>"1"},
-            {:atom1=>"2"},
-            {:atom1=>"3"},
-            {:atom1=>"4"},
-            {:atom1=>"jointuple"}]},
-        {:sbuffer=> # send buffer
-          [{:dst=>"localhost:11111",
+        {:copy1_at_p0=>[]},
+        {:copy2_at_p0=>[]},
+        {:deleg_from_p0_1_1_at_p1=>[]},
+        {:join_delegated_at_p0=>[{:atom1=>"jointuple"}]},
+        {:local_at_p0=>[{:atom1=>"p0_1"}, {:atom1=>"p0_2"}, {:atom1=>"jointuple"}]},
+        {:sbuffer=>
+            [{:dst=>"localhost:11111",
               :rel_name=>"deleg_from_p0_1_1_at_p1",
-              :fact=>["1"]},
+              :fact=>["p0_1"]},
             {:dst=>"localhost:11111",
               :rel_name=>"deleg_from_p0_1_1_at_p1",
-              :fact=>["2"]},
-            {:dst=>"localhost:11111",
-              :rel_name=>"deleg_from_p0_1_1_at_p1",
-              :fact=>["3"]},
-            {:dst=>"localhost:11111",
-              :rel_name=>"deleg_from_p0_1_1_at_p1",
-              :fact=>["4"]},
+              :fact=>["p0_2"]},
             {:dst=>"localhost:11111",
               :rel_name=>"deleg_from_p0_1_1_at_p1",
               :fact=>["jointuple"]}]}],
-      wl_peer[0].app_tables.map { |item| item.tabname }.sort.map { |at|
-        tab = wl_peer[0].tables[at].map { |t|
+      wl_peer[0].app_tables.map { |item| item.tabname }.sort.map do |at|
+        tab = wl_peer[0].tables[at].map do |t|
           h = Hash[t.each_pair.to_a]
           h.delete(:wdl_rule_id)
           h.delete(:port)
           h
-        }
+        end
         Hash[at, tab]
-      }
-    )
+      end)
 
     # check that the fully non-local rule from p0: rule extcopy@p2($X) :-
-    # local@p1($X);
-    #
-    # has been installed on p1
-    assert_equal(["rule copy2_at_p1($X) :- local_at_p2($X);",
-        "rule copy2@p1($X) :- local@p2($X);",
-        "rule join_delegated_at_p0($x) :- deleg_from_p0_1_1_at_p1($x), local_at_p1($x), local_at_p2($x);",
-        "rule deleg_from_p1_2_1_at_p2($x) :- deleg_from_p0_1_1_at_p1($x), local_at_p1($x);",
+    # local@p1($X); has been installed on p1
+    assert_equal(["rule copylocalatp2@p1($X) :- local@p2($X);",
+        "rule copylocalatp2@p1($X) :- local@p2($X);",
+        "rule join_delegated@p0($x) :- deleg_from_p0_1_1@p1($x), local@p1($x), local@p2($x);",
+        "rule deleg_from_p1_2_1@p2($x) :- deleg_from_p0_1_1@p1($x), local@p1($x);",
         "rule join_delegated@p0($x):-deleg_from_p1_2_1@p2($x),local@p2($x);",
-        "rule copy1_at_p0($X) :- local_at_p1($X);",
-        "rule extcopy_at_p2($X) :- local_at_p1($X);"],
+        "rule extcopylocalatp1@p2($X) :- local@p1($X);"],
       wl_peer[1].wl_program.rule_mapping.values.map do |ar|
         if ar.first.is_a? WLBud::WLRule
           ar.first.show_wdl_format
@@ -560,32 +573,23 @@ EOF
           ar.first
         end
       end)
+    
     # check facts on p2
     assert_equal([{:chan=>[]},
-        {:deleg_from_p1_2_1_at_p2=>[{:deleg_from_p1_2_1_x_0=>"jointuple"}]}, # join across tuples
-        {:extcopy_at_p2=> # result of fully non-local rule from p0 to p1 generating fact for p2
-          [{:atom1=>"p1_2"},
-            {:atom1=>"p1_3"},
-            {:atom1=>"p1_4"},
-            {:atom1=>"p1_5"},
-            {:atom1=>"jointuple"}]},
-        {:local_at_p2=> # base facts on p2
-          [{:atom1=>"p2_3"},
-            {:atom1=>"p2_4"},
-            {:atom1=>"p2_5"},
-            {:atom1=>"p2_6"},
-            {:atom1=>"jointuple"}]},
-        {:sbuffer=> # send buffer check
-          [{:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_3"]},
-            {:dst=>"localhost:11110", :rel_name=>"copy2_at_p0", :fact=>["p2_3"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_4"]},
-            {:dst=>"localhost:11110", :rel_name=>"copy2_at_p0", :fact=>["p2_4"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_5"]},
-            {:dst=>"localhost:11110", :rel_name=>"copy2_at_p0", :fact=>["p2_5"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["p2_6"]},
-            {:dst=>"localhost:11110", :rel_name=>"copy2_at_p0", :fact=>["p2_6"]},
-            {:dst=>"localhost:11111", :rel_name=>"copy2_at_p1", :fact=>["jointuple"]},
-            {:dst=>"localhost:11110", :rel_name=>"copy2_at_p0", :fact=>["jointuple"]},
+        {:deleg_from_p1_2_1_at_p2=>[{:deleg_from_p1_2_1_x_0=>"jointuple"}]},
+        {:extcopylocalatp1_at_p2=>
+            [{:atom1=>"p1_2"}, {:atom1=>"p1_3"}, {:atom1=>"jointuple"}]},
+        {:local_at_p2=>[{:atom1=>"p2_3"}, {:atom1=>"p2_4"}, {:atom1=>"jointuple"}]},
+        {:sbuffer=>
+            [{:dst=>"localhost:11111",
+              :rel_name=>"copylocalatp2_at_p1",
+              :fact=>["p2_3"]},
+            {:dst=>"localhost:11111",
+              :rel_name=>"copylocalatp2_at_p1",
+              :fact=>["p2_4"]},
+            {:dst=>"localhost:11111",
+              :rel_name=>"copylocalatp2_at_p1",
+              :fact=>["jointuple"]},
             {:dst=>"localhost:11110",
               :rel_name=>"join_delegated_at_p0",
               :fact=>["jointuple"]}]}],
@@ -597,8 +601,7 @@ EOF
           h
         }
         Hash[at, tab]
-      }
-    )
+      })
   ensure
     wl_peer.each { |item| assert item.clear_rule_dir }
     if EventMachine::reactor_running?

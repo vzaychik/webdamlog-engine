@@ -4,24 +4,11 @@ import os
 import sys
 from subprocess import call
 import models, scenario
+
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 import itertools
 
-# define bunch of scenario instances: [s]
-
-#   LOCAL
-#   for each s, generate scenario
-#   push
-
-# execute each scenario, x times (use database for coordination?)
-#    push benchmark files
-
-# LOCAL
-# for each execution, parse all benchmark files
-
-# 
-#
 def localSVNCommit( commitPath ):
     cwd = os.getcwd()
     os.chdir(commitPath)
@@ -30,7 +17,6 @@ def localSVNCommit( commitPath ):
     callString = ['svn', 'commit', '-m', """ "" """]
     call(callString)
     os.chdir(cwd)
-
 
 def localCommit( commitPath ):
     cwd = os.getcwd()
@@ -51,8 +37,8 @@ def simple():
         numAggregators = 3, \
         aggPerFollower = 1, \
         policy = 'PUB', \
-        numFacts = 100, \
-        valRange = 10, \
+        numFacts = 1000, \
+        valRange = 1000, \
         ruleScenario = 'UNION_OF_JOINS', \
 #        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
 #        hosts = ['dbcluster.cs.umass.edu'] * 4, \
@@ -94,7 +80,6 @@ def case1():
     
 if __name__ == "__main__":
 
-#    models.setupDatabaseTest()
     rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
 
     # create scenario instances
@@ -106,31 +91,3 @@ if __name__ == "__main__":
         # need to get scenario IDs back ??
 
     localSVNCommit(rootPath)
-
-    # execute scenarios, multiple times?
-        # need to have (execID, scenID) pairs 
-    
-    # loadBenchmark files
-    # filename format is:  "benchark_time_log_<peername>_<date and time of start>"
-    # for each (execID, scenID) pair:
-    # construct path  --> scenDir = os.path.join(scenarioPath,str(scenID),'exec_'+str(stamp))
-    # iterate through all benchmark files, extract peername, call loadBenchmark
-    
-    exit()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

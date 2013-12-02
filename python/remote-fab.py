@@ -6,19 +6,6 @@ from fabric.tasks import execute
 import os, sys
 import fab
 
-rootPathDict = { \
-    'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
-    'avid.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
-    'miklau1':'/state/partition2/miklau', \
-    'miklau2':'/state/partition2/miklau', \
-    'miklau3':'/state/partition2/miklau', \
-    'miklau4':'/state/partition2/miklau', \
-    'miklau5':'/state/partition2/miklau', }
-
-sys.path.append(os.path.join(rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-engine/python'))
-
-env.parallel = False
-
 @hosts(['dbcluster.cs.umass.edu'])
 def run_fab():
     with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
@@ -32,9 +19,9 @@ def run_execution():
 
 if __name__ == '__main__':
 
-    env.parallel = False
-    env.hosts=['dbcluster.cs.umass.edu']
-    execute(fab.pull_both)
+#    env.parallel = False
+#    env.hosts=['dbcluster.cs.umass.edu']
+#    execute(fab.pull_both)
 
 #    env.hosts=['localhost']
-    execute(run_execution)
+    execute(fab.remote_run, filename='execution.py')

@@ -26,6 +26,13 @@ def test():
 #    run('echo %s' % env.host )
 
 @hosts(['dbcluster.cs.umass.edu'])
+def remote_run(filename):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+        run('git pull')
+        run('python %s' % filename)
+
+
+@hosts(['dbcluster.cs.umass.edu'])
 def refreshDB():
     with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine')):
         run('git pull')

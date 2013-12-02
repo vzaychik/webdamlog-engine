@@ -109,24 +109,8 @@ def refreshFromFileSystem( startPath ):
     call(callString)
     processScenTypes( startPath )
     
-    
-
 if __name__ == "__main__":
 
     # for dbcluster running
     models.setupDatabase(clearDatabase=False)
     refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'))
-
-    # execID = 1001
-    # scenID = 9999
-    # testDir = '/Users/miklau/Documents/Projects/Webdam/webdamlog-exp/MAF/1385513847097/exec_1385518808938/bench_files/benchark_time_log_aggregator1_2013-11-26 21:20:03 -0500'
-    # l = parseBenchmarkFile(testDir,execID)
-    # print l
-    # exit()  ######################################################################
-
-
-# LOCAL
-# pull from git
-# iterate through directories, check if parsed.
-# if not, parse and add to database.
-# parse result and enter in database

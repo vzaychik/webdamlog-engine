@@ -34,11 +34,11 @@ def remote_run(filename):
 
 @hosts(['dbcluster.cs.umass.edu'])
 def refreshDB():
-    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine')):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine')):
         run('git pull')
-    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-exp')):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-exp')):
         run('svn up')
-    with cd(os.path.join(rootPathDict['avid.cs.umass.edu'], 'webdamlog-engine/python')):
+    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
         run('python loadBenchmark.py')
 
 

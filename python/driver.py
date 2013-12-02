@@ -57,13 +57,13 @@ def case1():
     scenarioList = []
     
     policyList = ['PUB','PRIV','KNOWN']
-    numFactsList = [500]
+    numFactsList = [1000]
     ruleScenarioList = ['UNION_OF_JOINS','JOIN_OF_UNIONS']
     
     for tup in itertools.product(policyList, numFactsList, ruleScenarioList):
         print tup
         scenario = models.Scenario( \
-            # scenID = ?? filled in later
+            # scenID = _ _ _ (filled in later)
             scenType = 'MAF', \
             numFollowers = 6, \
             numAggregators = 3, \
@@ -71,8 +71,8 @@ def case1():
             policy = tup[0], \
             numFacts = tup[1], \
             ruleScenario = tup[2], \
-            valRange = 500, \
-            hosts = ['dbcluster.cs.umass.edu']*4, \
+            valRange = 1000, \
+            hosts = ['miklau1','miklau2','miklau3','miklau4'], \
             numPeersPerHost = 3 )
         scenarioList.append(scenario)
     
@@ -85,9 +85,9 @@ if __name__ == "__main__":
     # create scenario instances
     scenarioList = case1()
     print len(scenarioList)
+
     # generate scenarios
     for s in scenarioList:
         scenario.generateScenarioFiles( s, rootPath )    
-        # need to get scenario IDs back ??
 
     localSVNCommit(rootPath)

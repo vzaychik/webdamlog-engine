@@ -78,8 +78,8 @@ if __name__ == "__main__":
     for scenID in [1385945417563]:
         for r in range(runs):
             executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.01 )
-#            executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
-#            executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
+            executeScenario( scenID, 'MAF', True, False, 20, 0.01 )
+            executeScenario( scenID, 'MAF', True, True, 20, 0.01 )
     
     # runs = 1
     # for scenID in [1385605955733]:

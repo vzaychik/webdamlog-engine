@@ -42,6 +42,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     os.makedirs(localExecPath)
     with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
         pickle.dump(execution, f)
+    os.makedirs(os.path.join(localExecPath,'bench_files'))  # also create this directory to avoid svn conflict at peers
     driver.localSVNCommit(localScenPath)
 
     # inspect scenario for 'out_' directories, infer hosts

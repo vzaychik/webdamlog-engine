@@ -65,7 +65,7 @@ def processBenchFiles( execID, startPath):
         except DoesNotExist:
             print 'Parsing and adding from benchmark file %s' % f
             tickList = parseBenchmarkFile(f, execID)
-            for t in scenarioList:
+            for t in tickList:
                 t.save()
 
 def processExecs( scenID, startPath):

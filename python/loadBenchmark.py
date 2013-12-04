@@ -58,10 +58,15 @@ def parseBenchmarkFile(filename, execID):
 def processBenchFiles( execID, startPath):
     fList = glob.glob(os.path.join(startPath, '*'))
     for f in fList:
-        print 'Parsing benchmark file %s' % f
-        scenarioList = parseBenchmarkFile(f, execID)
-        for s in scenarioList:
-            s.save()
+        try:
+            peername = os.path.split(f)[1].split('_')[3]
+            models.Execution.get(models.Tick.execID == execID & models.Tick.peerName == peername) # check for at least one tick with (execID, peername)
+            print 'Found record for benchmark file %s' % f
+        except DoesNotExist:
+            print 'Parsing and adding from benchmark file %s' % f
+            tickList = parseBenchmarkFile(f, execID)
+            for t in scenarioList:
+                t.save()
 
 def processExecs( scenID, startPath):
     dirList = glob.glob(os.path.join(startPath, 'exec_*'))
@@ -76,8 +81,8 @@ def processExecs( scenID, startPath):
             with open(pFile, 'r') as f:
                 newExecution = pickle.load(f)
             newExecution.save(force_insert=True)
-            processBenchFiles( execID, os.path.join(dir, 'bench_files')) # only if execID added
-        pass # execution exists, not processing
+        processBenchFiles( execID, os.path.join(dir, 'bench_files')) # whether or not it exists, process bench files inside
+        # pass # execution exists, not processing
     
 
 def processScenarios( scenType, startPath):

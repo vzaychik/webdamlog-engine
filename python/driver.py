@@ -33,9 +33,9 @@ def simple():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = 'MAF', \
-        numFollowers = 6, \
-        numAggregators = 3, \
-        aggPerFollower = 1, \
+        numFollowers = 6*2, \
+        numAggregators = 3*2, \
+        aggPerFollower = 1*2, \
         policy = 'PUB', \
         numFacts = 1000, \
         valRange = 1000, \
@@ -44,7 +44,7 @@ def simple():
 #        hosts = ['dbcluster.cs.umass.edu'] * 4, \
         hosts = ['miklau1','miklau2','miklau3','miklau4'], \
         numHosts = 4, \
-        numPeersPerHost = 3 )
+        numPeersPerHost = 3*2 )
     
     return [scenario]
 

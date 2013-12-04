@@ -7,12 +7,6 @@ import models, driver, fab, loadBenchmark
 from fabric.api import *
 from fabric.tasks import execute
 
-#database = SqliteDatabase(None)  # Create a database instance.
-
-#pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
-#scenarioPath = os.path.join(pathToRepository, 'webdamlog-exp/MAF')
-
-
 # Now executed at dbcluster.cs
 def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 

@@ -73,6 +73,7 @@ def case1():
             ruleScenario = tup[2], \
             valRange = 1000, \
             hosts = ['miklau1','miklau2','miklau3','miklau4'], \
+            numHosts = 4, \
             numPeersPerHost = 3 )
         scenarioList.append(scenario)
     

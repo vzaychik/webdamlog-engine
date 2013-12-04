@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
 
-    runs = 1
+    runs = 3
     for scenID in [1385949809339,1385949809670,1385949810005,1385949810399,1385949810752,1385949811095]:
         for r in range(runs):
             executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.25 )

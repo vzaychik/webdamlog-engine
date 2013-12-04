@@ -33,18 +33,18 @@ def simple():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = 'MAF', \
-        numFollowers = 6*2, \
-        numAggregators = 3*2, \
-        aggPerFollower = 1*2, \
+        numFollowers = 6*4, \
+        numAggregators = 3*4, \
+        aggPerFollower = 1*4, \
         policy = 'PUB', \
         numFacts = 1000, \
         valRange = 1000, \
         ruleScenario = 'UNION_OF_JOINS', \
-#        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
-#        hosts = ['dbcluster.cs.umass.edu'] * 4, \
-        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
+        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
         numHosts = 4, \
-        numPeersPerHost = 3*2 )
+        numPeersPerHost = 3*5 )
+    
+    # 1 + ceil(numFollower/peersPerHost) + ceil(numAggs/peersPerHost)
     
     return [scenario]
 

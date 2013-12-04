@@ -60,7 +60,7 @@ def processBenchFiles( execID, startPath):
     for f in fList:
         try:
             peername = os.path.split(f)[1].split('_')[3]
-            models.Execution.get( (models.Tick.execID == execID) & (models.Tick.peerName == peername) ) # check for at least one tick with (execID, peername)
+            models.Tick.get( (models.Tick.execID == execID) & (models.Tick.peerName == peername) ) # check for at least one tick with (execID, peername)
             print 'Found record for benchmark file %s' % f
         except DoesNotExist:
             print 'Parsing and adding from benchmark file %s' % f

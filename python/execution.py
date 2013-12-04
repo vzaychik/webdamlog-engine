@@ -69,7 +69,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
         execution.success = True
     except:
-        print "Execution failed:", sys.exc_info()[0]
+        print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
         execution.success = False
     
     execution.runTime = time.time() - start
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     runs = 1
 #    for scenID in [1385949809339,1385949809670,1385949810005,1385949810399,1385949810752,1385949811095]:
-    for scenID in [1386171769415]:
+    for scenID in [1386183547585]:
         for r in range(runs):
             executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.25 )
             executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )

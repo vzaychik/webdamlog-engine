@@ -39,7 +39,7 @@ def simple():
         numAggregators = 3*5, \
         aggPerFollower = 1*5, \
         policy = 'PUB', \
-        numFacts = 1000, \
+        numFacts = 10000, \
         valRange = 1000, \
         ruleScenario = 'UNION_OF_JOINS', \
         hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \

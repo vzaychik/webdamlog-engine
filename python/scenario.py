@@ -1,6 +1,6 @@
 from peewee import *
 from datetime import date
-import os, time
+import os, time, math
 import sys, pickle
 from subprocess import call
 #import tempfile
@@ -9,8 +9,11 @@ import models, driver
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
-def checkScenario(scenario):
+def checkScenario(s):
     # 1 + ceil(numFollower/peersPerHost) + ceil(numAggs/peersPerHost)
+    masterHosts = 1
+    followerHosts = math.ceil(s.numFollowers / s.numPeersPerHost)
+    assert( 1 + math.ceil())
     pass
 
 def generateScenarioFiles(scenario, rootPath):

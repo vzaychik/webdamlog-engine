@@ -29,22 +29,22 @@ def localCommit( commitPath ):
     call(callString)
     os.chdir(cwd)
 
+
+
 def simple():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = 'MAF', \
-        numFollowers = 6*4, \
-        numAggregators = 3*4, \
-        aggPerFollower = 1*4, \
+        numFollowers = 6*5, \
+        numAggregators = 3*5, \
+        aggPerFollower = 1*5, \
         policy = 'PUB', \
         numFacts = 1000, \
         valRange = 1000, \
         ruleScenario = 'UNION_OF_JOINS', \
         hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
-        numHosts = 4, \
-        numPeersPerHost = 3*5 )
-    
-    # 1 + ceil(numFollower/peersPerHost) + ceil(numAggs/peersPerHost)
+        numHosts = 5, \
+        numPeersPerHost = 3*6 )
     
     return [scenario]
 

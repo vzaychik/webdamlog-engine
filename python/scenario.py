@@ -9,6 +9,10 @@ import models, driver
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
+def checkScenario(scenario):
+    # 1 + ceil(numFollower/peersPerHost) + ceil(numAggs/peersPerHost)
+    pass
+
 def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)

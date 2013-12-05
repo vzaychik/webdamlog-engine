@@ -22,7 +22,11 @@ if __name__ == '__main__':
 #    env.parallel = False
     env.hosts=['dbcluster.cs.umass.edu']
     execute(fab.pull_both)
-
+    
     execute(fab.remote_run, filename='execution.py')
 
-#    execute(fab.remote_run, filename='models.py')
+    # env.hosts=['dbcluster.cs.umass.edu']
+    # execute(fab.pull_both)
+    # 
+    # execute(fab.remote_run, filename='models.py')
+    # execute(fab.refreshDB)

@@ -29,22 +29,22 @@ def localCommit( commitPath ):
     call(callString)
     os.chdir(cwd)
 
+
+
 def simple():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = 'MAF', \
-        numFollowers = 6, \
-        numAggregators = 3, \
-        aggPerFollower = 1, \
+        numFollowers = 6*5, \
+        numAggregators = 3*5, \
+        aggPerFollower = 1*5, \
         policy = 'PUB', \
-        numFacts = 1000, \
+        numFacts = 10000, \
         valRange = 1000, \
         ruleScenario = 'UNION_OF_JOINS', \
-#        hosts = ['127.0.0.1','127.0.0.2','127.0.0.3','127.0.0.4'], \
-#        hosts = ['dbcluster.cs.umass.edu'] * 4, \
-        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
-        numHosts = 4, \
-        numPeersPerHost = 3 )
+        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
+        numHosts = 5, \
+        numPeersPerHost = 3*6 )
     
     return [scenario]
 
@@ -57,7 +57,7 @@ def case1():
     scenarioList = []
     
     policyList = ['PUB','PRIV','KNOWN']
-    numFactsList = [1000]
+    numFactsList = [10000]
     ruleScenarioList = ['UNION_OF_JOINS','JOIN_OF_UNIONS']
     
     for tup in itertools.product(policyList, numFactsList, ruleScenarioList):
@@ -65,15 +65,16 @@ def case1():
         scenario = models.Scenario( \
             # scenID = _ _ _ (filled in later)
             scenType = 'MAF', \
-            numFollowers = 6, \
-            numAggregators = 3, \
-            aggPerFollower = 1, \
+            numFollowers = 6*5, \
+            numAggregators = 3*5, \
+            aggPerFollower = 1*5, \
             policy = tup[0], \
             numFacts = tup[1], \
             ruleScenario = tup[2], \
             valRange = 1000, \
-            hosts = ['miklau1','miklau2','miklau3','miklau4'], \
-            numPeersPerHost = 3 )
+            hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
+            numHosts = 5, \
+            numPeersPerHost = 3*6 )
         scenarioList.append(scenario)
     
     return scenarioList

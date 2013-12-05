@@ -33,6 +33,8 @@ class Execution(BaseModel):
     sleep = FloatField()
     access = BooleanField()
     optim1 = BooleanField()
+    runTime = FloatField()
+    success = BooleanField()
 
 class Tick(BaseModel):
     execID = ForeignKeyField(Execution)

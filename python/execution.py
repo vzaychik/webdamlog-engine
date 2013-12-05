@@ -1,16 +1,11 @@
 from peewee import *
 from datetime import date
+import time
 import os, sys, time, glob, pickle
 from subprocess import call
-import models, driver, fab
+import models, driver, fab, loadBenchmark
 from fabric.api import *
 from fabric.tasks import execute
-
-#database = SqliteDatabase(None)  # Create a database instance.
-
-#pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
-#scenarioPath = os.path.join(pathToRepository, 'webdamlog-exp/MAF')
-
 
 # Now executed at dbcluster.cs
 def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
@@ -38,7 +33,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     execPath = os.path.join(scenPath,'exec_'+str(stamp))
     localExecPath = os.path.join( os.path.join(pathToRepository,execPath))
 
-    # create directory for execution within scenario dir, pickle execution object, svn add and commit
+    # create directory for execution within scenario dir, svn add and commit
     os.makedirs(localExecPath)
     with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
         pickle.dump(execution, f)
@@ -49,14 +44,9 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     outs = glob.glob( os.path.join(localScenPath,'out_*'))
     outKey = os.path.split(outs[0])[1].split('_')[2]
     hosts = [os.path.split(out)[1].split('_')[1] for out in outs]
-    print outKey
-    print hosts
 
     env.hosts=hosts
     env.parallel = True     # execute on each host in parallel
-
-    # each host should pull latest code from git (ruby script, soon fab)
-    execute(fab.pull_both)
 
     # prepare parameters for ruby script
     paramString = str(ticks) + ' '
@@ -65,17 +55,37 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         paramString += 'access'+' '
     if (optim1Bool and accessBool):
         paramString += 'optim1'+' '
-    
-    execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
 
+    start = time.time()
+    try:
+        # each host should pull latest code and latest exp
+        execute(fab.pull_both)
+        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
+        execution.success = True
+    except:
+        print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
+        execution.success = False
+    
+    execution.runTime = time.time() - start
+
+    # pickle object
+    with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
+        pickle.dump(execution, f)
+
+    # refresh database for this execution
+    loadBenchmark.processExecs( scenID, localScenPath)
+
+    driver.localSVNCommit(localScenPath)
+    
     return execution.execID
 
 if __name__ == "__main__":
 
     rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
 
-    runs = 1
-    for scenID in [1385949809339,1385949809670,1385949810005,1385949810399,1385949810752,1385949811095]:
+    runs = 6
+#    for scenID in [1385949809339,1385949809670,1385949810005,1385949810399,1385949810752,1385949811095]:
+    for scenID in [1386192449148,1386192449148,1386192449148,1386192449148,1386192449148,1386192449148]:
         for r in range(runs):
             executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.25 )
             executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )

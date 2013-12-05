@@ -586,22 +586,22 @@ In the string: #{line}
           #select just the Read tuples
           #str_res << "atom0.priv == \"Read\" && "
           wlrule.body.each do |atom|
-            str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"Read\" && "
-          end
-          wlrule.body.each do |atom|
             if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                   (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
                 if !@options[:optim1]
-                  str_res << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+                  str_res << "#{atom.relname}acl.rel == \"#{atom.fullrelname}\" && #{atom.relname}acl.priv == \"R\" && "
                 end
               elsif (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                   (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
                 if !@options[:optim1]
-                  str_res << "#{atom.relname}acl.priv == \"Grant\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+                  str_res << "#{atom.relname}acl.rel == \"#{atom.fullrelname}\" && #{atom.relname}acl.priv == \"G\" && "
                 end
               end
             end
+          end
+          wlrule.body.each do |atom|
+            str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
           end
 
           ## check for read or grant for target peer on preserved relations only
@@ -626,7 +626,7 @@ In the string: #{line}
           
           unless first_intersection
             if @options[:optim1]
-              str_res << "(capchead.plist)).include?(\"#{wlrule.head.peername}\") && capchead.priv == \"Read\" && " 
+              str_res << "(capchead.plist)).include?(\"#{wlrule.head.peername}\") && capchead.priv == \"R\" && " 
             elsif @options[:optim2]
               str_res.slice!(-10..-1)
               #FIXME - need to have a special case for Omega
@@ -671,7 +671,7 @@ In the string: #{line}
           puts "rule head is not local " if !bound_n_local?(wlrule.head) if @options[:debug]
           puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
           if wlrule.author != @peername && bound_n_local?(wlrule.head) && !@options[:optim1]
-            str_res << " && aclw.priv == \"Write\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
+            str_res << " && aclw.priv == \"W\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
           elsif @options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername
             #we need to check write on the final relation, not on intermediary
             if intermediary?(wlrule.head)
@@ -766,13 +766,13 @@ In the string: #{line}
             end
           end
           capc_str.slice!(-2..-1)
-          capc_str << "| [\"Read\", #{head_str}] if "
+          capc_str << "| [\"R\", #{head_str}] if "
 
           wlrule.body.each do |atom|
             if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
                   (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
-                capc_str << "#{atom.relname}acl.priv == \"Read\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+                capc_str << "#{atom.relname}acl.priv == \"R\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
               end
             end
           end
@@ -783,7 +783,7 @@ In the string: #{line}
 
           #need one for grant which is the same except Grant instead of Read
           capc2 = "#{capc_str}"
-          capc_str << "#{capc2.gsub!('Read','Grant')}"
+          capc_str << "#{capc2.gsub!("\"R\"","\"G\"")}"
         end
 
         #need to make another rule for capc for "body", i.e. where grant should be checked for rule author
@@ -832,7 +832,7 @@ In the string: #{line}
             if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                   (intensional_head?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
-                capc_str << "#{atom.relname}acl.priv == \"Grant\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
+                capc_str << "#{atom.relname}acl.priv == \"G\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
               end
             end
           end
@@ -865,7 +865,6 @@ In the string: #{line}
 
       if @options[:optim2] && !wlrule.body.empty?
         #go through the intersections that are required and add them to the formulas relation
-        #due to self-join limit, do this in pairs
         intersects = []
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom)
@@ -879,10 +878,13 @@ In the string: #{line}
           #FIXME - make work for more than 2 relations. however, this is limited by bud's self-join limit
           rel1 = intersects.pop
           rel2 = intersects.pop
-          #FIXME - is this the right way to handle Omega?
-          formula_str << "formulas_at_#{peername} <= (formulas_at_#{peername}*formulas_at_#{peername}*#{atom.fullrelname}*aclf_at_#{peername}).combos {|x,y,z,f| [x.id+"*"+y.id,x.plist.intersect(y.plist)] if x.id == z.plist && y.id == f.plist && f.rel == #{atom.fullrelname} && z.plist != Omega.new && f.plist != Omega.new;"
+          #FIXME - how do we handle Omega?
+          if rel2.nil?
+            formula_str << "formulas_at_#{peername} <= (formulas_at_#{peername}*formulas_at_#{peername}*formulas2_at_#{peername}*formulas2_at_#{peername}*#{rel1}*aclf_at_#{peername}*#{rel2}*aclf_at_#{peername}).combos {|f1,f2,f3,f4,r1,acl1,r2,acl2| [f1.id+\"*\"+f2.id+\"*\"+f3.id+\"*\"+f4.id,f1.plist.intersect(f2.plist).intersect(f3.plist).intersect(f4.plist)] if f1.id == r1.plist && f2.id == acl1.plist && f3.id == r2.plist && f4.id == acl2.plist && acl1.rel == \"#{rel1}\" && acl2.rel == \"#{rel2}\"};"
+          else
+            formula_str << "formulas_at_#{peername} <= (formulas_at_#{peername}*formulas_at_#{peername}*#{rel1}*aclf_at_#{peername}).combos {|f1,f2,r1,acl1| [f1.id+\"*\"+f2.id,f1.plist.intersect(f2.plist)] if f1.id == r1.plist && f2.id == acl1.plist && acl1.rel == \"#{rel1}\"};"
+          end
         end
-
       end
 
       return formula_str
@@ -1048,7 +1050,7 @@ In the string: #{line}
       end
       return namedSentence
     end
-
+    
     # Disambiguate fields, it replace alias such as local or me by the local
     # peername id. Hence subsequent call to peername will use the unique id of
     # this peer.
@@ -1131,8 +1133,8 @@ In the string: #{line}
       if @options[:accessc]
         #add priv and plist computation
         #we select just the read tuples
-        str << "\"Read\", "
-        str << "Omega.new"
+        str << "\"R\", "
+        str << "Omega.instance"
 
         capc = false
         if extensional_head?(wlrule)
@@ -1316,6 +1318,11 @@ In the string: #{line}
           str << ','
         end
       end
+      #FIXME - make the below work for more than 1 acl in the rule without it clashing, if it's possible
+      #if @options[:accessc] && !@options[:optim1]
+      #  str << "acl_at_#{@peername}.priv => #{make_rel_name(wlrule.body.first.fullrelname)}.priv,"
+      #  combos=true
+      #end
       str.slice!(-1) if combos
       str << ')'
       

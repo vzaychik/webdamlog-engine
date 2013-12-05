@@ -321,9 +321,10 @@ module WLBud
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
-              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"Write\" && rel.plist.include?(\"#{p[0]}\")};"
+              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
             end
           }
+          puts "Installing bud rule #{str_res}" if @options[:debug]
           optim1name = "webdamlog_#{@peername}_writeable"
           filestr = build_string_rule_to_include(optim1name, str_res)
           fullfilename = File.join(@rule_dir, optim1name)
@@ -727,7 +728,7 @@ module WLBud
       #one for grant priv and one for read
       if @options[:accessc]
         rule2 = "#{rule}"
-        rule2.gsub! 'Read', 'Grant'
+        rule2.gsub! "\"R\"", "\"G\""
         rule << rule2
       end
 
@@ -864,6 +865,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       #VZM Need to update kind relation
       if @options[:accessc]
         tables["t_kind".to_sym] <+ [[name.to_s, collection.get_type.to_s, collection.arity]]	  
+        tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", name.to_s],["#{peername}", "W", name.to_s],["#{peername}", "R", name.to_s]]
         #need to add extended collection
         extended_collection = @wl_program.parse(collection.make_extended)
         puts "Adding a collection: \n #{extended_collection.show}" if @options[:debug]
@@ -877,13 +879,14 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         collection.fields.each {|field|
           str_res << "t." << field << ", "
         }
-        str_res << "\"Read\", Omega.new]};"
+        str_res << "\"R\", Omega.instance]};"
         str_res << "#{extended_collection.fullrelname} <= #{name} {|t| ["
         collection.fields.each {|field|
           str_res << "t." << field << ", "
         }
-        str_res << "\"Grant\", Omega.new]};"
+        str_res << "\"G\", Omega.instance]};"
 
+        puts "Installing bud rule #{str_res}" if @options[:debug]
         #write to a file
         extrulename = "webdamlog_#{@peername}_#{name}_extrule"
         filestr = build_string_rule_to_include(extrulename, str_res)
@@ -922,19 +925,22 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         values << :"kind"
         values << :"arity"
         kindschema = {keys => values}
-        self.table("t_kind".to_sym, kindschema)
+        self.table(:t_kind, kindschema)
+
         #install default rules into acl
         #have to make a string to pass into bloom to evaluate
         str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| [t.peer, t.priv, PList.new(t.rel)]};"
         #any time kind is updated because a new relation is added, need to install into acl
 
-        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Grant', k.rel]};"
-        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Write', k.rel]};"
-        str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'Read', k.rel]};"
+        #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'G', k.rel]};"
+        #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'W', k.rel]};"
+        #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'R', k.rel]};"
         #peer has full privs to his own acl
-        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Grant\", \"acl_at_#{peername}\"]];"
-        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Write\", \"acl_at_#{peername}\"]];"
-        str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"Read\", \"acl_at_#{peername}\"]];"                
+        #str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"G\", \"acl_at_#{peername}\"]];"
+        #str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"W\", \"acl_at_#{peername}\"]];"
+        #str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"R\", \"acl_at_#{peername}\"]];"
+        tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", "acl_at_#{peername}"],["#{peername}", "W", "acl_at_#{peername}"],["#{peername}", "R", "acl_at_#{peername}"]]
+        puts "Installing bud rule #{str_res}" if @options[:debug]
         #write to a file
         aclrulename = "webdamlog_#{@peername}_aclkind"
         filestr = build_string_rule_to_include(aclrulename, str_res)
@@ -970,6 +976,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         self.scratch("formula_at_#{peername}".to_sym, formschema)
         self.table("symbols_at_#{peername}".to_sym, formulaschema)
         self.table("formulas_at_#{peername}".to_sym, formulaschema)
+        self.table("formulas2_at_#{peername}".to_sym, formulaschema)
         keys=[]
         keys << :"rel"
         keys << :"priv"
@@ -983,12 +990,11 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         str_res = "formula_at_#{peername} <= acl_at_#{peername}.reduce({}) {|memo,t| memo[t.plist.to_a] = 1; memo};"
         str_res << "symbols_at_#{peername} <= formula_at_#{peername}.each_with_index {|t,i| [\"#{peername}_\"+i.to_s,t[0]]};"
         str_res << "formulas_at_#{peername} <= symbols_at_#{peername};"
-        #str_res << "formulas_at_#{peername} <= (formulae2_at_#{peername}*formulae2_at_#{peername}).combos {|x,y| [x.id+\"*\"+y.id,x.plist&y.plist]};"
-        #str_res << "formulas_at_#{peername} <= (formulae2_at_#{peername}*formulae2_at_#{peername}).combos {|x,y| [x.id+\"+\"+y.idx.plist|y.plist]};"
-        #str_res << "formulas_at_#{peername} <= formulae2_at_#{peername};"
+        str_res << "formulas2_at_#{peername} <= formulas_at_#{peername};"
 
-        str_res << "aclf_at_#{peername} <= (symbols_at_#{peername} * acl_at_#{peername}).combos {|a,b| [b.rel, b.priv, a.id] if a.plist == b.plist.to_a && b.priv !=\"Write\"};"
+        str_res << "aclf_at_#{peername} <= (symbols_at_#{peername} * acl_at_#{peername}).combos {|a,b| [b.rel, b.priv, a.id] if a.plist == b.plist.to_a && b.priv !=\"W\"};"
 
+        puts "Installing bud rule #{str_res}" if @options[:debug]
         #write out
         formularulename = "webdamlog_#{peername}_formulas"
         filestr = build_string_rule_to_include(formularulename, str_res)
@@ -1031,7 +1037,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         load fullfilename
       elsif policy.access.all?
         puts "adding to acl Omega for #{rel} for priv #{priv}"
-        str_res = "acl_at_#{self.peername} <= [[\"#{rel}\",\"#{priv}\",Omega.new]]"
+        str_res = "acl_at_#{self.peername} <= [[\"#{rel}\",\"#{priv}\",Omega.instance]]"
         #write to a file
         policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
         filestr = build_string_rule_to_include(policyname, str_res)
@@ -1164,7 +1170,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
                     tuple.collect! {|x|
                       if x.is_a? Array
                         if (x.include?("All peers"))
-                          Omega.new
+                          Omega.instance
                         else
                           PList.new(x.to_set)
                         end

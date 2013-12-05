@@ -1,6 +1,8 @@
 require 'bud/lattice-lib'
+require 'singleton'
 
 class PList < Bud::SetLattice
+
   alias_method :base_intersect, :intersect
   alias_method :base_merge, :merge
 
@@ -30,6 +32,7 @@ class PList < Bud::SetLattice
 end
 
 class Omega < PList
+  include Singleton
 
   def intersect(other)
     return other

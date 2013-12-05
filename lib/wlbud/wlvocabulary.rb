@@ -977,7 +977,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       @type = :Read
     end
     def to_s
-      return "Read"
+      return "R"
     end
   end
 
@@ -987,7 +987,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       @type = :Write
     end
     def to_s
-      return "Write"
+      return "W"
     end
   end
 
@@ -997,7 +997,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       @type = :Grant
     end
     def to_s
-      return "Grant"
+      return "G"
     end
   end
 

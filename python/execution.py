@@ -75,8 +75,8 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
         pickle.dump(execution, f)
 
-    execute(fab.pull_both)
     # refresh database for this execution
+    execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
     loadBenchmark.processExecs( scenID, localScenPath)
 
     driver.localSVNCommit(localScenPath)
@@ -95,7 +95,3 @@ if __name__ == "__main__":
             executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
             executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
     
-    # runs = 1
-    # for scenID in [1385605955733]:
-    #     for r in range(runs):
-    #         executeScenario( scenID, 'MAF', True, True, 20, 0.01 )

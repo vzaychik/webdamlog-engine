@@ -113,7 +113,7 @@ def refreshFromFileSystem( startPath, siLowerBound ):
     os.chdir(startPath)
     callString = ['svn','up']
     call(callString)
-    processScenTypes( startPath )
+    processScenTypes( startPath, siLowerBound )
     
 if __name__ == "__main__":
 

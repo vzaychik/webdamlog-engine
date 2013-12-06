@@ -29,5 +29,5 @@ if __name__ == '__main__':
     env.hosts=['dbcluster.cs.umass.edu']
     execute(fab.pull_both)
     
-    execute(fab.remote_run, filename='models.py')
+#    execute(fab.remote_run, filename='models.py')
     execute(fab.refreshDB)

@@ -85,30 +85,31 @@ def processExecs( scenID, startPath):
         # pass # execution exists, not processing
     
 
-def processScenarios( scenType, startPath):
+def processScenarios( scenType, startPath, siLowerBound):
     dirList = glob.glob(os.path.join(startPath, '*'))
     for dir in dirList:
         scenID = os.path.split(dir)[1]
-        try:
-            models.Scenario.get(models.Scenario.scenID == scenID)
-            print 'Scenario %s found.' % scenID
-        except DoesNotExist:
-            print 'Scenario %s not found, adding...' % scenID
-            pFile = glob.glob(os.path.join(dir, '*.pckl'))[0]  # error checking ??
-            with open(pFile, 'r') as f:
-                newScenario = pickle.load(f)
-            newScenario.save(force_insert=True)
-        processExecs(scenID,dir)            
+        if scenID >= siLowerBound:  # test condition of scenID -- skip if less than bound
+            try:
+                models.Scenario.get(models.Scenario.scenID == scenID)
+                print 'Scenario %s found.' % scenID
+            except DoesNotExist:
+                print 'Scenario %s not found, adding...' % scenID
+                pFile = glob.glob(os.path.join(dir, '*.pckl'))[0]  # error checking ??
+                with open(pFile, 'r') as f:
+                    newScenario = pickle.load(f)
+                newScenario.save(force_insert=True)
+            processExecs(scenID,dir)            
         # whether or not it exists, call processExecs( scenID?, startPath+dir)
 
-def processScenTypes( startPath ):
+def processScenTypes( startPath, siLowerBound ):
     dirList = glob.glob(os.path.join(startPath, '*'))
     for dir in dirList:
         scenType = os.path.split(dir)[1]
         print scenType
-        processScenarios(scenType, dir)
+        processScenarios(scenType, dir, siLowerBound)
 
-def refreshFromFileSystem( startPath ):
+def refreshFromFileSystem( startPath, siLowerBound ):
     os.chdir(startPath)
     callString = ['svn','up']
     call(callString)
@@ -118,4 +119,4 @@ if __name__ == "__main__":
 
     # for dbcluster running
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'))
+    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'), 1386295710900)

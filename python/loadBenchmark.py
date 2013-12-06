@@ -89,7 +89,7 @@ def processScenarios( scenType, startPath, siLowerBound):
     dirList = glob.glob(os.path.join(startPath, '*'))
     for dir in dirList:
         scenID = os.path.split(dir)[1]
-        if scenID >= siLowerBound:  # test condition of scenID -- skip if less than bound
+        if int(scenID) >= siLowerBound:  # test condition of scenID -- skip if less than bound
             try:
                 models.Scenario.get(models.Scenario.scenID == scenID)
                 print 'Scenario %s found.' % scenID
@@ -120,3 +120,4 @@ if __name__ == "__main__":
     # for dbcluster running
     models.setupDatabase(clearDatabase=False)
     refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'), 1386295710900)
+                                                                                                    1386192450912

@@ -281,7 +281,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       raise "cannot build seed template from non seed rule" unless @seed
       raise "building a seed template from seed without unbound atoms does not make sense" if unbound.nil? or unbound.empty?
       
-      template = "#{head.show_wdl_format} :- #{seedatom},"
+      template = "#{head.show_wdl_format}:-#{seedatom},"
       unbound.each do |ato|
         template << "#{ato},"
       end ; template.slice!(-1);
@@ -542,7 +542,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       str = ""
       str << get_type.to_s.downcase + " "
       str << "persistent" + " " if self.persistent?
-      str << fullrelname
+      str << "#{relname}@#{peername}"
       str << "( #{col_fields.text_value} ) ;"
     end
   end

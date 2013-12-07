@@ -35,16 +35,16 @@ def simple():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = 'MAF', \
-        numFollowers = 6*5, \
-        numAggregators = 3*5, \
-        aggPerFollower = 1*5, \
+        numFollowers = 6*3, \
+        numAggregators = 3*3, \
+        aggPerFollower = 1*3, \
         policy = 'PUB', \
         numFacts = 10000, \
         valRange = 1000, \
         ruleScenario = 'UNION_OF_JOINS', \
         hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
         numHosts = 5, \
-        numPeersPerHost = 3*6 )
+        numPeersPerHost = 3*3 )
     
     return [scenario]
 
@@ -57,7 +57,7 @@ def case1():
     scenarioList = []
     
     policyList = ['PUB','PRIV','KNOWN']
-    numFactsList = [10000]
+    numFactsList = [1000]
     ruleScenarioList = ['UNION_OF_JOINS','JOIN_OF_UNIONS']
     
     for tup in itertools.product(policyList, numFactsList, ruleScenarioList):
@@ -65,16 +65,16 @@ def case1():
         scenario = models.Scenario( \
             # scenID = _ _ _ (filled in later)
             scenType = 'MAF', \
-            numFollowers = 6*5, \
-            numAggregators = 3*5, \
-            aggPerFollower = 1*5, \
+            numFollowers = 6*3, \
+            numAggregators = 3*3, \
+            aggPerFollower = 1*3, \
             policy = tup[0], \
             numFacts = tup[1], \
             ruleScenario = tup[2], \
             valRange = 1000, \
             hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
             numHosts = 5, \
-            numPeersPerHost = 3*6 )
+            numPeersPerHost = 3*3 )
         scenarioList.append(scenario)
     
     return scenarioList
@@ -89,6 +89,7 @@ if __name__ == "__main__":
 
     # generate scenarios
     for s in scenarioList:
-        scenario.generateScenarioFiles( s, rootPath )    
+        newScenID = scenario.generateScenarioFiles( s, rootPath )
+        print 'Generated new scenario: ', newScenID
 
     localSVNCommit(rootPath)

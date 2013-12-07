@@ -35,6 +35,7 @@ class Execution(BaseModel):
     optim1 = BooleanField()
     runTime = FloatField()
     success = BooleanField()
+    build = IntegerField()
 
 class Tick(BaseModel):
     execID = ForeignKeyField(Execution)

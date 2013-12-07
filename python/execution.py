@@ -7,6 +7,8 @@ import models, driver, fab, loadBenchmark
 from fabric.api import *
 from fabric.tasks import execute
 
+build = 1
+
 # Now executed at dbcluster.cs
 def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
@@ -19,7 +21,8 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         numTicks = ticks, \
         sleep = sleep, \
         access = accessBool, \
-        optim1 = optim1Bool )
+        optim1 = optim1Bool, \
+        build = build )
     
     # this is the directory containing the scenario: e.g. webdamlog-exp/MAF/1385388824301
     scenPath = os.path.join('webdamlog-exp',scenType,str(scenID))
@@ -73,7 +76,8 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         pickle.dump(execution, f)
 
     # refresh database for this execution
-    loadBenchmark.processExecs( scenID, localScenPath)
+    execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
+    loadBenchmark.processExecs( scenID, localExecPath)
 
     driver.localSVNCommit(localScenPath)
     
@@ -83,15 +87,11 @@ if __name__ == "__main__":
 
     rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
 
-    runs = 6
-#    for scenID in [1385949809339,1385949809670,1385949810005,1385949810399,1385949810752,1385949811095]:
-    for scenID in [1386192449148,1386192449148,1386192449148,1386192449148,1386192449148,1386192449148]:
+    runs = 5
+    
+    for scenID in [1386295710927, 1386295708991, 1386295710003, 1386295710488, 1386295709543, 1386295711376]:
         for r in range(runs):
             executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.25 )
             executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
             executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
     
-    # runs = 1
-    # for scenID in [1385605955733]:
-    #     for r in range(runs):
-    #         executeScenario( scenID, 'MAF', True, True, 20, 0.01 )

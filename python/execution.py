@@ -7,7 +7,7 @@ import models, driver, fab, loadBenchmark
 from fabric.api import *
 from fabric.tasks import execute
 
-build = 1
+build = 2
 
 # Now executed at dbcluster.cs
 def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):

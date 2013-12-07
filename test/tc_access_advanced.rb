@@ -305,7 +305,7 @@ end
       runner.tick
       runner.tick
 
-      assert_equal [{:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access","p1","p2"].to_set)}, {:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)},  {:atom1=>"3", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"3", :priv=>"R", :plist=>PList.new(["test_access","p2"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
+      assert_equal [{:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access","p1","p2"].to_set)}, {:atom1=>"3", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"3", :priv=>"R", :plist=>PList.new(["test_access","p2"].to_set)}], runner.snapshot_facts(:local1_i_ext_at_test_access)
 
     ensure
        runner.stop

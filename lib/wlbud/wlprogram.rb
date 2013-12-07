@@ -296,7 +296,7 @@ In the string: #{line}
       elsif wlrule.split
         rewrite_non_local(wlrule)
       elsif @nonlocalheadrules.include?(wlrule)
-        puts "rule #{wlrule} is nonlocalhead, rewriting"
+        puts "rule #{wlrule} is nonlocalhead, rewriting" if @options[:debug]
         rewrite_non_local_head_rule(wlrule)
       end
     end
@@ -513,6 +513,325 @@ In the string: #{line}
         raise WLErrorPeerId,
           "In #{wlrule.text_value} the peer name: #{head_atom_peername} cannot be found in the list of known peer: #{@wlpeers.inspect}"
       end
+
+      if @options[:optim1]
+        translate_rule_optim1(wlrule)
+      elsif @options[:optim2]
+        translate_rule_optim2(wlrule)
+      elsif @options[:accessc]
+        translate_rule_accessc(wlrule)
+      else
+        translate_rule_regular(wlrule)
+      end
+
+    end
+
+    def translate_rule_regular(wlrule)
+      str_res = ""
+      body = wlrule.body
+
+      # Generate rule head Send fact buffer if non-local head
+      unless bound_n_local?(wlrule.head)
+        str_res << "sbuffer <= "
+      else if is_tmp?(wlrule.head)
+          str_res << "temp :#{wlrule.head.fullrelname} <= "
+        else
+          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
+        end
+      end
+
+      # Make the locations dictionaries for this rule
+      wlrule.make_dictionaries unless wlrule.dic_made
+
+      if body.length==0
+        str_res << " ["
+        str_res << projection_bud_string(wlrule)
+        str_res << "];"
+      else
+        if body.length==1
+          str_res << body.first.fullrelname
+        else
+          s = make_combos(wlrule)
+          str_res << s
+        end
+        str_res << " {|";
+        wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
+        str_res.slice!(-2..-1) #remove last and before last
+
+        str_res << "| "
+        
+        str_res << projection_bud_string(wlrule)
+        str_res << condition_bud_string(wlrule)
+        
+        str_res << "};"
+      end
+    end
+
+    def translate_rule_accessc(wlrule)
+      str_res = ""
+      body = wlrule.body
+
+      # Generate rule head Send fact buffer if non-local head
+      unless bound_n_local?(wlrule.head)
+        str_res << "sbuffer <= "
+      else if is_tmp?(wlrule.head)
+          str_res << "temp :#{wlrule.head.fullrelname} <= "
+        else
+          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
+        end
+      end
+
+      # Make the locations dictionaries for this rule
+      wlrule.make_dictionaries unless wlrule.dic_made
+
+      if body.length==0
+        #VZM:TODO! - when is rule body length ever 0??? and what do we do in such cases with access controL?
+        puts "translation of rule with zero body length while in access control mode not implemented!!!"
+      else
+        s = make_combos(wlrule)
+        str_res << s
+
+        str_res << " {|";
+        wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
+        str_res.slice!(-2..-1) #remove last and before last
+
+        #VZM access control - need to add variable names for each acl we added
+        wlrule.body.each do |atom|
+          if bound_n_local?(atom) && !intermediary?(atom)
+            str_res << ", #{atom.relname}acl"
+          end
+        end
+        if (bound_n_local?(wlrule.head) && wlrule.author != @peername)
+          str_res << ", aclw"
+        end
+
+        str_res << "| "
+        
+        str_res << projection_bud_string(wlrule)
+        str_res << condition_bud_string(wlrule)
+
+        #add the check for the right plist in acls
+        #add the check that we can write to the head relation
+        if str_res.include?(" if ")
+          str_res << " && "
+        else
+          str_res << " if "
+        end
+        #select just the Read tuples
+        wlrule.body.each do |atom|
+          if bound_n_local?(atom) && !intermediary?(atom)
+            if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              str_res << "#{atom.relname}acl.rel == \"#{atom.fullrelname}\" && #{atom.relname}acl.priv == \"R\" && "
+            elsif (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+              str_res << "#{atom.relname}acl.rel == \"#{atom.fullrelname}\" && #{atom.relname}acl.priv == \"G\" && "
+            end
+          end
+        end
+        wlrule.body.each do |atom|
+          str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
+        end
+        
+        ## check for read or grant for target peer on preserved relations only
+        first_intersection = true
+        wlrule.body.each do |atom|
+          if bound_n_local?(atom) && !intermediary?(atom)
+            if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              str_res << "("
+              str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+              unless first_intersection
+                str_res << ")"
+              end
+              str_res << ".intersect"
+              str_res << "(#{atom.relname}acl.plist).intersect"
+              first_intersection = false
+            end
+          end
+        end
+        
+        unless first_intersection
+          str_res.slice!(-10..-1)
+          str_res << ").include?(\"#{wlrule.head.peername}\") && "
+        end
+
+        ## check for grant for author peer on hide relations only
+        first_intersection = true
+        wlrule.body.each do |atom|
+          if bound_n_local?(atom) && !intermediary?(atom)
+            if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+                (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+              str_res << "("
+              str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+              unless first_intersection
+                str_res << ")"
+              end
+              str_res << ".intersect"
+              if bound_n_local?(atom) && !intermediary?(atom)
+                str_res << "(#{atom.relname}acl.plist).intersect"
+              end
+              first_intersection = false
+            end
+          end
+        end
+          
+        if first_intersection
+          str_res.slice!(-3..-1)
+        else
+          str_res.slice!(-10..-1)
+          str_res << ").include?(\"#{wlrule.author}\")"
+        end
+
+        puts "rule head is not local " if !bound_n_local?(wlrule.head) if @options[:debug]
+        puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
+        if wlrule.author != @peername && bound_n_local?(wlrule.head)
+          str_res << " && aclw.priv == \"W\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
+        end
+        
+        str_res << "};"
+      end
+    end
+
+    def translate_rule_optim1(wlrule)
+      str_res = ""
+      body = wlrule.body
+
+      # Generate rule head Send fact buffer if non-local head
+      unless bound_n_local?(wlrule.head)
+        str_res << "sbuffer <= "
+      else if is_tmp?(wlrule.head)
+             str_res << "temp :#{wlrule.head.fullrelname} <= "
+           else
+             str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
+           end
+      end
+      
+      # Make the locations dictionaries for this rule
+      wlrule.make_dictionaries unless wlrule.dic_made
+      
+      if body.length==0
+        #VZM:TODO! - when is rule body length ever 0??? and what do we do in such cases with access controL?
+        puts "translation of rule with zero body length while in access control mode not implemented!!!"
+      else
+        str_res << "("
+        wlrule.body.each do |atom|
+          str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} * "
+        end
+        #TODO - probably need to do a push selection on writeable as well because of cartesian product
+        if !bound_n_local?(wlrule.head) && wlrule.author == @peername
+          str_res << "writeable_at_#{@peername} * "
+        end
+        str_res << "capc_#{wlrule.rule_id}__at_#{@peername}).combos("
+        
+        # create join conditions
+        combos=false
+        wlrule.dic_wlvar.each do |key,value|
+          next unless value.length > 1 # skip free variable (that is occurring only once in the body)
+          next if key == '$_' # skip anonymous variable PENDING parsing string directly here is subject to bugs in general create good data structure
+          
+          v1 = value.first
+          rel_first , attr_first = v1.split('.')
+          # join every first occurrence of a variable with its subsequent
+          value[1..-1].each do |v|
+            rel_other , attr_other = v.split('.')
+            rel_first_name = wlrule.dic_invert_relation_name[Integer(rel_first)]
+            rel_other_name = wlrule.dic_invert_relation_name[Integer(rel_other)]
+            first_atom = wlrule.body[Integer(rel_first)]
+            other_atom = wlrule.body[Integer(rel_other)]
+            col_name_first = get_column_name_of_relation(first_atom, Integer(attr_first))
+            col_name_other = get_column_name_of_relation(other_atom, Integer(attr_other))
+            # If it is a self-join symbolic name should be used
+            if rel_first_name.eql?(rel_other_name)
+              # if_str << " && #{wlrule.dic_relation_name[rel_first]}.#{attr_first}==#{wlrule.dic_budvar[rel_other]}.#{attr_other}"
+              str_res << ":#{col_name_first}" << ' => ' << ":#{col_name_other}"
+              combos = true
+            else
+              str_res << "rext_#{wlrule.rule_id}_#{rel_first_name}." << col_name_first << ' => ' << "rext_#{wlrule.rule_id}_#{rel_other_name}." << col_name_other
+              combos = true
+            end
+            str_res << ','
+          end
+        end
+
+        # natural join on priv
+        wlrule.body.each do |atom|
+          if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+              (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+            str_res << "capc_#{wlrule.rule_id}__at_#{@peername}.priv => rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername}.priv, "
+            combos = true
+          end
+        end
+        str_res.slice!(-2..-1) if combos #remove last and before last
+        str_res << ") {|"
+
+        wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
+
+        if (!bound_n_local?(wlrule.head) && wlrule.author == @peername)
+          str_res << "aclw, "
+        end
+        str_res << "capc"
+        
+        str_res << "| "
+        
+        str_res << projection_bud_string(wlrule)
+        str_res << condition_bud_string(wlrule)
+
+        puts "rule head is not local " if !bound_n_local?(wlrule.head) if @options[:debug]
+        puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
+        if !bound_n_local?(wlrule.head) && wlrule.author == @peername
+          #we need to check write on the final relation, not on intermediary
+          if intermediary?(wlrule.head)
+            headrule = nil
+            @rule_mapping.keys.each {|id|
+              headrule = @rule_mapping[id]
+              break if headrule.include?(wlrule.rule_id)
+            }
+            if !bound_n_local?(headrule.first.head)
+              if str_res.include?(" if ")
+                str_res << " && "
+              else
+                str_res << " if "
+              end
+              str_res << "aclw.rel == \"#{headrule.first.head.fullrelname}\" && aclw.peer == \"#{headrule.first.head.peername}\""
+            end
+          else
+            if str_res.include?(" if ")
+              str_res << " && "
+            else
+              str_res << " if "
+            end
+
+            str_res << "aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.peer == \"#{wlrule.head.peername}\""
+          end
+        end
+      
+        str_res << "};"
+      end
+
+      #make selections over body relations since bud doesn't do push selections
+      wlrule.body.each do |atom|
+        if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+            (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+          str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} <= #{make_rel_name(atom.fullrelname)} {|t| t if t.plist.include?(\"#{wlrule.head.peername}\")};"
+        elsif (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
+            (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
+          str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} <= #{make_rel_name(atom.fullrelname)} {|t| t if t.plist.include?(\"#{wlrule.author}\") && t.priv == \"G\"};"
+          str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} <= #{make_rel_name(atom.fullrelname)} {|t| ["
+          # add the list of variable and constant that should be projected
+          fields = wlcollections[atom.fullrelname].fields
+          puts "#{atom.fullrelname} has #{fields.length}"
+          fields.each do |f|
+            str_res << "t.#{f}, "
+          end
+          str_res << "\"R\",t.plist] if t.plist.include?(\"#{wlrule.author}\") && t.priv == \"G\"};"
+        end
+      end
+
+      return str_res
+    end
+
+    def translate_rule_optim2(wlrule)
       str_res = ""
       body = wlrule.body
 
@@ -713,136 +1032,98 @@ In the string: #{line}
 
       wlrule.make_dictionaries unless wlrule.dic_made
 
-      if @options[:optim1] && !wlrule.body.empty?
-
-        #figure out whether we have any "head" relations, i.e. those that preserve provenance
-        preserve_proven = 0
-        if extensional_head?(wlrule)
-          wlrule.body.each do |atom|
-            if !atom.provenance.empty? && atom.provenance.type == :Preserve && bound_n_local?(atom) && !intermediary?(atom)
-              head_str << "(" if preserve_proven > 0
-              head_str << "#{atom.relname}acl.plist"
-              head_str << ")" if preserve_proven > 0
-              head_str << ".intersect"
-              preserve_proven += 1
+      if !wlrule.body.empty?
+        headpr = []
+        noninterm = []
+        wlrule.body.each_with_index do |atom, index|
+          if bound_n_local?(atom) && !intermediary?(atom)
+            if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
+                (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
+              headpr << index
             end
+            noninterm << index
+          end
+        end
+              
+        if noninterm.length > 1
+          noninterm.each do |index|
+            if headpr.include?(index)
+              capc_str << "capc_#{wlrule.rule_id}_#{wlrule.body[index].relname}_at_#{@peername} <= acl_at_#{@peername} {|t| [t.priv, t.plist] if t.rel == \"#{wlrule.body[index].fullrelname}\" && t.priv != \"W\" && t.plist.include?(\"#{wlrule.head.peername}\")};"
+            else
+              capc_str << "capc_#{wlrule.rule_id}_#{wlrule.body[index].relname}_at_#{@peername} <= acl_at_#{@peername} {|t| [\"G\", t.plist] if t.rel == \"#{wlrule.body[index].fullrelname}\" && t.priv == \"G\" && t.plist.include?(\"#{wlrule.author}\")};"
+            end
+          end
+
+          #if there are no nongrant, i.e. non-hide atoms, then just add omega grant and read
+          if headpr.empty?
+            capc_str << "capc_#{wlrule.rule_id}__at_#{@peername} <= "
+            capc_str << "(" if noninterm > 1
+            wlrule.body.each do |atom|
+              if bound_n_local?(atom) && !intermediary?(atom)
+                capc_str << "capc_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} * "
+              end
+            end
+            capc_str.slice!(-3..-1)
+            capc_str << ").combos" if noninterm > 1
+            capc_str << " {|"
+            noninterm.times do |count|
+              capc_str << "capc#{count},"
+            end
+            capc_str.slice!(-2..-1)
+            capc_str << "| [\"G\",Omega.instance]};"
+
+            capc_str << "capc_#{wlrule.rule_id}__at_#{@peername} <= ("
+            capc_str << "(" if noninterm > 1
+            wlrule.body.each do |atom|
+              if bound_n_local?(atom) && !intermediary?(atom)
+                capc_str << "capc_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} * "
+              end
+            end
+            capc_str.slice!(-3..-1)
+            capc_str << ").combos" if noninterm > 1
+            capc_str << " {|"
+            noninterm.times do |count|
+              capc_str << "capc#{count},"
+            end
+            capc_str.slice!(-2..-1)
+            capc_str << "| [\"R\",Omega.instance]};"
+          else
+            capc_str << "capc_#{wlrule.rule_id}__at_#{@peername} <= ("
+            noninterm.each do |index|
+              capc_str << "capc_#{wlrule.rule_id}_#{wlrule.body[index].relname}_at_#{@peername} * "
+            end
+            capc_str.slice!(-3..-1)
+            capc_str << ").combos"
+            #natural join
+            if headpr.length > 1
+              capc_str << "("
+              headpr.each do |index|
+                capc_str << "capc_#{wlrule.rule_id}_#{wlrule.body[index].relname}_at_#{@peername}.priv => capc_#{wlrule.rule_id}_#{wlrule.body[headpr.first].relname}_at_#{@peername}.priv, " if index > 0
+              end
+              capc_str.slice!(-2..-1)
+              capc_str << ")"
+            end
+            capc_str << " {|"
+            noninterm.times do |count|
+              capc_str << "capc#{count}, "
+            end
+            capc_str.slice!(-2..-1)
+            capc_str << "| [capc0.priv, Omega.instance"
+            noninterm.times do |index|
+              capc_str << ".intersect(capc#{index}.plist)"
+            end
+            capc_str << "]};"
           end
         else
-          wlrule.body.each do |atom|
-            if (atom.provenance.empty? || atom.provenance.type != :Hide) && bound_n_local?(atom) && !intermediary?(atom)
-              head_str << "(" unless preserve_proven > 0
-              head_str << "#{atom.relname}acl.plist"
-              head_str << ")" unless preserve_proven > 0
-              head_str << ".intersect"
-              preserve_proven += 1
-            end
-          end
-        end
-        head_str.slice!(-10..-1) unless head_str.empty?
-
-        #yes, we have relations with preserve provenance, so make a head capc
-        if !head_str.empty?
-          capc_str = "capc_#{wlrule.rule_id}_at_#{@peername} <= "
-          #go through all relations in the body and grab the acls
-          if preserve_proven == 1
-            capc_str << "acl_at_#{@peername}"
+          atom = wlrule.body[noninterm.first]
+          if headpr.include?(noninterm.first)
+            capc_str << "capc_#{wlrule.rule_id}__at_#{@peername} <= acl_at_#{@peername} {|t| [t.priv, t.plist] if t.rel == \"#{atom.fullrelname}\" && t.priv != \"W\" && t.plist.include?(\"#{wlrule.head.peername}\")};"
           else
-            #FIXME - self-join only works for at most 2 in bud
-            capc_str << "("
-            preserve_proven.times do
-              capc_str << "acl_at_#{@peername} * "
-            end
-            capc_str.slice!(-3..-1)
-            capc_str << ").combos"
-          end
-
-          capc_str << " {|"
-          wlrule.body.each do |atom|
-            if bound_n_local?(atom) && !intermediary?(atom)
-              if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                  (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
-                capc_str << "#{atom.relname}acl, "
-              end
-            end
-          end
-          capc_str.slice!(-2..-1)
-          capc_str << "| [\"R\", #{head_str}] if "
-
-          wlrule.body.each do |atom|
-            if bound_n_local?(atom) && !intermediary?(atom)
-              if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                  (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
-                capc_str << "#{atom.relname}acl.priv == \"R\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
-              end
-            end
-          end
-
-          capc_str.slice!(-4..-1)
-
-          capc_str << "};"
-
-          #need one for grant which is the same except Grant instead of Read
-          capc2 = "#{capc_str}"
-          capc_str << "#{capc2.gsub!("\"R\"","\"G\"")}"
-        end
-
-        #need to make another rule for capc for "body", i.e. where grant should be checked for rule author
-        grant_proven = 0
-        wlrule.body.each do |atom|
-          if bound_n_local?(atom) && !intermediary?(atom)
-            if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
-              body_str << "(" if grant_proven > 0
-              body_str << "#{atom.relname}acl.plist"
-              body_str << ")" if grant_proven > 0
-              body_str << ".intersect"
-              grant_proven += 1
-            end
+            capc_str << "capc_#{wlrule.rule_id}__at_#{@peername} <= acl_at_#{@peername} {|t| [\"G\", t.plist] if t.rel == \"#{atom.fullrelname}\" && t.priv == \"G\" && t.plist.include?(\"#{wlrule.author}\")};"
           end
         end
-        body_str.slice!(-10..-1) unless body_str.empty?
-
-        if !body_str.empty?
-          capc_str << "capc_#{wlrule.rule_id}_at_#{@peername} <= "
-          if grant_proven == 1
-            capc_str << "acl_at_#{@peername}"
-          else
-            #FIXME - self-join only works for at most 2 in bud
-            capc_str << "("
-            preserve_proven.times do
-              capc_str << "acl_at_#{@peername} * "
-            end
-            capc_str.slice!(-3..-1)
-            capc_str << ").combos"
-          end
-          
-          capc_str << " {|"
-          wlrule.body.each do |atom|
-            if bound_n_local?(atom) && !intermediary?(atom)
-              if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                  (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
-                capc_str << "#{atom.relname}acl, "
-              end
-            end
-          end
-          capc_str.slice!(-2..-1)
-          capc_str << "| [\"body\", #{body_str}] if "
-
-          wlrule.body.each do |atom|
-            if bound_n_local?(atom) && !intermediary?(atom)
-              if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
-                  (intensional_head?(wlrule.head) && !atom.provenance.empty? && atom.provenance.type == :Hide)
-                capc_str << "#{atom.relname}acl.priv == \"G\" && #{atom.relname}acl.rel == \"#{atom.fullrelname}\" && "
-              end
-            end
-          end
-          capc_str.slice!(-4..-1)
-
-          capc_str << "};"
-        end
-
-      end #if optim1
-
+      end
+      
       return capc_str
     end
 
@@ -1132,28 +1413,25 @@ In the string: #{line}
 
       if @options[:accessc]
         #add priv and plist computation
-        #we select just the read tuples
-        str << "\"R\", "
+        if @options[:optim1]
+          str << "atom0.priv, "
+        else
+          str << "\"R\", "
+        end
         str << "Omega.instance"
 
-        capc = false
+
         if extensional_head?(wlrule)
           #only intersect those that have preserve on them
           wlrule.body.each do |atom|
             if !atom.provenance.empty? && atom.provenance.type == :Preserve
               str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"              
               if bound_n_local?(atom) && !intermediary?(atom)
-                if @options[:optim1]
-                  capc = true
-                else
+                if !@options[:optim1]
                   str << ".intersect(#{atom.relname}acl.plist)"
                 end
               end
             end
-          end
-          #only want to do this if there are some relations to be had for this
-          if @options[:optim1] && capc
-            str << ".intersect(capchead.plist)"
           end
         else
           #if there is a hide, do not carry over the access restrictions
@@ -1161,18 +1439,18 @@ In the string: #{line}
             if atom.provenance.empty? || atom.provenance.type != :Hide
               str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"
               if bound_n_local?(atom) && !intermediary?(atom)
-                if @options[:optim1]
-                  capc = true
-                else
+                if !@options[:optim1]
                   str << ".intersect(#{atom.relname}acl.plist)"
                 end
               end
             end
           end
-          if @options[:optim1] && capc
-            str << ".intersect(capchead.plist)"
-          end
         end
+
+        if @options[:optim1] && !extensional_head?(wlrule)
+          str << ".intersect(capc.plist)"
+        end
+
       else #regular non-access control execution
         str.slice!(-2..-1) unless fields.empty?
       end

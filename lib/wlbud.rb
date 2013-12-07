@@ -321,7 +321,8 @@ module WLBud
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
-              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
+              #str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
+              str_res << "sbuffer <= acle_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.peer == \"#{p[0]}\"};"
             end
           }
           puts "Installing bud rule #{str_res}" if @options[:debug]
@@ -719,20 +720,21 @@ module WLBud
       puts "Adding a rule: #{wlrule}" if @options[:debug]
       @wl_program.disamb_peername!(wlrule)
       if @options[:optim1]
-        add_capc wlrule
+        add_capcs wlrule
+        add_rexts wlrule
       end
       rule = "#{@wl_program.translate_rule_str(wlrule)}"
       name = "webdamlog_#{@peername}_#{wlrule.rule_id}"
 
       #this is a bit hacky - with access control we generate 2 rules instead of one
       #one for grant priv and one for read
-      if @options[:accessc]
+      if @options[:accessc] && !@options[:optim1]
         rule2 = "#{rule}"
         rule2.gsub! "\"R\"", "\"G\""
         rule << rule2
       end
 
-      rule << @wl_program.translate_capc_str(wlrule) #this will only work if optim1 is on, otherwise will be empty
+      rule << @wl_program.translate_capc_str(wlrule) if @options[:optim1]
       #FIXME - this will take care of joins/intersections, but what about unions?
       rule << @wl_program.translate_formula_str(wlrule) #this is for optim2
 
@@ -1006,13 +1008,38 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       end
     end
 
-    def add_capc(wlrule)
+    #make capc for each relation in the body of the rule
+    def add_capcs(wlrule)
+      if wlrule.body.length > 1
+        wlrule.body.each do |atom|
+          add_capc(wlrule.rule_id, atom.relname)
+        end
+      end
+
+      add_capc(wlrule.rule_id)
+    end
+    
+    def add_capc(id,atomn="")
       keys=[]
       values=[]
       keys << :"priv"
       values << :"plist"
       capcschema = {keys => values}
-      self.scratch("capc_#{wlrule.rule_id}_at_#{peername}".to_sym,capcschema)
+      self.scratch("capc_#{id}_#{atomn}_at_#{peername}".to_sym,capcschema)
+    end
+
+    def add_rexts(wlrule)
+      wlrule.body.each do |atom|
+        add_rext(wlrule.rule_id, atom)
+      end
+    end
+
+    def add_rext(id, atom)
+      keys=[]
+      values=[]
+      col = @wl_program.wlcollections[atom.fullrelname]
+      rext = @wl_program.parse(col.make_rext(id))
+      self.schema_init(rext)
     end
 
     # Takes in an access policy and updates acl
@@ -1036,7 +1063,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         fout.close
         load fullfilename
       elsif policy.access.all?
-        puts "adding to acl Omega for #{rel} for priv #{priv}"
+        puts "adding to acl Omega for #{rel} for priv #{priv}" if @options[:debug]
         str_res = "acl_at_#{self.peername} <= [[\"#{rel}\",\"#{priv}\",Omega.instance]]"
         #write to a file
         policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
@@ -1075,7 +1102,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
     # rewrite a parsed wlrule and install it in the engine !@attributes
     # [WBud::WLRule] rule as an object
     def install_rule wlrule
-      puts "installing rule #{wlrule} whose author is #{wlrule.author}"
+      puts "installing rule #{wlrule} whose author is #{wlrule.author}" if @options[:debug]
       if @wl_program.bound_n_local?(wlrule) && (!@options[:accessc] || !@wl_program.nonlocalheadrules.include?(wlrule) || @options[:optim1])
         return translate_rule(wlrule)
       else # rewrite

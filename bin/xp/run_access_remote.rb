@@ -50,7 +50,6 @@ end
 # Giving a program file generated from data_generators start the peer given in
 # the name of the file using the address found in the program file
 def create_wl_runner pg_file
-  puts "creating peer from file #{pg_file}"
   ip_addr = port = ''
   pg_splitted = pg_file.split "_"
   peername = pg_splitted.last

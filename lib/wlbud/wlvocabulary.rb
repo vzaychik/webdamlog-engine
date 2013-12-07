@@ -527,6 +527,13 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       str << "(#{col_fields.text_value}, priv*, plist) ;"
     end
 
+    def make_rext(id)
+      str = "collection #{get_type.to_s.downcase} "
+      str << "persistent" + " " if self.persistent?
+      str << "rext_#{id}_#{relname}@#{self.peername}"
+      str << "(#{col_fields.text_value}, priv*, plist) ;"
+    end
+
     # Return the name of this atom in the format "relation_at_peer"
     #
     # Create a string for the name of the relation that fits bud restriction

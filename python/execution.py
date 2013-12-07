@@ -77,7 +77,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
 
     # refresh database for this execution
     execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
-    loadBenchmark.processExecs( scenID, localScenPath)
+    loadBenchmark.processExecs( scenID, localExecPath)
 
     driver.localSVNCommit(localScenPath)
     

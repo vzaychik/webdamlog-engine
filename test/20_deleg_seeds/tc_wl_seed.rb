@@ -7,7 +7,6 @@ require 'test/unit'
 # Test program with seeds ie. relation or peer name variables
 
 
-
 # Test the method in program to rewrite unbound rules into seed rule
 #
 # The rule used here is a very long one to test many case of bounding variables
@@ -139,17 +138,19 @@ end
       runner = WLRunner.create @username, @pg_file, @port
       test_string = "rule local1@test_seed($h1,$h2,$h3) :- local2@test_seed($l1,$h1),local3@test_seed($l1,$s1),local4@test_seed($s2,$l3),$s1@test_seed($h2,$h3),local4@test_seed($_,$s2);"
       runner.tick
-      assert runner.new_sprout_rules.empty?
+      assert runner.sprout_rules.empty?
       runner.update_add_rule(test_string)
-      assert_equal ["rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname1, flocal3), relname1@test_seed($h2, $h3), local4@test_seed($_, flocal3);",
+      assert runner.sprout_rules.empty?
+      assert_equal 1,runner.t_rules.length, "only the original rule is installed"
+      runner.tick
+      assert_equal [
+        "rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname1, flocal3), relname1@test_seed($h2, $h3), local4@test_seed($_, flocal3);",
         "rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname2, flocal3), relname2@test_seed($h2, $h3), local4@test_seed($_, flocal3);",
         "rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname1, useless3), relname1@test_seed($h2, $h3), local4@test_seed($_, useless3);",
         "rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname2, useless3), relname2@test_seed($h2, $h3), local4@test_seed($_, useless3);",
         "rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname1, useless4), relname1@test_seed($h2, $h3), local4@test_seed($_, useless4);",
         "rule local1@test_seed(flocalhead1, $h2, $h3) :- seed_from_test_seed_1_1@test_seed(flocalhead1, relname2, useless4), relname2@test_seed($h2, $h3), local4@test_seed($_, useless4);"],
-        runner.new_sprout_rules.keys
-      assert_equal 1,runner.t_rules.length, "only the original rule is installed"
-      runner.tick
+        runner.sprout_rules.keys
       assert_equal 7,runner.t_rules.length, "2 rules srpout from seeds must be installed"
       assert_equal({[:bud_obj, :rule_id]=>[:lhs, :op, :src, :orig_src, :unsafe_funcs_called]},
         runner.t_rules.schema,
@@ -181,34 +182,5 @@ end
     ensure
       runner.stop
     end
-  end
-end
-
-# test the rule with variable with the rule given by vera in emails rule
-# rule album_i@sue3($img,$id) :- all_friends_i@sue3($id), photos@$id($img), tags@$id($img,1), tags@$id($img,2);
-class TcWlVeraRule < Test::Unit::TestCase
-  include MixinTcWlTest
-
-  def setup
-    @pg = <<-EOF
-end
-    EOF
-    @username = "test_seed"
-    @port = "11110"
-    @pg_file = "test_seed_vera_variable_rule"
-    File.open(@pg_file,"w"){ |file| file.write @pg }
-  end
-
-  def teardown
-    File.delete(@pg_file) if File.exists?(@pg_file)
-    ObjectSpace.each_object(WLRunner) do |obj|
-      clean_rule_dir obj.rule_dir
-      obj.delete
-    end
-    ObjectSpace.garbage_collect
-  end
-
-  def test_vera_rule_with_variable
-
   end
 end

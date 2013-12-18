@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# ####License####
+# -*- coding: utf-8 -*- 
+####License####
 #  File name wlbud.rb
 #  Copyright © by INRIA
 #
@@ -423,20 +423,23 @@ module WLBud
                 @wl_program.wlcollections[col.fullrelname] = col
               }
             end
-            @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
-            add_facts(packet_value.facts) unless packet_value.facts.nil?
+            @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules            
           else
             if @options[:accessc]
               @extended_collections_to_flush.each {|col|
                 @wl_program.wlcollections[col.fullrelname] = col
               }
             end
-            packet_value.rules.each{ |rule| add_rule(rule, packet_value.peer_name) } unless packet_value.rules.nil?
-            add_facts(packet_value.facts) unless packet_value.facts.nil?
+            packet_value.rules.each{ |rule| add_rule(rule, packet_value.peer_name) } unless packet_value.rules.nil?            
           end
+          add_facts(packet_value.facts) unless packet_value.facts.nil?
         end
+        # PENDING remove new_sprout_rules attribute
         # add new rules from seeds
+        @new_sprout_rules = make_seed_sprout
+        @sprout_rules.merge!(@new_sprout_rules) { |key,v1,v2| raise WLError, "seed generated a duplicate" if v1 == v2 }
         @new_sprout_rules.each_key { |key| add_rule(key) }
+        @new_sprout_rules.clear
         
         if @options[:measure]
           @measure_obj.append_measure @budtime
@@ -551,8 +554,7 @@ module WLBud
           # #logtab.to_a.sort{ |t1,t2| [t1[0],t1[1]] <=> [t2[0],t2[1]]
           # }.each{|s| puts s} # same result as above
           puts "----end of viz logtab-----"
-        end
-        @new_sprout_rules.merge! make_seed_sprout
+        end        
         # There is the moment in the tick where I should fill the channel with
         # my own structure that is the facts, the delegated rules along with the
         # newly created relations (declaration of new collections)
@@ -742,9 +744,8 @@ module WLBud
       fullfilename = File.join(@rule_dir,name)
       raise WLErrorPeerId, "there must be an error in unique id: #{wlrule.rule_id} of this rule: #{wlrule} \n \
 engine is trying to write this new rule in an existing file: #{fullfilename}" if File.exists?(fullfilename)
-      fout = File.new("#{fullfilename}", "a")
+      fout = File.new("#{fullfilename}", "w+")
       fout.puts "#{str}"
-
       fout.close
       if @options[:debug]
         puts "Content of the tmp file is:\n#{File.readlines(fullfilename).each{|f| f }}\n"
@@ -1248,7 +1249,9 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       return chan.read_channel(@options[:debug])
     end
 
-    # generate the new rules from seed that have been bounded
+    # Create the static rule from a seed previously evaluated.  Bind all
+    # possible variables of a seed template with value found in intermediary
+    # relation.
     def make_seed_sprout
       new_rules = {}
       # for each seeds entry
@@ -1258,12 +1261,15 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         template = @wl_program.parse sts[2]
         new_rule = nil
         var_to_bound = template.body.first.variables[2]
-        # for each tuple in intermediary relation
+        # FIXME instead of each tuple iterate over the delta of new tuples would
+        # be better for each tuple in intermediary relation
         coll.pro do |tuple|
           new_rule = String.new template.show_wdl_format
           var_to_bound.each_index do |ind_var|
-            # FIXME take care if tuple value requires quotes
-            new_rule = new_rule.gsub var_to_bound[ind_var], tuple[ind_var]
+            # FIXME hard coded @ to add quotes around field value but not around relation name and peer name
+            new_rule = new_rule.gsub "#{var_to_bound[ind_var]}@", "#{tuple[ind_var]}@"
+            new_rule = new_rule.gsub "@#{var_to_bound[ind_var]}", "@#{tuple[ind_var]}"
+            new_rule = new_rule.gsub "#{var_to_bound[ind_var]}", "#{tuple[ind_var]}"
           end
           # add new rules only if it has not already been derived
           unless @sprout_rules.has_key?(new_rule)
@@ -1432,16 +1438,14 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
     # @return [String] the name of dir where rule files will be stored
     #
     def create_rule_dir(rule_dir)
-      if rule_dir.nil? or not File.directory?(rule_dir) or not File.writable?(rule_dir)
-        returned_dir = rule_dir || "wlrdir_#{@peername}_#{Time.now}_#{self.class}_#{@peername.object_id}"
-        base_dir = WL::get_path_to_rule_dir
-        unless (File::directory?(base_dir))
-          Dir.mkdir(base_dir)
-        end
-        returned_dir = File.join(base_dir,WLTools.friendly_filename(returned_dir))
-        unless (File::directory?(returned_dir))
-          Dir.mkdir(returned_dir)
-        end
+      base_dir = WL::get_path_to_rule_dir
+      Dir.mkdir(base_dir) unless (File::directory?(base_dir))
+      returned_dir = rule_dir || "wlrdir_#{@peername}_#{Time.now}_#{self.class}_#{@peername.object_id}"
+      returned_dir = File.join(base_dir,WLTools.friendly_filename(returned_dir))
+      if File.writable?(base_dir)
+        Dir.mkdir(returned_dir) unless (File::directory?(returned_dir))
+      else
+        raise WLError, "Right to write needed in the rule directory of webdamlog"
       end # unless File.directory?(rule_dir)
       return returned_dir
     end # create_rule_dir

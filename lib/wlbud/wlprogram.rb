@@ -152,29 +152,9 @@ module WLBud
       # Parse lines to be read and add them to wlprogram
       io_pg = IO.readlines @programfile, ';'
       parse_lines io_pg, true
-
     end
 
-    # Returns true if no rules are loaded for evaluation.
-    def rules_empty? ; return @rule_mapping.empty?; end
-
-    # Returns true if no facts are loaded for evaluation.
-    def facts_empty? ; return @wlfacts.empty?; end
-
-    # Returns true if no policies are loaded for evaluation.
-    def policies_empty? ; return @wlpolicies.empty?; end
-
-    # Return true if no collection is loaded for evaluation.
-    def collection_empty? ; return @wlcollections.empty?; end
-
-    # Return true if the whole program to evaluate is empty
-    def empty? ; return (rules_empty? and facts_empty? and collection_empty?) ; end
-
-    def print_arg_tab(target,str)
-      string=""
-      target.each {|r| string << "#{r};\n"}
-      puts "#{str} :{\n#{string}}"
-    end
+    public  
 
     # Parse a program. Notice that ';' is a reserved keyword for end sentence. A
     # sentence could define a peer, a collection, a fact or a rule.
@@ -280,7 +260,7 @@ In the string: #{line}
       return peername, address
     end
 
-    # The whole rewrite process to compile webdamlog into bud + delegation and
+    # The whole rewrite process to compile Webdamlog into bud + delegation and
     # seeds. If the rule needs to be split it will create a new intermediary
     # relation that is accessible with flush_new_local_declaration. Then the
     # rule could be a simple rewriting or a seed. According to the case it will
@@ -413,7 +393,7 @@ In the string: #{line}
           delegation = wlrule.show_wdl_format
           # FIXME hacky substitute of _at_ by @ to be parsed correctly by the
           # receiver
-          delegation.gsub!(/_at_/, '@')
+          # delegation.gsub!(/_at_/, '@')
 
         else # if the rule must be cut in two part
           interm_relname = generate_intermediary_relation_name(wlrule.rule_id)
@@ -498,8 +478,7 @@ In the string: #{line}
     public
 
     # Generates the string representing the rule in the Bud format from a
-    # WLrule.
-    #
+    # WLRule
     def translate_rule_str(wlrule)
       unless wlrule.is_a?(WLBud::WLRule)
         raise WLErrorTyping,
@@ -554,16 +533,13 @@ In the string: #{line}
           s = make_combos(wlrule)
           str_res << s
         end
-        str_res << " {|";
+        str_res << " do |";
         wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
         str_res.slice!(-2..-1) #remove last and before last
-
-        str_res << "| "
-        
+        str_res << "| "        
         str_res << projection_bud_string(wlrule)
         str_res << condition_bud_string(wlrule)
-        
-        str_res << "};"
+        str_res << " end;"
       end
     end
 
@@ -1331,7 +1307,7 @@ In the string: #{line}
       end
       return namedSentence
     end
-    
+
     # Disambiguate fields, it replace alias such as local or me by the local
     # peername id. Hence subsequent call to peername will use the unique id of
     # this peer.
@@ -1380,7 +1356,7 @@ In the string: #{line}
       #   conform to facts to be sent via sbuffer
       unless bound_n_local?(wlrule.head)
         destination = "#{@wlpeers[wlrule.head.peername]}"
-        # #add location specifier
+        # add location specifier
         raise WLErrorPeerId, "impossible to define the peer that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{destination}\", "
         relation = "#{make_rel_name(wlrule.head.fullrelname)}"
@@ -1391,23 +1367,23 @@ In the string: #{line}
 
       # add the list of variable and constant that should be projected
       fields = wlrule.head.fields
-      fields.each do |f|
-        if f.variable?
-          var = f.token_text_value
-          if wlrule.dic_wlvar.has_key?(var)
-            relation , attribute = wlrule.dic_wlvar.fetch(var).first.split('.')
+      fields.each do |field|
+        textfield = field.token_text_value
+        if field.variable?
+          if wlrule.dic_wlvar.has_key?(textfield)
+            relation , attribute = wlrule.dic_wlvar.fetch(textfield).first.split('.')
             str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation)}[#{attribute}], "
           else
-            if var.anonymous?
+            if field.anonymous?
               raise(WLErrorGrammarParsing,
                 "Anonymous variable in the head not allowed in " + wlrule.text_value)
             else
               raise(WLErrorGrammarParsing,
-                "In rule "+wlrule.text_value+" #{var} is present in the head but not in the body. This is not WebdamLog syntax.")
+                "In rule "+wlrule.text_value+" #{textfield} is present in the head but not in the body. This is not WebdamLog syntax.")
             end
           end
         else
-          str << "#{quote_string(f.token_text_value)}, "
+          str << "#{WLTools::quote_string(textfield)}, "
         end
       end
 
@@ -1473,9 +1449,9 @@ In the string: #{line}
           if wlrule.dic_wlconst.keys.first == key
             str << " if "
           else
-            str << " && "
+            str << " and "
           end
-          str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position)}[#{attribute_position}]==#{quote_string(key)}"
+          str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position)}[#{attribute_position}]==#{WLTools::quote_string(key)}"
         end
       end
       return str
@@ -1616,11 +1592,6 @@ In the string: #{line}
       else
         raise WLErrorProgram, "in get_column_name_of_relation #{atom.relname}_at_#{atom.peername} not found in wlcollections"
       end
-    end
-
-    # Add quotes around s if it is a string
-    def quote_string(s)
-      s.is_a?(String) ? "\'#{s}\'" : s.to_s
     end
 
     # Tools for WLprogram This tool function checks if a table includes an

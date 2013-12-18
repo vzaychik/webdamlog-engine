@@ -156,26 +156,26 @@ module WLBud
     # Make dictionary : creates hash dictionaries for WLvariables and constants.
     # These dictionaries takes as key the field value as it appears in the .wl
     # file along with their position in the rule to disambiguate in case of self
-    # joins. As value it's location in the following format :
+    # joins.  As value it's location in the following format :
     # 'relation_pos.field_pos'
     #
-    # Detect variable by checking field names starting with a '$' sign. This
+    # Detect variable by checking field names starting with a '$' sign.  This
     # populate the two dictionaries dic_wlconst and dic_wlvar and the relation
     # dictionary with its reverse.
-    def make_dictionaries ()
+    def make_dictionaries
       self.body.each_with_index do |atom,n|
         # field variable goes to dic_wlvar and constant to dic_wlconst
         atom.fields.each_with_index do |f,i|
           str = "#{n}.#{i}"
           if f.variable?
-            var = f.text_value
+            var = f.token_text_value
             if self.dic_wlvar.has_key?(var)
               self.dic_wlvar[var] << str
             else
               self.dic_wlvar[var]=[str]
             end
           else
-            const = f.text_value
+            const = f.token_text_value
             if self.dic_wlconst.has_key?(const)
               self.dic_wlconst[const] << str
             else
@@ -231,12 +231,12 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     end
 
     # Create a new rule with a new relation in the head that receive the
-    # valuations of all the useful variable in the bound part of a wlrule
+    # valuations of all the useful variables in the bound part of a wlrule
     #
     # Useful variable are the one appearing in the local part AND (in the
     # unbound part OR in the head)
     def create_intermediary_relation_from_bound_atoms interm_relname, interm_peername
-      #select atom in the local part
+      # select atom in the local part
       localbody = ""
       local_vars = []
       @bound.each do |atom|
@@ -245,7 +245,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       end
       local_vars = local_vars.flatten.compact.uniq
       localbody.slice!(-1)
-      #select atom in the remote part and in the head
+      # #select atom in the remote part and in the head
       remote_vars = []
       @unbound.each do |atom|
         remote_vars += atom.variables.flatten
@@ -258,16 +258,25 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
           useful_vars << var
         end
       end
-      # build the list of attributes for relation declaration (dec_fields)
-      # removing the '$' of variable and create attributes names
-      dec_fields=''
-      var_fields=''
-      useful_vars.each_index do |ind|
-        useful_var = useful_vars[ind]
-        dec_fields << useful_var.gsub( /(^\$)(.*)/ , interm_relname+"_\\2_"+ind.to_s+"\*," )
-        var_fields << useful_var << ","
-      end ; dec_fields.slice!(-1); var_fields.slice!(-1);
 
+      # FIXME if there is no useful variable the rule is syntactically correct
+      # but logically there is useless atoms. The problem is that it will
+      # generate a rewriting with a zero arity relation. I changed it here to
+      # add a boolean set to true.
+      if useful_vars.empty?
+        dec_fields='const_bool*'
+        var_fields='true'
+      else
+        # build the list of attributes for relation declaration (dec_fields)
+        # removing the '$' of variable and create attributes names
+        dec_fields=''
+        var_fields=''
+        useful_vars.each_index do |ind|
+          useful_var = useful_vars[ind]
+          dec_fields << useful_var.gsub( /(^\$)(.*)/ , interm_relname+"_\\2_"+ind.to_s+"\*," )
+          var_fields << useful_var << ","
+        end ; dec_fields.slice!(-1); var_fields.slice!(-1);
+      end
       # new collection declaration
       interm_rel_declaration = "#{interm_relname}@#{interm_peername}(#{dec_fields})"
       # new rule to install
@@ -384,7 +393,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
   end
 
   module WLItem
-
     attr_accessor :item_text_value
 
     def item_text_value
@@ -412,6 +420,9 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
   end
 
   class WLComplexString < WLVocabulary
+    def variable?
+      false
+    end
   end
 
   # The WLcollection class is used to store the content of parsed WL relation
@@ -460,7 +471,8 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       return @schema
     end # schema
 
-    # @return [Symbol] the relation type :Intensional :Extensional or :Intermediary
+    # @return [Symbol] the relation type :Intensional :Extensional or
+    # :Intermediary
     def get_type
       rel_type.type
     end
@@ -701,7 +713,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       @peername = yield peername if block_given?
     end
 
-    # @return [Array] the variables included in the atom in an array format 
+    # @return [Array] the variables included in the atom in an array format
     # [relation_var,peer_var,[field_var1,field_var2,...]]
     def variables
       if @variables.nil?
@@ -828,13 +840,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       super(a1,a2,a3)
     end
 
-    # remove the comma and return an array of items if defined here, it seems
-    # that list_rtokens doesn't override the list_rtokens defined by treetop
-    # while parsing
-    #
-    # def list_rtokens
-    #  super.elements.map{ |comma_and_item| comma_and_item.other_rtoken}
-    # end the list of rtokens in an array
+    # remove the comma and return an array of rtokens (rule tokens)
     def get_rtokens
       [first_rtoken] + list_rtokens.elements.map{ |comma_and_item| comma_and_item.other_rtoken }
     end

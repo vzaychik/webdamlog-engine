@@ -69,60 +69,59 @@ module WLBud
       @wlfacts=[]
       # List of access control policies in the program file
       # Array: (WLBud::WLPolicy)
-      #
       @wlpolicies=[]
       # The original rules before the rewriting used for evaluation. It gives
-      # the original semantic of the program.
+      #  the original semantic of the program.
       #
       # Original rules id are stored as key and value is an array with first the
-      # original rule as a WLBud::WLRule then the id of rules rewritten or
-      # string representing the rewriting if the rewriting is non-local since
-      # rule id are given by the peer which install the rule.
+      #  original rule as a WLBud::WLRule then the id of rules rewritten or
+      #  string representing the rewriting if the rewriting is non-local since
+      #  rule id are given by the peer which install the rule.
       @rule_mapping = Hash.new{ |h,k| h[k]=Array.new }
       # The local rules straightforward to convert into bud (simple syntax
       # translation)
       # === data struct
-      # Array:(WLBud:WLRule)
-      #@localrules=[]
-      # Nonlocal rules in WL are never converted into Bloom rules directly (as
-      # opposed to previous types of rules). They are split in two part one
-      # stored in delegation that must be send to a remote peer and another part
-      # stored in rewrittenlocal that correspond to the longest sequence
-      # possible to evaluate locally, that may be the whole original rule if
-      # only the head was not local.
+      # Array:(WLBud:WLRule) #@localrules=[] Nonlocal rules in WL are never
+      #  converted into Bloom rules directly (as
+      #  opposed to previous types of rules). They are split in two part one
+      #  stored in delegation that must be send to a remote peer and another part
+      #  stored in rewrittenlocal that correspond to the longest sequence
+      #  possible to evaluate locally, that may be the whole original rule if
+      #  only the head was not local.
       # === data struct
-      # Array:(WLBud:WLRule)
-      # The list of rules which have a non-local head - this only matters
-      # in access control on mode
+      # Array:(WLBud:WLRule) The list of rules which have a non-local head -
+      # this only matters
+      #  in access control on mode
       @nonlocalheadrules=[]
       # The list of delegation needed to send after having processed the
-      # wlprogram at initialization. Ie. the non-local part of rules should
-      # start with an intermediary relation that control it triggering.
+      #  wlprogram at initialization. Ie. the non-local part of rules should
+      #  start with an intermediary relation that control it triggering.
       #
       # Array:(WLBud:WLRule)
-      # @delegations = Hash.new{ |h,k| h[k]=Array.new }
-      # This is the list of rules which contains the local rules after a
-      # non-local rule of the wlprogram at initialization has been rewritten.
-      # This kind of rule have a intermediary relation in their head that
-      # control the corresponding delegated part of the rule on the remote peer.
+      #
+      # @delegations = Hash.new{ |h,k| h[k]=Array.new } This is the list of
+      # rules which contains the local rules after a
+      #  non-local rule of the wlprogram at initialization has been rewritten.
+      #  This kind of rule have a intermediary relation in their head that
+      #  control the corresponding delegated part of the rule on the remote peer.
       # === data struct
       # Array:(WLBud:WLRule)
       @rewrittenlocal=[]
       # Keep the new relation to declare on remote peer (typically intermediary
-      # relation created when rewrite) due to processing of of a wlgrammar line
-      # in rewrite_non_local.
+      #  relation created when rewrite) due to processing of of a wlgrammar line
+      #  in rewrite_non_local.
       # === data struct
       # Hash:(peer address, Set:(string wlgrammar collection declaration) )
       @new_relations_to_declare_on_remote_peer = Hash.new{|h,k| h[k]=Set.new }
       # The list of all the new delegations to be send due to processing of a
-      # wlgrammar line in rewrite_non_local. It contains the non-local part of
-      # the rule that have been splitted.
+      #  wlgrammar line in rewrite_non_local. It contains the non-local part of
+      #  the rule that have been splitted.
       # === data struct
       # Hash:(peer address, Set:(string wlgrammar rule) )
       @new_delegations_to_send = Hash.new{|h,k| h[k]=Set.new }
       # The list of all the new local collection to create due to processing of
-      # a wlgrammar line in rewrite_non_local. It contains the intermediary
-      # relation declaration.
+      #  a wlgrammar line in rewrite_non_local. It contains the intermediary
+      #  relation declaration.
       # === data struct
       # Array:(string wlgrammar collection)
       @new_local_declaration = []
@@ -133,8 +132,8 @@ module WLBud
       # Array:(WLBud::WLRule)
       @new_rewritten_local_rule_to_install = []
       # The list of all the new local seeds to create due to processing of a
-      # wlgrammar line in rewrite_unbound_rules. It contains the bound part of
-      # the rule that have been split.
+      #   wlgrammar line in rewrite_unbound_rules. It contains the bound part of
+      #   the rule that have been split.
       #
       # === data struct
       # Array:[[WRule:seeder,String:interm_rel_in_rule,String:seedtemplate,WLRule:wlrule],...]
@@ -198,8 +197,7 @@ module WLBud
     # PENDING should check before adding rule that the all the local atoms have
     # been declared. The atoms in the head that are not local should also be
     # declared but I can also make my parser declare them automatically since
-    # the type is not important.
-    # FIXME: remove rewritten is useless now
+    # the type is not important. FIXME: remove rewritten is useless now
     def parse(line, add_to_program=false, options={})
       raise WLErrorTyping, "I could only parse string not #{line.class}" unless line.is_a?(String)
       unless (output=@parser.parse(line))
@@ -221,8 +219,7 @@ In the string: #{line}
           case result
           when WLBud::WLPeerDec
             pname = WLTools.sanitize(result.peername)
-            #ip = WLTools.sanitize(result.ip)
-            ip = result.ip
+            ip = WLTools.sanitize(result.ip)
             port = WLTools.sanitize(result.port)
             add_peer pname, ip, port
           when WLBud::WLCollection
@@ -232,12 +229,12 @@ In the string: #{line}
             @wlfacts << result
           when WLBud::WLRule
             result.rule_id = rule_id_generator
-            #assign current peer as the rule author by default
+            # assign current peer as the rule author by default
             result.author = @peername
             @rule_mapping[result.rule_id] << result
-            #VZM access control - need to do additional special processing
-            #if the head is not local but the body is local, then need to
-            #rewrite to delegate since we need to check write permissions
+            # VZM access control - need to do additional special processing if
+            # the head is not local but the body is local, then need to rewrite
+            # to delegate since we need to check write permissions
             if @options[:accessc] && !@options[:optim1] && !bound_n_local?(result.head) && !result.head.relname.start_with?("deleg_") && bound_n_local?(result)
               @nonlocalheadrules << result
             end
@@ -281,8 +278,8 @@ In the string: #{line}
       end
     end
 
-    #For access control rewrite a local rule with non-local head to have an intermediary nonlocal head
-    #plus a delegated rule to the other peer
+    # For access control rewrite a local rule with non-local head to have an
+    #  intermediary nonlocal head plus a delegated rule to the other peer
     def rewrite_non_local_head_rule wlrule
       raise WLErrorProgram, "local peername:#{@peername} is not defined yet while rewrite rule:#{wlrule}" if @peername.nil?
       raise WLErrorProgram, "trying to rewrite the remote head rule for a local-head rule" if bound_n_local?(wlrule.head)
@@ -314,8 +311,7 @@ In the string: #{line}
       @new_delegations_to_send[addr_destination_peer] << delegation
       @rule_mapping[wlrule.rule_id] << delegation
       @rule_mapping[delegation] << delegation
-
-      #wlrule.head.relname = relation_name
+      
       rulestr = wlrule.show_wdl_format
       rulestr.gsub!('_at_','@')
       rulestr.gsub!(wlrule.head.relname, relation_name)
@@ -423,8 +419,8 @@ In the string: #{line}
     # Split the rule by reading atoms from left to right until non local atom or
     # variable in relation name or peer name has been found.
     #
-    # Set the attributes @seed and @split_pos respectively to true if there is an
-    # atom with variable in relation or peer name ; and @seedpos with the
+    # Set the attributes @seed and @split_pos respectively to true if there is
+    # an atom with variable in relation or peer name ; and @seedpos with the
     # position of this atom in the body starting from 0 or -1 if the variable is
     # in the head.
     #
@@ -474,8 +470,7 @@ In the string: #{line}
 
     public
 
-    # Generates the string representing the rule in the Bud format from a
-    # WLRule
+    # Generates the string representing the rule in the Bud format from a WLRule
     def translate_rule_str(wlrule)
       unless wlrule.is_a?(WLBud::WLRule)
         raise WLErrorTyping,
@@ -558,7 +553,8 @@ In the string: #{line}
       wlrule.make_dictionaries unless wlrule.dic_made
 
       if body.length==0
-        #VZM:TODO! - when is rule body length ever 0??? and what do we do in such cases with access controL?
+        # VZM:TODO! - when is rule body length ever 0??? and what do we do in
+        #  such cases with access controL?
         puts "translation of rule with zero body length while in access control mode not implemented!!!"
       else
         s = make_combos(wlrule)
@@ -568,7 +564,7 @@ In the string: #{line}
         wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
         str_res.slice!(-2..-1) #remove last and before last
 
-        #VZM access control - need to add variable names for each acl we added
+        # VZM access control - need to add variable names for each acl we added
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom)
             str_res << ", #{atom.relname}acl"
@@ -583,14 +579,14 @@ In the string: #{line}
         str_res << projection_bud_string(wlrule)
         str_res << condition_bud_string(wlrule)
 
-        #add the check for the right plist in acls
-        #add the check that we can write to the head relation
+        # add the check for the right plist in acls #add the check that we can
+        # write to the head relation
         if str_res.include?(" if ")
           str_res << " && "
         else
           str_res << " if "
         end
-        #select just the Read tuples
+        # select just the Read tuples
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom)
             if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
@@ -606,7 +602,7 @@ In the string: #{line}
           str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
         end
         
-        ## check for read or grant for target peer on preserved relations only
+        # check for read or grant for target peer on preserved relations only
         first_intersection = true
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom)
@@ -629,7 +625,7 @@ In the string: #{line}
           str_res << ").include?(\"#{wlrule.head.peername}\") && "
         end
 
-        ## check for grant for author peer on hide relations only
+        # check for grant for author peer on hide relations only
         first_intersection = true
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom)
@@ -674,24 +670,26 @@ In the string: #{line}
       unless bound_n_local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
-             str_res << "temp :#{wlrule.head.fullrelname} <= "
-           else
-             str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
-           end
+          str_res << "temp :#{wlrule.head.fullrelname} <= "
+        else
+          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
+        end
       end
       
       # Make the locations dictionaries for this rule
       wlrule.make_dictionaries unless wlrule.dic_made
       
       if body.length==0
-        #VZM:TODO! - when is rule body length ever 0??? and what do we do in such cases with access controL?
+        # VZM:TODO! - when is rule body length ever 0??? and what do we do in
+        # such cases with access controL?
         puts "translation of rule with zero body length while in access control mode not implemented!!!"
       else
         str_res << "("
         wlrule.body.each do |atom|
           str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} * "
         end
-        #TODO - probably need to do a push selection on writeable as well because of cartesian product
+        # TODO - probably need to do a push selection on writeable as well
+        # because of cartesian product
         if !bound_n_local?(wlrule.head) && wlrule.author == @peername
           str_res << "writeable_at_#{@peername} * "
         end
@@ -753,7 +751,7 @@ In the string: #{line}
         puts "rule head is not local " if !bound_n_local?(wlrule.head) if @options[:debug]
         puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
         if !bound_n_local?(wlrule.head) && wlrule.author == @peername
-          #we need to check write on the final relation, not on intermediary
+          # We need to check write on the final relation, not on intermediary
           if intermediary?(wlrule.head)
             headrule = nil
             @rule_mapping.keys.each {|id|
@@ -782,7 +780,7 @@ In the string: #{line}
         str_res << "};"
       end
 
-      #make selections over body relations since bud doesn't do push selections
+      # make selections over body relations since bud doesn't do push selections
       wlrule.body.each do |atom|
         if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
             (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
@@ -823,7 +821,8 @@ In the string: #{line}
 
       if body.length==0
         if @options[:accessc]
-          #VZM:TODO! - when is rule body length ever 0??? and what do we do in such cases with access controL?
+          # VZM:TODO! - when is rule body length ever 0??? and what do we do in
+          # such cases with access controL?
           puts "translation of rule with zero body length while in access control mode not implemented!!!"
         end
 
@@ -841,7 +840,7 @@ In the string: #{line}
         wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
         str_res.slice!(-2..-1) #remove last and before last
 
-        #VZM access control - need to add variable names for each acl we added
+        # VZM access control - need to add variable names for each acl we added
         if @options[:accessc]
           wlrule.body.each do |atom|
             if bound_n_local?(atom) && !intermediary?(atom)
@@ -867,16 +866,16 @@ In the string: #{line}
         str_res << projection_bud_string(wlrule)
         str_res << condition_bud_string(wlrule)
 
-        #add the check for the right plist in acls
-        #add the check that we can write to the head relation
+        # add the check for the right plist in acls #add the check that we can
+        # write to the head relation
         if @options[:accessc]
           if str_res.include?(" if ")
             str_res << " && "
           else
             str_res << " if "
           end
-          #select just the Read tuples
-          #str_res << "atom0.priv == \"Read\" && "
+          # select just the Read tuples #str_res << "atom0.priv == \"Read\" &&
+          # "
           wlrule.body.each do |atom|
             if bound_n_local?(atom) && !intermediary?(atom)
               if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
@@ -896,7 +895,8 @@ In the string: #{line}
             str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
           end
 
-          ## check for read or grant for target peer on preserved relations only
+          # check for read or grant for target peer on preserved relations
+          # only
           first_intersection = true
           wlrule.body.each do |atom|
             if bound_n_local?(atom) && !intermediary?(atom)
@@ -921,7 +921,7 @@ In the string: #{line}
               str_res << "(capchead.plist)).include?(\"#{wlrule.head.peername}\") && capchead.priv == \"R\" && " 
             elsif @options[:optim2]
               str_res.slice!(-10..-1)
-              #FIXME - need to have a special case for Omega
+              # FIXME - need to have a special case for Omega
               str_res << ") == formul.id && formul.plist.include?(\"#{wlrule.head.peername}\" && "
             else
               str_res.slice!(-10..-1)
@@ -929,7 +929,7 @@ In the string: #{line}
             end
           end
 
-          ## check for grant for author peer on hide relations only
+          # check for grant for author peer on hide relations only
           first_intersection = true
           wlrule.body.each do |atom|
             if bound_n_local?(atom) && !intermediary?(atom)
@@ -965,7 +965,7 @@ In the string: #{line}
           if wlrule.author != @peername && bound_n_local?(wlrule.head) && !@options[:optim1]
             str_res << " && aclw.priv == \"W\" && aclw.rel == \"#{wlrule.head.fullrelname}\" && aclw.plist.include?(\"#{wlrule.author}\")"
           elsif @options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername
-            #we need to check write on the final relation, not on intermediary
+            # Ee need to check write on the final relation, not on intermediary
             if intermediary?(wlrule.head)
               headrule = nil
               @rule_mapping.keys.each {|id|
@@ -1027,7 +1027,8 @@ In the string: #{line}
             end
           end
 
-          #if there are no nongrant, i.e. non-hide atoms, then just add omega grant and read
+          # If there are no nongrant, i.e. non-hide atoms, then just add omega
+          # grant and read
           if headpr.empty?
             capc_str << "capc_#{wlrule.rule_id}__at_#{@peername} <= "
             capc_str << "(" if noninterm > 1
@@ -1067,7 +1068,7 @@ In the string: #{line}
             end
             capc_str.slice!(-3..-1)
             capc_str << ").combos"
-            #natural join
+            # natural join
             if headpr.length > 1
               capc_str << "("
               headpr.each do |index|
@@ -1118,7 +1119,8 @@ In the string: #{line}
       wlrule.make_dictionaries unless wlrule.dic_made
 
       if @options[:optim2] && !wlrule.body.empty?
-        #go through the intersections that are required and add them to the formulas relation
+        # go through the intersections that are required and add them to the
+        # formulas relation
         intersects = []
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom)
@@ -1129,10 +1131,11 @@ In the string: #{line}
           end
         end
         unless intersects.empty?
-          #FIXME - make work for more than 2 relations. however, this is limited by bud's self-join limit
+          # FIXME - make work for more than 2 relations. however, this is
+          # limited by bud's self-join limit
           rel1 = intersects.pop
           rel2 = intersects.pop
-          #FIXME - how do we handle Omega?
+          # FIXME - how do we handle Omega?
           if rel2.nil?
             formula_str << "formulas_at_#{peername} <= (formulas_at_#{peername}*formulas_at_#{peername}*formulas2_at_#{peername}*formulas2_at_#{peername}*#{rel1}*aclf_at_#{peername}*#{rel2}*aclf_at_#{peername}).combos {|f1,f2,f3,f4,r1,acl1,r2,acl2| [f1.id+\"*\"+f2.id+\"*\"+f3.id+\"*\"+f4.id,f1.plist.intersect(f2.plist).intersect(f3.plist).intersect(f4.plist)] if f1.id == r1.plist && f2.id == acl1.plist && f3.id == r2.plist && f4.id == acl2.plist && acl1.rel == \"#{rel1}\" && acl2.rel == \"#{rel2}\"};"
           else
@@ -1144,9 +1147,8 @@ In the string: #{line}
       return formula_str
     end
 
-    # Generates the string representing the relation name
-    # If access control is on, turns into extended relation
-    # unless it's a delegated relation
+    # Generates the string representing the relation name If access control is
+    # on, turns into extended relation unless it's a delegated relation
     def make_rel_name (rel)
       rel, pname = rel.split('_at_')
       str_res = "#{rel}"
@@ -1385,7 +1387,7 @@ In the string: #{line}
       end
 
       if @options[:accessc]
-        #add priv and plist computation
+        # add priv and plist computation
         if @options[:optim1]
           str << "atom0.priv, "
         else
@@ -1395,7 +1397,7 @@ In the string: #{line}
 
 
         if extensional_head?(wlrule)
-          #only intersect those that have preserve on them
+          # only intersect those that have preserve on them
           wlrule.body.each do |atom|
             if !atom.provenance.empty? && atom.provenance.type == :Preserve
               str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"              
@@ -1407,7 +1409,7 @@ In the string: #{line}
             end
           end
         else
-          #if there is a hide, do not carry over the access restrictions
+          # if there is a hide, do not carry over the access restrictions
           wlrule.body.each do |atom|
             if atom.provenance.empty? || atom.provenance.type != :Hide
               str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"
@@ -1436,8 +1438,8 @@ In the string: #{line}
       return str
     end
 
-    # define the if condition for each constant it assign its value.
-    # @return [String] the string to append to make the wdl rule
+    # define the if condition for each constant it assign its value. @return
+    # [String] the string to append to make the wdl rule
     def condition_bud_string wlrule
       str = ""
       wlrule.dic_wlconst.each do |key,value|
@@ -1486,7 +1488,8 @@ In the string: #{line}
       end
       str.slice!(-2..-1) unless wlrule.body.empty?
 
-      #VZM access control - need to add acls for each relation that is local and not delegated 
+      # VZM access control - need to add acls for each relation that is local
+      # and not delegated
       if @options[:accessc]
         wlrule.body.each do |atom|
           if bound_n_local?(atom) && !intermediary?(atom) && !@options[:optim1]
@@ -1497,16 +1500,17 @@ In the string: #{line}
             end
           end
         end
-        #instead of including acls directly, with optimization 1 we compute those in a special capc relation
+        # instead of including acls directly, with optimization 1 we compute
+        # those in a special capc relation
         if @options[:optim1]
           str << " * capc_#{wlrule.rule_id}_at_#{@peername} * capc_#{wlrule.rule_id}_at_#{@peername}"
         end
         if @options[:optim2]
           str << " * formulas_at_#{@peername}"
         end
-        #in regular access control check writeable at the source prior to writing
-        #with optimization 1 check only with the original rule using the writeable relation
-        #and assume no malicious peers
+        # in regular access control check writeable at the source prior to
+        # writing #with optimization 1 check only with the original rule using
+        # the writeable relation #and assume no malicious peers
         if wlrule.author != @peername && bound_n_local?(wlrule.head) && !@options[:optim1]
           str << " * acl_at_#{wlrule.head.peername}"
         elsif @options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername
@@ -1549,11 +1553,11 @@ In the string: #{line}
           str << ','
         end
       end
-      #FIXME - make the below work for more than 1 acl in the rule without it clashing, if it's possible
-      #if @options[:accessc] && !@options[:optim1]
+      # FIXME - make the below work for more than 1 acl in the rule without it
+      # clashing, if it's possible #if @options[:accessc] && !@options[:optim1]
       #  str << "acl_at_#{@peername}.priv => #{make_rel_name(wlrule.body.first.fullrelname)}.priv,"
       #  combos=true
-      #end
+      # end
       str.slice!(-1) if combos
       str << ')'
       
@@ -1617,7 +1621,7 @@ In the string: #{line}
         return wlatom.get_type.intermediary?
       else
         raise WLErrorProgram,
-        "Tried to determine if #{wlatom} is intermediary but it has wrong type #{wlatom.class}"
+          "Tried to determine if #{wlatom} is intermediary but it has wrong type #{wlatom.class}"
       end
     end
 
@@ -1635,8 +1639,21 @@ In the string: #{line}
       puts "\n\n--------------------------------------------------------"
     end
 
+    # Returns true if no rules are loaded for evaluation.
+    def rules_empty? ; return @rule_mapping.empty?; end
+
+    # Returns true if no facts are loaded for evaluation.
+    def facts_empty? ; return @wlfacts.empty?; end
+
+    # Return true if no collection is loaded for evaluation.
+    def collection_empty? ; return @wlcollections.empty?; end
+
+    # Return true if the whole program to evaluate is empty
+    def empty? ; return (rules_empty? and facts_empty? and collection_empty?) ; end
+
     def extensional_head? (wlrule)
-      #we want to always check the rule head which for imtermediary relations means finding their parents
+      # We want to always check the rule head which for imtermediary relations
+      #  means finding their parents
       if intermediary?(wlrule.head)
         headrule = nil
         @rule_mapping.keys.each {|id|
@@ -1648,7 +1665,7 @@ In the string: #{line}
           return extensional?(headrule.first.head)
         else
           raise WLErrorProgram,
-          "Not good, can't locate the parent rule for this intermediary one #{wlrule}"
+            "Not good, can't locate the parent rule for this intermediary one #{wlrule}"
         end
       else
         return extensional?(wlrule.head)
@@ -1666,7 +1683,7 @@ In the string: #{line}
         return wlatom.get_type.extensional?
       else
         raise WLErrorProgram,
-        "Tried to determine is #{wlatom} is extensional but it has wrong type #{wlatom.class}"
+          "Tried to determine is #{wlatom} is extensional but it has wrong type #{wlatom.class}"
       end
     end
 

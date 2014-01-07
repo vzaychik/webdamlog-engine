@@ -96,6 +96,16 @@ public class Peer {
 			_collections.add(new Collection("s" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
 		}
 	}
+	
+	public void addSlave(Peer p, String nonKeys) {
+		_slaves.add(p);
+		_knownPeers.add(p);
+		if (_type.equals(PEER_TYPE.AGGREGATOR)) {
+			_collections.add(new Collection("r" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+		} else if (_type.equals(PEER_TYPE.MASTER)) {
+			_collections.add(new Collection("s" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+		}		
+	}
 
 	public void addKnownPeer(Peer p) {
 		_knownPeers.add(p);

@@ -60,9 +60,14 @@ public class Collection {
 		this (name, peerName, type, isPersistent, keys, "");
 	}
 
-	public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys,int numFacts, int valRange) {
+	public Collection(String name,  String peerName, COL_TYPE type, int isPersistent, String keys,int numFacts, int valRange) {
 		this (name, peerName, type, isPersistent, keys);
 		this.addFacts(numFacts, valRange);
+	}
+
+	public Collection(String name,  String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys, int numFacts, int valRange) {
+		this (name, peerName, type, isPersistent, keys, nonKeys);
+		this.addFacts(numFacts, valRange, this._nonKeys.size());
 	}
 
 	public String getType() {
@@ -109,8 +114,8 @@ public class Collection {
 	
 	public String nonKeysToString() {
 		StringBuffer res = new StringBuffer();
-		for (String key : _nonKeys) {
-			res.append(key);
+		for (String str : _nonKeys) {
+			res.append("," + str);
 		}
 		return res.toString();
 	}
@@ -138,6 +143,25 @@ public class Collection {
 			Random rand = new Random();
 			for (int i=0; i<numFacts; i++) {
 				_facts.add("" + rand.nextInt(valRange));
+			}
+		}
+	}
+	
+	/**
+	 * Generate facts that have a key column and the specified number of extra columns
+	 * @param numFacts
+	 * @param valRange
+	 * @param numExtraCols
+	 */
+	public void addFacts(int numFacts, int valRange, int numExtraCols) {
+		if (_type == COL_TYPE.EXT) {
+			Random rand = new Random();
+			for (int i=0; i<numFacts; i++) {
+				StringBuffer fact = new StringBuffer("" + rand.nextInt(valRange));
+				for (int col=0; col<numExtraCols; col++) {
+					fact.append("," + Constants.EXTRA_COL);
+				}
+				_facts.add(fact.toString());
 			}
 		}
 	}

@@ -31,5 +31,8 @@ public class Constants {
 	
 	public static float PROB_ALICE_OR_BOB_IN_PHOTO = 0.5f;
 	public static float PROB_OTHER_PEER_IN_PHOTO = 0.1f;
+	
+	// the length of the extra columns in the MAF scenario
+	public static String EXTRA_COL = "\"ABCDEFGHIJ\"";
 
 }

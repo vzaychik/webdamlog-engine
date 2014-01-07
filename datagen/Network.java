@@ -102,12 +102,12 @@ public class Network {
 	}
 	
 	public static void main(String[] args) {
-		if (args.length < 7) {
+		if (args.length < 8) {
 			//System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
-			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange [instanceFile] [numPeersPerInstance]");
+			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange numExtraCols [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
-		
+				
 		StringBuffer readmeComment = new StringBuffer("");
 		int numFollowers = Integer.parseInt(args[0].trim()); 
 		int numAggregators = Integer.parseInt(args[1].trim()); 		
@@ -116,8 +116,13 @@ public class Network {
 		POLICY policy = POLICY.valueOf(args[3]);
 		int numFacts = Integer.parseInt(args[4].trim());
 		SCENARIO scenario = SCENARIO.valueOf(args[5]);
-		int valRange = Integer.parseInt(args[6].trim()); 
+		int valRange = Integer.parseInt(args[6].trim()); 		
+		int numExtraCols = Integer.parseInt(args[7].trim()); 
 		
+		String nonKeys="col0";
+		for (int col=1; col<numExtraCols; col++) {
+			nonKeys += ",col" + col;
+		}
 		
 		// String dirPath = args[6].trim();
 		
@@ -128,10 +133,11 @@ public class Network {
 		readmeComment.append(", # facts per relation=" + numFacts);
 		readmeComment.append(", scenario=" + scenario.toString());
 		readmeComment.append(", value range=" + valRange);
+		readmeComment.append(", # extra cols=" + numExtraCols);
 				
-		if (args.length > 7) {
-			String instanceFile = args[7].trim();
-			int peersPerInstance = Integer.parseInt(args[8]);
+		if (args.length > 8) {
+			String instanceFile = args[8].trim();
+			int peersPerInstance = Integer.parseInt(args[9]);
 			initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
 		} else {
 			initNetAddressMap(1+numAggregators+numFollowers);
@@ -140,7 +146,11 @@ public class Network {
 		int currentId = 0;
 		
 		Peer master = new Peer(currentId++, PEER_TYPE.MASTER);
-		master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x"));
+		if (numExtraCols == 0) {
+			master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x"));
+		} else {
+			master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+		}
 		master.setPolicy(policy);
 		master.setScenario(scenario);
 
@@ -148,8 +158,13 @@ public class Network {
 		for (int i=0; i<numAggregators; i++) {
 			Peer p = new Peer(currentId++, PEER_TYPE.AGGREGATOR);
 			p.addMaster(master);
-			master.addSlave(p);
-			p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x"));
+			if (numExtraCols == 0) {
+				master.addSlave(p);
+				p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x"));
+			} else {
+				master.addSlave(p, nonKeys);
+				p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+			}
 			p.setPolicy(policy);
 			p.setScenario(scenario);
 			aggregators.add(p);
@@ -159,8 +174,11 @@ public class Network {
 		for (int i=0; i<numFollowers; i++) {
 			Peer p = new Peer(currentId++, PEER_TYPE.FOLLOWER);
 			p.addKnownPeer(master);
-			p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
-			
+			if (numExtraCols == 0) {
+				p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
+			} else {
+				p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", nonKeys, numFacts, valRange));
+			}
 			HashSet<Integer> aggsToFollow = new HashSet<Integer>();
 			for (int j=0; j <aggregators.size(); j++) {
 				for (int k=0; k<=overlap; k++) {
@@ -174,7 +192,11 @@ public class Network {
 			for (int j=0; j <aggregators.size(); j++) {
 				if (aggsToFollow.contains(j)) {
 					p.addMaster(aggregators.get(j));
-					aggregators.get(j).addSlave(p);
+					if (numExtraCols == 0) {
+						aggregators.get(j).addSlave(p);
+					} else {
+						aggregators.get(j).addSlave(p, nonKeys);
+					}
 					p.setPolicy(policy);
 					p.setScenario(scenario);					
 				}

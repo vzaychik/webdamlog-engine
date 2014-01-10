@@ -71,12 +71,12 @@ module WLBud
       # Array: (WLBud::WLPolicy)
       @wlpolicies=[]
       # The original rules before the rewriting used for evaluation. It gives
-      #  the original semantic of the program.
+      # the original semantic of the program.
       #
       # Original rules id are stored as key and value is an array with first the
-      #  original rule as a WLBud::WLRule then the id of rules rewritten or
-      #  string representing the rewriting if the rewriting is non-local since
-      #  rule id are given by the peer which install the rule.
+      # original rule as a WLBud::WLRule then the id of rules rewritten or
+      # string representing the rewriting if the rewriting is non-local since
+      # rule id are given by the peer which install the rule.
       @rule_mapping = Hash.new{ |h,k| h[k]=Array.new }
       # The local rules straightforward to convert into bud (simple syntax
       # translation)
@@ -197,7 +197,8 @@ module WLBud
     # PENDING should check before adding rule that the all the local atoms have
     # been declared. The atoms in the head that are not local should also be
     # declared but I can also make my parser declare them automatically since
-    # the type is not important. FIXME: remove rewritten is useless now
+    # the type is not important.
+    # FIXME: remove rewritten is useless now
     def parse(line, add_to_program=false, options={})
       raise WLErrorTyping, "I could only parse string not #{line.class}" unless line.is_a?(String)
       unless (output=@parser.parse(line))
@@ -470,7 +471,8 @@ In the string: #{line}
 
     public
 
-    # Generates the string representing the rule in the Bud format from a WLRule
+    # Generates the string representing the rule in the Bud format from a
+    # WLRule
     def translate_rule_str(wlrule)
       unless wlrule.is_a?(WLBud::WLRule)
         raise WLErrorTyping,
@@ -1385,50 +1387,7 @@ In the string: #{line}
           str << "#{WLTools::quote_string(textfield)}, "
         end
       end
-
-      if @options[:accessc]
-        # add priv and plist computation
-        if @options[:optim1]
-          str << "atom0.priv, "
-        else
-          str << "\"R\", "
-        end
-        str << "Omega.instance"
-
-
-        if extensional_head?(wlrule)
-          # only intersect those that have preserve on them
-          wlrule.body.each do |atom|
-            if !atom.provenance.empty? && atom.provenance.type == :Preserve
-              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"              
-              if bound_n_local?(atom) && !intermediary?(atom)
-                if !@options[:optim1]
-                  str << ".intersect(#{atom.relname}acl.plist)"
-                end
-              end
-            end
-          end
-        else
-          # if there is a hide, do not carry over the access restrictions
-          wlrule.body.each do |atom|
-            if atom.provenance.empty? || atom.provenance.type != :Hide
-              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"
-              if bound_n_local?(atom) && !intermediary?(atom)
-                if !@options[:optim1]
-                  str << ".intersect(#{atom.relname}acl.plist)"
-                end
-              end
-            end
-          end
-        end
-
-        if @options[:optim1] && !extensional_head?(wlrule)
-          str << ".intersect(capc.plist)"
-        end
-
-      else #regular non-access control execution
-        str.slice!(-2..-1) unless fields.empty?
-      end
+      str.slice!(-2..-1) unless fields.empty?
 
       unless bound_n_local?(wlrule.head)
         str << "]"
@@ -1438,19 +1397,45 @@ In the string: #{line}
       return str
     end
 
-    # define the if condition for each constant it assign its value. @return
-    # [String] the string to append to make the wdl rule
+    # Define the if condition for each constant it assign its value.
+    #
+    # @return [String] the string to append to make the wdl rule
     def condition_bud_string wlrule
       str = ""
+      first_condition = true
+
+      # add the condition for each constant
       wlrule.dic_wlconst.each do |key,value|
         value.each do |v|
           relation_position , attribute_position = v.split('.')
-          if wlrule.dic_wlconst.keys.first == key
+          if first_condition
             str << " if "
+            first_condition = false
           else
             str << " and "
           end
           str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position)}[#{attribute_position}]==#{WLTools::quote_string(key)}"
+        end
+      end
+
+      # add the condition for each self join to unfold
+      wlrule.dic_wlvar.each_pair do |key,values|
+        (0..values.size-2).each_with_index do |iter1,index|
+          pos1 = values[iter1]
+          relation_position1 , attribute_position1 = pos1.split('.')
+          (index+1..values.size-1).each do |iter2|
+            pos2 = values[iter2]
+            relation_position2 , attribute_position2 = pos2.split('.')
+            if wlrule.dic_invert_relation_name[Integer(relation_position1)] == wlrule.dic_invert_relation_name[Integer(relation_position2)]
+              if first_condition
+                str << " if "
+                first_condition = false
+              else
+                str << " and "
+              end
+              str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position1)}[#{attribute_position1}]==#{WLBud::WLProgram.atom_iterator_by_pos(relation_position2)}[#{attribute_position2}]"
+            end
+          end
         end
       end
       return str
@@ -1538,15 +1523,10 @@ In the string: #{line}
           col_name_first = get_column_name_of_relation(first_atom, Integer(attr_first))
           col_name_other = get_column_name_of_relation(other_atom, Integer(attr_other))
           # If it is a self-join symbolic name should be used
-          if rel_first_name.eql?(rel_other_name)
-            # if_str << " && #{wlrule.dic_relation_name[rel_first]}.#{attr_first}==#{wlrule.dic_budvar[rel_other]}.#{attr_other}"
+          if rel_first_name.eql?(rel_other_name)            
             str << ":#{col_name_first}" << ' => ' << ":#{col_name_other}"
             combos=true
           else
-            # str << WLProgram.atom_iterator_by_pos(rel_first) << attr_first <<
-            # '
-            # => ' << WLProgram.atom_iterator_by_pos(rel_other) << attr_other <<
-            # ',' ;
             str << make_rel_name(rel_first_name) << '.' << col_name_first << ' => ' << make_rel_name(rel_other_name) << '.' << col_name_other
             combos=true
           end

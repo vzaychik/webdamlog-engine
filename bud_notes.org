@@ -11,8 +11,9 @@ History:
 + 0.0.3 :: starter
 + 0.0.5
 + 0.0.7
-+ [current] 0.9.1 :: working but annoying to rewrite rules in files
-+ 0.9.5 :: to test
++ 0.9.1 :: working but annoying to rewrite rules in files
++ 0.9.5
++ [current] 0.9.7
 
 
 ** Launch Bud
@@ -330,6 +331,43 @@ multiple languages like JSON but it's faster and smaller.
 #+end_src
 
 http://wiki.msgpack.org/display/MSGPACK/QuickStart+for+Ruby
+
+
+
+** Bud evaluation via PushElements
+
+To evaluate rules bud creates a set of PushElement for each operators
+interpreted in eval_rule in bud.rb. The type of the PushElement is
+decided by the method used to create the PushElement:
+
+*** Creation of PushElements
+
++ ScannerElements :: are created when evaluating rules via the
+     *to_push_elem* method in collections.rb
+
++ PushSHJoin :: are created when evaluating '*' in rules via the method
+                *join* of PushElement in elements.rb
+
+
+
+
+*** Storage of PushElements
+
+See do_wiring in bud.rb and README.rescan in bud/executor
+
++ @scanners :: ScannerElement are the collections to rescan in the rhs of the rules
++ @push_elems :: an array of array with various fields about a
+                 PushElement. PushElements in this list are built from
+                 pro, each_with_index, join, notin, group, argagg,
+                 on_include?, inspected, flat_map but not from a
+                 collection.
++ @push_sorted_elems :: the list of PushElements ordered in a breadth-first order
++ @merge_targets :: collections in lhs of rules
+
+
+
+
+
 
 
 

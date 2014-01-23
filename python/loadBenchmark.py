@@ -54,7 +54,7 @@ def parseBenchmarkFile(filename, execID):
 
     return scenarioList
 
-
+# helper function for refreshFromFileSystem
 def processBenchFiles( execID, startPath):
     fList = glob.glob(os.path.join(startPath, '*'))
     for f in fList:
@@ -68,6 +68,7 @@ def processBenchFiles( execID, startPath):
             for t in tickList:
                 t.save()
 
+# helper function for refreshFromFileSystem
 def processExecs( scenID, startPath):
     dirList = glob.glob(os.path.join(startPath, 'exec_*'))
     for dir in dirList:
@@ -84,7 +85,7 @@ def processExecs( scenID, startPath):
         processBenchFiles( execID, os.path.join(dir, 'bench_files')) # whether or not it exists, process bench files inside
         # pass # execution exists, not processing
     
-
+# helper function for refreshFromFileSystem
 def processScenarios( scenType, startPath, siLowerBound):
     dirList = glob.glob(os.path.join(startPath, '*'))
     for dir in dirList:
@@ -102,6 +103,7 @@ def processScenarios( scenType, startPath, siLowerBound):
             processExecs(scenID,dir)            
         # whether or not it exists, call processExecs( scenID?, startPath+dir)
 
+# helper function for refreshFromFileSystem
 def processScenTypes( startPath, siLowerBound ):
     dirList = glob.glob(os.path.join(startPath, '*'))
     for dir in dirList:
@@ -109,6 +111,9 @@ def processScenTypes( startPath, siLowerBound ):
         print scenType
         processScenarios(scenType, dir, siLowerBound)
 
+# traverses the filesystem adding everything it finds to the database (as long as it doesn't already exist)
+# if siLowerbound = k it ignores all scenarios with scenID < k.  
+# use siLowerbound = 0 for everything
 def refreshFromFileSystem( startPath, siLowerBound ):
     os.chdir(startPath)
     callString = ['svn','up']

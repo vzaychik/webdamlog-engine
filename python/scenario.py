@@ -10,12 +10,14 @@ pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
 def checkScenario(s):
-    # 1 + ceil(numFollower/peersPerHost) + ceil(numAggs/peersPerHost)
     masterHosts = 1
     followerHosts = math.ceil(s.numFollowers / s.numPeersPerHost)
     assert( 1 + math.ceil())
     pass
 
+#
+# Generates a scenario using Julia's java code and stores it in the filesystem.
+#
 def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)
@@ -48,11 +50,10 @@ def generateScenarioFiles(scenario, rootPath):
     # execute java
     print 'Running dataGen in:'
     print os.getcwd()
+    print javaString
     call(javaString)
 
     scenario.scenID = stamp    
-
-    # TODO push output files to git
 
     # save scenario model instance with timestamp
     with open(os.path.join(tempDir,str(stamp)+'.pckl'), 'w') as f:
@@ -62,12 +63,13 @@ def generateScenarioFiles(scenario, rootPath):
 
 if __name__ == "__main__":
 
+    # set up path
     rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
 
-    scenarios = driver.simple()
+    scenarios = driver.simple()  # create a list of scenario instances
     for s in scenarios:
-        generateScenarioFiles( s, rootPath )
+        generateScenarioFiles( s, rootPath )    # generate each scenario
     
-    driver.localSVNCommit( rootPath )
+    driver.localSVNCommit( rootPath )   # commit the results
     
     exit()

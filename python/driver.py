@@ -51,8 +51,10 @@ def simple():
 
 # For each set of parameters, we want to execute 6 cases, for each combination of policy (PUBLIC | PRIVATE | KNOWN) and scenario (UNION_OF_JOINS | JOIN_OF_UNIONS).
 
+# From Julia's experimental descriptions
 # Case 1) Performance as a function of data size. Set VAL_RANGE to 10,000 in Constants.java.  Then fix # followers=100, # aggregators=10, overlap=1, and vary # facts between 10 and 10,000 with a logarithmic step.  I expect a linear dependency between data size (x) and time to fixpoint (y) for PUBLIC and KNOWN policies, under both scenarios.
 
+# generates a list of scenario objects for  {policies} x {numFacts} x {ruleScenarios}
 def case1():
     scenarioList = []
     
@@ -60,7 +62,7 @@ def case1():
     numFactsList = [1000]
     ruleScenarioList = ['UNION_OF_JOINS','JOIN_OF_UNIONS']
     
-    for tup in itertools.product(policyList, numFactsList, ruleScenarioList):
+    for tup in itertools.product(policyList, numFactsList, ruleScenarioList):       # this iterates thru the crossproduct
         print tup
         scenario = models.Scenario( \
             # scenID = _ _ _ (filled in later)
@@ -92,4 +94,4 @@ if __name__ == "__main__":
         newScenID = scenario.generateScenarioFiles( s, rootPath )
         print 'Generated new scenario: ', newScenID
 
-    localSVNCommit(rootPath)
+    localSVNCommit(rootPath)        # commit results

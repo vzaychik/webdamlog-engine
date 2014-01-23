@@ -10,6 +10,9 @@ from fabric.tasks import execute
 build = 2
 
 # Now executed at dbcluster.cs
+#
+# Executes the scenario given by scenID
+#
 def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
 
     stamp = int(time.time()*1000)
@@ -76,8 +79,8 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         pickle.dump(execution, f)
 
     # refresh database for this execution
-    execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
-    loadBenchmark.processExecs( scenID, localExecPath)
+#    execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
+#    loadBenchmark.processExecs( scenID, localExecPath)
 
     driver.localSVNCommit(localScenPath)
     

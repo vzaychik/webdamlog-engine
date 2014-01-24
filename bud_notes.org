@@ -204,6 +204,11 @@ According to the doc of "sync_do" inserting into a scratch with a
 deferred operator (especially <+ since <- is idiot) must be really
 inserting stuff for the next round.
 
+Scratch are not invalidated at the begining if @pendings is empty and
+scratch is not in a source(i.e. it appers at least once in the lhs of a
+rule).
+
+
 *** Join
 
 Self-join are very limited: only one and no-way to rename the two
@@ -349,25 +354,49 @@ decided by the method used to create the PushElement:
                 *join* of PushElement in elements.rb
 
 
-
-
 *** Storage of PushElements
 
 See do_wiring in bud.rb and README.rescan in bud/executor
 
 + @scanners :: ScannerElement are the collections to rescan in the rhs of the rules
++ @push_sources :: scanners created in to_push_elems
 + @push_elems :: an array of array with various fields about a
                  PushElement. PushElements in this list are built from
                  pro, each_with_index, join, notin, group, argagg,
                  on_include?, inspected, flat_map but not from a
-                 collection.
-+ @push_sorted_elems :: the list of PushElements ordered in a breadth-first order
+                 collection#to_push_elem.
++ @push_sorted_elems :: the list of PushElements ordered in a
+     breadth-first order. Initialized in the do_wiring method in bud.rb.
 + @merge_targets :: collections in lhs of rules
 
 
+*** About PushElements created while evaluating rules
+
++ PushSHJoin :: Creation from join in elements.rb in PushElement
+                #+begin_src ruby
+toplevel.push_elems[[self.object_id, :join, [self, elem2], toplevel, blk]]
+join = Bud::PushSHJoin.new([self, elem2], toplevel.this_rule_context, [])
+self.wire_to(join)
+elem2.wire_to(join)
+toplevel.push_elems[[self.object_id, :join, [self, elem2], toplevel, blk]] = join
+toplevel.push_joins[toplevel.this_stratum] << join
+                #+end_src
+                Then is is stored in @push_elems and @push_joins.
+
++ ScannerElement :: Creation from to_push_elem in collection.rb in
+                    BudCollection
+                    #+begin_src ruby
+scanner = Bud::ScannerElement.new(the_name, @bud_instance, self, the_schema)
+toplevel.scanners[this_stratum][[oid, the_name]] = scanner
+toplevel.push_sources[this_stratum][[oid, the_name]] = scanner
+                    #+end_src
+                    Then it is stored in @scanners and @push_sources.
 
 
+*** Wiring of PushElements
 
+It seems that PushSHJoins have only one output but scanners can have
+multiples.
 
 
 

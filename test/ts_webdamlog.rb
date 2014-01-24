@@ -73,8 +73,8 @@ if ARGV.include?("ordered")
   require "20_deleg_seeds/tc_wl_pending_delegations.rb"
 else
   files.each { |file| require file }
-  # puts files.map { |file| "require \"#{File.basename file}\"" } puts files.map
-  # { |file| "require \"#{file}\"" }
+  # puts files.map { |file| "require \"#{File.basename file}\"" }
+  # puts files.map { |file| "require \"#{file}\"" }
 end
 
 # clean rule dir created during tests

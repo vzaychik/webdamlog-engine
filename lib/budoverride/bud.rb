@@ -4,7 +4,7 @@ module WLBud
   class WL
 
     # Hacky: attribute that store the rule_id currently evaluated while wiring
-    #   to be added to push_elems
+    #  to be added to push_elems
     attr_reader :current_eval_rule_id
 
     # The initializer for WLBud directly overrides the initializer from Bud.

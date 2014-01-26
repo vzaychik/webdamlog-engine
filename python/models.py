@@ -21,10 +21,12 @@ class Scenario(BaseModel):
     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
     ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
-    valRange = IntegerField(null=True)
+    valRange = IntegerField(null=True) #facts at follower peers are drawn randomly from the interval [0, valRange)
+    numExtraCols = IntegerField(null=True) #number additional of non-key columns
     numHosts = IntegerField(null=True)  # number of hosts
     hosts = CharField(null=True) # optional argument; name of the file (on the local system) that lists names or IP addresses of the instances, one name or IP address per line
-    numPeersPerHost = IntegerField(null=True) 
+    numPeersPerHost = IntegerField(null=True)
+    networkFile = CharField(null=True) 
 
 class Execution(BaseModel):
     execID = BigIntegerField(primary_key=True)

@@ -3,7 +3,6 @@ from datetime import date
 import os, time, math
 import sys, pickle
 from subprocess import call
-#import tempfile
 import models, driver
 
 pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
@@ -12,12 +11,13 @@ sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 def checkScenario(s):
     masterHosts = 1
     followerHosts = math.ceil(s.numFollowers / s.numPeersPerHost)
-    assert( 1 + math.ceil())
+    assert(1 + math.ceil())
     pass
 
 #
 # Generates a scenario using Julia's java code and stores it in the filesystem.
-#
+# input: scenario is a single scenario object
+# input: rootPath
 def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)
@@ -36,14 +36,24 @@ def generateScenarioFiles(scenario, rootPath):
     javaString = ['java']
     javaString.append('-cp')
     javaString.append(os.path.join(pathToRepository,'webdamlog-engine/datagen','dataGen.jar'))
-    javaString.append('org.stoyanovich.webdam.datagen.Network')
-    javaString.append(str(scenario.numFollowers))
-    javaString.append(str(scenario.numAggregators))
-    javaString.append(str(scenario.aggPerFollower))
-    javaString.append(scenario.policy)
-    javaString.append(str(scenario.numFacts))
-    javaString.append(scenario.ruleScenario)
-    javaString.append(str(scenario.valRange))
+    if (scenario.scenType == 'MAF'): # parameters for MAF
+        javaString.append('org.stoyanovich.webdam.datagen.Network')
+        javaString.append(str(scenario.numFollowers))
+        javaString.append(str(scenario.numAggregators))
+        javaString.append(str(scenario.aggPerFollower))
+        javaString.append(scenario.policy)
+        javaString.append(str(scenario.numFacts))
+        javaString.append(scenario.ruleScenario)
+        javaString.append(str(scenario.valRange))
+        javaString.append(str(scenario.numExtraCols))        
+    if (scenario.scenType == 'PA'): # parameters for PA
+        javaString.append('org.stoyanovich.webdam.datagen.Album')
+#        javaString.append(scenario.networkFile)
+        javaString.append(os.path.join(pathToRepository,'webdamlog-engine/network',str(scenario.networkFile)))
+        javaString.append(scenario.policy)
+        javaString.append(str(scenario.numFacts))
+        javaString.append(str(scenario.valRange))
+    # common parameters
     javaString.append('netAddr.txt')
     javaString.append(str(scenario.numPeersPerHost))
 
@@ -66,10 +76,10 @@ if __name__ == "__main__":
     # set up path
     rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
 
-    scenarios = driver.simple()  # create a list of scenario instances
+    scenarios = driver.simplePA()  # create a list of scenario instances
     for s in scenarios:
         generateScenarioFiles( s, rootPath )    # generate each scenario
     
-    driver.localSVNCommit( rootPath )   # commit the results
+#    driver.localSVNCommit( rootPath )   # commit the results
     
     exit()

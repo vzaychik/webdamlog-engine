@@ -30,8 +30,22 @@ def localCommit( commitPath ):
     os.chdir(cwd)
 
 
+def simplePA():
+    scenario = models.Scenario( \
+        # scenID = ?? filled in later
+        scenType = 'PA', \
+        policy = 'PUB', \
+        networkFile = 'facebook-u19-i10.txt', \
+        numFacts = 10000, \
+        valRange = 1000, \
+        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
+        numHosts = 4, \
+        numPeersPerHost = 3*3 )
+    
+    return [scenario]
 
-def simple():
+
+def simpleMAF():
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = 'MAF', \
@@ -41,9 +55,10 @@ def simple():
         policy = 'PUB', \
         numFacts = 10000, \
         valRange = 1000, \
+        numExtraCols = 6, \
         ruleScenario = 'UNION_OF_JOINS', \
-        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
-        numHosts = 5, \
+        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
+        numHosts = 4, \
         numPeersPerHost = 3*3 )
     
     return [scenario]
@@ -53,6 +68,21 @@ def simple():
 
 # From Julia's experimental descriptions
 # Case 1) Performance as a function of data size. Set VAL_RANGE to 10,000 in Constants.java.  Then fix # followers=100, # aggregators=10, overlap=1, and vary # facts between 10 and 10,000 with a logarithmic step.  I expect a linear dependency between data size (x) and time to fixpoint (y) for PUBLIC and KNOWN policies, under both scenarios.
+
+    # TODO: add general purpose execution
+    # accept scenario inputs: MAF or PA, set valued where appropriate
+    # accept execution inputs: set valued where appropriate
+    # construct all scenario objects (cross product)
+    # test database for existing scenarios that are a match
+    #   if found, get scenID to use for path
+    #   check filesystem (at least for existence of proper path)
+    # generate any scenarios not found
+    # construct all executions
+    # prompt user?
+    # run each execution
+    # refresh database
+    
+
 
 # generates a list of scenario objects for  {policies} x {numFacts} x {ruleScenarios}
 def case1():

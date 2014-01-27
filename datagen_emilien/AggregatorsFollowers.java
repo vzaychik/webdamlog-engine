@@ -15,12 +15,20 @@ import org.webdam.datagen.Constants.PEER_TYPE;
 import org.webdam.datagen.Constants.POLICY;
 import org.webdam.datagen.Constants.SCENARIO;
 
-public class Network {
+/**
+ * Part 1 scenario from Julia's code.
+ *
+ * Example of command line to run this class (the two last arguments are optional):
+ * java -cp datagen.jar org.webdam.datagen.AggregatorsFollowers 6 3 1 KNOWN 10 JOIN_OF_UNIONS 20 15 netAddr.txt 3
+ */
+public class AggregatorsFollowers {
 
     /**
      * List of ip addresses of machines
      */
     public static HashMap<Integer, String> _netAddressMap = new HashMap<>();
+
+    private static SCENARIO name;
 
     /**
      * Initialization of _netAddressMap.
@@ -99,8 +107,8 @@ public class Network {
                 name = "master";
             }
             String host = "localhost";
-            if (Network._netAddressMap.containsKey(i)) {
-                host = Network._netAddressMap.get(i);
+            if (AggregatorsFollowers._netAddressMap.containsKey(i)) {
+                host = AggregatorsFollowers._netAddressMap.get(i);
             }
             res.append("peer ").append(name).append(i).append("=").append(host).append(":").append(Constants.PORT_OFFSET + i).append(";\n");
         }
@@ -118,7 +126,6 @@ public class Network {
      * @return
      */
     public static String peerProgramsToCSV(int numAggregators, int numFollowers, String dirPath) {
-
         StringBuilder res = new StringBuilder(dirPath + "/run_master0");
         for (int i = 1; i < 1 + numAggregators + numFollowers; i++) {
             String name = "follower" + i;
@@ -137,13 +144,13 @@ public class Network {
      *
      * <ul>
      * <li> numFollowers - number of peers at the lowest layer
-     * <li>numAggregators - number of aggregators (middle layer)
-     * <li>aggregatorsPerFollower - degree of follower nodes
-     * <li>policy - one of PUBLIC, PRIVATE, KNOWN
-     * <li>numFacts - number of facts per extensional relation on a follower
+     * <li> numAggregators - number of aggregators (middle layer)
+     * <li> aggregatorsPerFollower - degree of follower nodes
+     * <li> policy - one of PUBLIC, PRIVATE, KNOWN
+     * <li> numFacts - number of facts per extensional relation on a follower
      * peer. This is an upper bound - facts are not guaranteed to be unique, so
      * we’ll usually end up with fewer, after duplicate elimination.
-     * <li>scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
+     * <li> scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
      * <li> valRange - facts in the unary relations at follower peers are drawn
      * randomly from the interval [0, valRange)
      * <li> numExtraCols - number additional of non-key columns
@@ -171,7 +178,8 @@ public class Network {
         int overlap = Integer.parseInt(args[2].trim());
         POLICY policy = POLICY.valueOf(args[3]);
         int numFacts = Integer.parseInt(args[4].trim());
-        SCENARIO scenario = SCENARIO.valueOf(args[5]);
+        SCENARIO scenario = SCENARIO.valueOf(args[5]);        
+        AggregatorsFollowers.name = scenario;
         int valRange = Integer.parseInt(args[6].trim());
         int numExtraCols = Integer.parseInt(args[7].trim());
 
@@ -262,7 +270,7 @@ public class Network {
         }
 
 
-        String knownPeers = Network.peersToString(numAggregators, numFollowers);
+        String knownPeers = AggregatorsFollowers.peersToString(numAggregators, numFollowers);
         ArrayList<Peer> allPeers = new ArrayList<>();
         allPeers.add(master);
         allPeers.addAll(aggregators);
@@ -271,14 +279,17 @@ public class Network {
         if (Constants.DO_FILE_IO) {
             try {
                 long ts = System.currentTimeMillis();
-                HashSet<String> hostsHS = new HashSet<>(_netAddressMap.values());
+                HashMap<String, String> hostsHM = new HashMap<>();
 
-                for (String hostName : hostsHS) {
+                for (String hostName : _netAddressMap.values()) {
                     // make a directory for each instance
-                    String dirName = "out_" + hostName + "_" + ts;
+                    String dirName = "out_" + AggregatorsFollowers.name + "_" + hostName + "_" + ts;
                     File outDir = new File(dirName);
-                    outDir.mkdir();
-                    System.out.println("Output in " + dirName);
+                    if (!outDir.exists()) {
+                        outDir.mkdir();
+                        System.out.println("Output in new directory " + dirName);
+                    }
+                    hostsHM.put(hostName, dirName);
                 }
 
                 StringBuilder masterRules = new StringBuilder("// rules\n");
@@ -286,7 +297,7 @@ public class Network {
                 for (Peer p : allPeers) {
                     String hostName = _netAddressMap.get(p.getId());
 
-                    String dirName = "out_" + hostName + "_" + ts;
+                    String dirName = hostsHM.get(hostName);
                     p.outputProgramToFile(readmeComment.toString(), dirName, knownPeers);
 
                     // Launcher file to start peer in order
@@ -316,15 +327,16 @@ public class Network {
 
                 if (Constants.MASTER_ONLY_RULES) {
                     // append rules to the master's program
-                    String dirName = "out_" + _netAddressMap.get(0) + "_" + ts;
+                    String hostname = _netAddressMap.get(0);
+                    String dirName = hostsHM.get(hostname);
                     String fileName = dirName + "/run_master0";
                     try (BufferedWriter outFP = new BufferedWriter(new FileWriter(fileName, true))) {
                         outFP.write(masterRules.toString());
                     }
                 }
 
-                for (String hostName : hostsHS) {
-                    String dirName = "out_" + hostName + "_" + ts;
+                for (String hostName : hostsHM.keySet()) {
+                    String dirName = hostsHM.get(hostName);
                     try (BufferedWriter outFP = new BufferedWriter(new FileWriter(dirName + "/XP_NOACCESS", true))) {
                         outFP.write("\n");
                     }

@@ -59,8 +59,8 @@ public class Peer {
 
     public String getAddress() {
         String host = "localhost";
-        if (Network._netAddressMap.containsKey(_id)) {
-            host = Network._netAddressMap.get(_id);
+        if (AggregatorsFollowers._netAddressMap.containsKey(_id)) {
+            host = AggregatorsFollowers._netAddressMap.get(_id);
         }
         return host + ":" + (Constants.PORT_OFFSET + _id);
     }
@@ -126,6 +126,10 @@ public class Peer {
 
     public void setScenario(SCENARIO scenario) {
         _scenario = scenario;
+    }
+
+    public SCENARIO getScenario() {
+        return _scenario;
     }
 
     public String outputKnownPeers() {

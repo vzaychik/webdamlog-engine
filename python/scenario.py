@@ -31,7 +31,6 @@ def generateScenarioFiles(scenario, rootPath):
         f.write(host + '\n')
     f.close()
 
-    # TODO change below to cover case where scenType = PA
     # construct java execution list (in format for subprocess.call)
     javaString = ['java']
     javaString.append('-cp')

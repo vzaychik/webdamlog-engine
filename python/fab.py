@@ -52,7 +52,7 @@ def pull_both():
 # ruby sample execution
 # ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
 
-def run_ruby(execPath, scenPath, paramString, outKey):
+def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]
     runString = 'ruby %s %s %s' % ( \
         os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote.rb'), \
@@ -60,14 +60,13 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         paramString )
     # need to be in the execution directory because benchmark files will be created there
     with cd(os.path.join(rootPath, execPath)):
+        if (env.host == master):
+            run('sleep ' + str(masterDelay))
         run(runString)
         run('svn add --force .')
         run("""svn commit -m '' """)
 
 if __name__ == '__main__':
-
-#    parser = argparse.ArgumentParser()
-#    parser.parse_args()
 
     env.hosts=['localhost']
     execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])

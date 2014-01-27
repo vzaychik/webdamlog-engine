@@ -180,7 +180,7 @@ public class Network {
             nonKeys += ",col" + col;
         }
 
-        
+
         // Header comments in files
         readmeComment.append("# followers=").append(numFollowers);
         readmeComment.append(", # aggregators=").append(numAggregators);
@@ -199,8 +199,10 @@ public class Network {
             initNetAddressMap(1 + numAggregators + numFollowers);
         }
 
-        int currentId = 0;
 
+        // Setup each kind of peers
+        // One master
+        int currentId = 0;
         Peer master = new Peer(currentId++, PEER_TYPE.MASTER);
         if (numExtraCols == 0) {
             master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x"));
@@ -209,7 +211,7 @@ public class Network {
         }
         master.setPolicy(policy);
         master.setScenario(scenario);
-
+        // Follower peers
         ArrayList<Peer> aggregators = new ArrayList<>();
         for (int i = 0; i < numAggregators; i++) {
             Peer p = new Peer(currentId++, PEER_TYPE.AGGREGATOR);
@@ -225,7 +227,7 @@ public class Network {
             p.setScenario(scenario);
             aggregators.add(p);
         }
-
+        // Aggregator peers
         ArrayList<Peer> followers = new ArrayList<>();
         for (int i = 0; i < numFollowers; i++) {
             Peer p = new Peer(currentId++, PEER_TYPE.FOLLOWER);
@@ -244,7 +246,6 @@ public class Network {
                     }
                 }
             }
-
             for (int j = 0; j < aggregators.size(); j++) {
                 if (aggsToFollow.contains(j)) {
                     p.addMaster(aggregators.get(j));
@@ -257,9 +258,9 @@ public class Network {
                     p.setScenario(scenario);
                 }
             }
-
             followers.add(p);
         }
+
 
         String knownPeers = Network.peersToString(numAggregators, numFollowers);
         ArrayList<Peer> allPeers = new ArrayList<>();
@@ -269,7 +270,6 @@ public class Network {
 
         if (Constants.DO_FILE_IO) {
             try {
-
                 long ts = System.currentTimeMillis();
                 HashSet<String> hostsHS = new HashSet<>(_netAddressMap.values());
 
@@ -289,8 +289,8 @@ public class Network {
                     String dirName = "out_" + hostName + "_" + ts;
                     p.outputProgramToFile(readmeComment.toString(), dirName, knownPeers);
 
+                    // Launcher file to start peer in order
                     File XPFile = new File(dirName + "/XP_NOACCESS");
-
                     if (XPFile.exists()) {
                         try (BufferedWriter outFP = new BufferedWriter(new FileWriter(dirName + "/XP_NOACCESS", true))) {
                             //if (Constants.FULL_PATHS) {
@@ -329,7 +329,6 @@ public class Network {
                         outFP.write("\n");
                     }
                 }
-
             } catch (IOException ioe) {
                 System.out.println(ioe.toString());
             }

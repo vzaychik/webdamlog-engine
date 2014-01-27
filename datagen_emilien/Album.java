@@ -33,7 +33,7 @@ public class Album {
     // a mapping from [0, numPeers) to network ids of peers
     public static HashMap<Integer, Integer> _peerIdHM = new HashMap<>();
     public static ArrayList<Peer> _peersList = new ArrayList<>();
-    public static final SCENARIO NAME = SCENARIO.ALBUM;
+    public static final SCENARIO SCENARIO_NAME = SCENARIO.ALBUM;
 
     public static void initNetAddressMap(String inFileName, int peersPerInstance, int numPeers) {
         try {
@@ -97,6 +97,21 @@ public class Album {
         return res.toString();
     }
 
+    /**
+     * Main class to generate the text files to launch experiments.
+     *
+     * @param args array of arguments, see below.
+     *
+     * The two last arguments are optional
+     * <ul>
+     * <li> networkFile - network nodes / neighbors from Facebook, space-separated, one line per node
+     * <li> policy - one of PUBLIC, PRIVATE, KNOWN
+     * <li> numFacts - number of facts per extensional relation photos on each peer except peers alice, bob, sue
+     * <li> valRange - facts in the photoAlbum relation are drawn randomly from the interval [0, valRange)
+     * <li> [instanceFile] - optional argument; name of the file (on the local system) that lists names or IP addresses of the instances, one name or IP address per line
+     * <li> [numPeersPerInstance] - optional argument; number of peers to place on each instance. Peers alice, bob and sue each run on a dedicated instance.  The remaining peers are placed onto shared instances.
+     * </ul>
+     */
     public static void main(String[] args) {
 
         if (args.length < 4) {
@@ -237,7 +252,7 @@ public class Album {
 
                 for (String hostName : _netAddressMap.values()) {
                     // make a directory for each instance
-                    String dirName = "out_" + Album.NAME + "_" + hostName + "_" + ts;
+                    String dirName = "out_" + Album.SCENARIO_NAME + "_" + hostName + "_" + ts;
                     File outDir = new File(dirName);
                     if (!outDir.exists()) {
                         outDir.mkdir();

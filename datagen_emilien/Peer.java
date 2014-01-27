@@ -33,6 +33,17 @@ public class Peer {
         _collections = new ArrayList<>();
     }
 
+    public Peer(int id, PEER_TYPE type, SCENARIO scenario) {
+        _id = id;
+        _auxId = id;
+        _type = type;
+        _slaves = new ArrayList<>();
+        _masters = new ArrayList<>();
+        _knownPeers = new HashSet<>();
+        _collections = new ArrayList<>();
+        _scenario = scenario;
+    }
+
     public void setAuxId(int auxId) {
         _auxId = auxId;
     }
@@ -254,6 +265,33 @@ public class Peer {
                 // compute the contents of album@sue($img,$peer)
                 Collection album = this.getCollectionByName("album");
                 prog.append("rule ").append(album.getSchemaWithVars()).append(" :- ").append(allFriends.getSchemaWithVars()).append(", photos@$peer($img), tags@$peer($img,\"").append(alice.getName()).append("\"), tags@$peer($img,\"").append(bob.getName()).append("\");\n");
+            }
+        } else if (_scenario == SCENARIO.AGGFOLUNION) {
+            if (_type == PEER_TYPE.MASTER) {
+                // no rules
+            } else if (_type == PEER_TYPE.AGGREGATOR) {
+
+                // send the contents of relation a@thispeer(x) to relation m@master(x), on each master
+                for (Peer m : _masters) {
+                    Collection headC = m.getCollectionByName("m");
+                    Collection bodyC = this.getCollectionByName("a");
+                    prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
+                }
+
+                // take the join of f@follower_i(x*), store result in a@aggregator(x*)
+                Collection headC = this.getCollectionByName("a");
+                String bodyOfJoinRule = "";
+                for (Peer f : _slaves) {
+                    Collection bodyC = f.getCollectionByName("f");
+                    if (bodyOfJoinRule.length() > 0) {
+                        bodyOfJoinRule += ", ";
+                    }
+                    bodyOfJoinRule += bodyC.getSchemaWithVars();
+                }
+                prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyOfJoinRule).append(";\n");
+
+            } else if (_type == PEER_TYPE.FOLLOWER) {
+                // no rules
             }
         }
 

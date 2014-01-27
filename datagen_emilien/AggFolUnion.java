@@ -10,28 +10,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.webdam.datagen.Constants.COL_TYPE;
-import org.webdam.datagen.Constants.PEER_TYPE;
-import org.webdam.datagen.Constants.POLICY;
 import org.webdam.datagen.Constants.SCENARIO;
 
 /**
- * Part 1 scenario from Julia's code.
+ * Data generator to test the limit of number of peer per machines.
  *
- * Example of command line to run this class (the two last arguments are optional):
+ * Example of command line to run this class (the two last arguments are
+ * optional):
  * <ul>
- * <li> java -cp datagen.jar org.webdam.datagen.AggregatorsFollowers 6 3 1 KNOWN 10 JOIN_OF_UNIONS 20 15 netAddr.txt 3
- * <li> java -cp datagen.jar org.webdam.datagen.AggregatorsFollowers 6 3 1 KNOWN 10 UNION_OF_JOINS 20 15 netAddr.txt 3
+ * <li> java -cp datagen.jar org.webdam.datagen.AggFolUnion 10 5 2 10 50
  * </ul>
  */
-public class AggregatorsFollowers {
+public class AggFolUnion {
 
     /**
      * List of ip addresses of machines
      */
     public static HashMap<Integer, String> _netAddressMap = new HashMap<>();
-
-    private static SCENARIO scenario_name;
+    
+    private static final SCENARIO SCENARIO_NAME = SCENARIO.AGGFOLUNION;
 
     /**
      * Initialization of _netAddressMap.
@@ -102,7 +99,8 @@ public class AggregatorsFollowers {
     public static String peersToString(int numAggregators, int numFollowers) {
 
         StringBuilder res = new StringBuilder("// known peers\n");
-        for (int i = 0; i < 1 + numAggregators + numFollowers; i++) {
+        int totalPeers = 1 + numAggregators + numFollowers;
+        for (int i = 0; i < totalPeers; i++) {
             String relname = "follower";
             if ((i > 0) && (i <= numAggregators)) {
                 relname = "aggregator";
@@ -145,19 +143,16 @@ public class AggregatorsFollowers {
      *
      * @param args array of arguments, see below.
      *
-     * The two last arguments are optional
+     *
      * <ul>
      * <li> numFollowers - number of peers at the lowest layer
      * <li> numAggregators - number of aggregators (middle layer)
-     * <li> aggregatorsPerFollower - degree of follower nodes
-     * <li> policy - one of PUBLIC, PRIVATE, KNOWN
+     * <li> aggregatorsPerFollower - input degree +1 of follower nodes
      * <li> numFacts - number of facts per extensional relation on a follower
      * peer. This is an upper bound - facts are not guaranteed to be unique, so
      * we’ll usually end up with fewer, after duplicate elimination.
-     * <li> scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
      * <li> valRange - facts in the unary relations at follower peers are drawn
      * randomly from the interval [0, valRange)
-     * <li> numExtraCols - number additional of non-key columns
      * <li> [instanceFile] - optional argument; name of the file (on the local
      * system) that lists names or IP addresses of the instances, one name or IP
      * address per line
@@ -172,40 +167,27 @@ public class AggregatorsFollowers {
     public static void main(String[] args) {
 
         // Check parameters
-        if (args.length < 8) {
-            System.out.println("Not enough arguments: AggregatorsFollowers numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange numExtraCols [instanceFile] [numPeersPerInstance]");
+        if (args.length < 5) {
+            System.out.println("Not enough arguments: AggFolUnion numFollowers numAggregators numAggregatorsPerFollower numFacts valRange [instanceFile] [numPeersPerInstance]");
             System.exit(0);
         }
         StringBuilder readmeComment = new StringBuilder("");
         int numFollowers = Integer.parseInt(args[0].trim());
         int numAggregators = Integer.parseInt(args[1].trim());
         int overlap = Integer.parseInt(args[2].trim());
-        POLICY policy = POLICY.valueOf(args[3]);
-        int numFacts = Integer.parseInt(args[4].trim());
-        SCENARIO scenario = SCENARIO.valueOf(args[5]);        
-        AggregatorsFollowers.scenario_name = scenario;
-        int valRange = Integer.parseInt(args[6].trim());
-        int numExtraCols = Integer.parseInt(args[7].trim());
-
-        String nonKeys = "col0";
-        for (int col = 1; col < numExtraCols; col++) {
-            nonKeys += ",col" + col;
-        }
-
+        int numFacts = Integer.parseInt(args[3].trim());
+        int valRange = Integer.parseInt(args[4].trim());
 
         // Header comments in files
         readmeComment.append("# followers=").append(numFollowers);
         readmeComment.append(", # aggregators=").append(numAggregators);
         readmeComment.append(", # aggregators per follower=").append(overlap);
-        readmeComment.append(", policy=").append(policy.toString());
         readmeComment.append(", # facts per relation=").append(numFacts);
-        readmeComment.append(", scenario=").append(scenario.toString());
         readmeComment.append(", value range=").append(valRange);
-        readmeComment.append(", # extra cols=").append(numExtraCols);
 
-        if (args.length > 8) {
-            String instanceFile = args[8].trim();
-            int peersPerInstance = Integer.parseInt(args[9]);
+        if (args.length > 5) {
+            String instanceFile = args[5].trim();
+            int peersPerInstance = Integer.parseInt(args[6]);
             initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
         } else {
             initNetAddressMap(1 + numAggregators + numFollowers);
@@ -215,62 +197,39 @@ public class AggregatorsFollowers {
         // Setup each kind of peers
         // One master
         int currentId = 0;
-        Peer master = new Peer(currentId++, PEER_TYPE.MASTER);
-        if (numExtraCols == 0) {
-            master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x"));
-        } else {
-            master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x", nonKeys));
-        }
-        master.setPolicy(policy);
-        master.setScenario(scenario);
+        Peer master = new Peer(currentId++, Constants.PEER_TYPE.MASTER, SCENARIO_NAME);
+        master.addCollection(new Collection("m", master.getName(), Constants.COL_TYPE.INT, 0, "field"));
         // Aggregator peers
         ArrayList<Peer> aggregators = new ArrayList<>();
         for (int i = 0; i < numAggregators; i++) {
-            Peer p = new Peer(currentId++, PEER_TYPE.AGGREGATOR);
+            Peer p = new Peer(currentId++, Constants.PEER_TYPE.AGGREGATOR, SCENARIO_NAME);
             p.addMaster(master);
-            if (numExtraCols == 0) {
-                master.addSlave(p);
-                p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x"));
-            } else {
-                master.addSlave(p, nonKeys);
-                p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x", nonKeys));
-            }
-            p.setPolicy(policy);
-            p.setScenario(scenario);
+            master.addSlave(p);
+            p.addCollection(new Collection("a", p.getName(), Constants.COL_TYPE.INT, 0, "field"));
             aggregators.add(p);
         }
         // Follower peers
         ArrayList<Peer> followers = new ArrayList<>();
         for (int i = 0; i < numFollowers; i++) {
-            Peer p = new Peer(currentId++, PEER_TYPE.FOLLOWER);
-            p.addKnownPeer(master);
-            if (numExtraCols == 0) {
-                p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
-            } else {
-                p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", nonKeys, numFacts, valRange));
-            }
+            Peer follower = new Peer(currentId++, Constants.PEER_TYPE.FOLLOWER, SCENARIO_NAME);
+            follower.addKnownPeer(master);
+            follower.addCollection(new Collection("f", follower.getName(), Constants.COL_TYPE.EXT, 1, "field", numFacts, valRange));
             HashSet<Integer> aggsToFollow = new HashSet<>();
             for (int j = 0; j < aggregators.size(); j++) {
                 for (int k = 0; k <= overlap; k++) {
-                    if ((p.getId() + k) % numAggregators == aggregators.get(j).getId() - 1) {
-                        // peer p will follow the jth aggregator
+                    if ((follower.getId() + k) % numAggregators == aggregators.get(j).getId() - 1) {
+                        // peer follower will follow the jth aggregator
                         aggsToFollow.add(j);
                     }
                 }
             }
             for (int j = 0; j < aggregators.size(); j++) {
                 if (aggsToFollow.contains(j)) {
-                    p.addMaster(aggregators.get(j));
-                    if (numExtraCols == 0) {
-                        aggregators.get(j).addSlave(p);
-                    } else {
-                        aggregators.get(j).addSlave(p, nonKeys);
-                    }
-                    p.setPolicy(policy);
-                    p.setScenario(scenario);
+                    follower.addMaster(aggregators.get(j));
+                    aggregators.get(j).addSlave(follower);
                 }
             }
-            followers.add(p);
+            followers.add(follower);
         }
 
 
@@ -280,20 +239,21 @@ public class AggregatorsFollowers {
         allPeers.addAll(aggregators);
         allPeers.addAll(followers);
 
+
         if (Constants.DO_FILE_IO) {
             try {
                 long ts = System.currentTimeMillis();
-                HashMap<String, String> hostsHM = new HashMap<>();
+                HashMap<String, String> hostsDirnameHM = new HashMap<>();
 
                 for (String hostName : _netAddressMap.values()) {
                     // make a directory for each instance
-                    String dirName = "out_" + AggregatorsFollowers.scenario_name + "_" + hostName + "_" + ts;
+                    String dirName = "out_" + AggFolUnion.SCENARIO_NAME + "_" + hostName + "_" + ts;
                     File outDir = new File(dirName);
                     if (!outDir.exists()) {
                         outDir.mkdir();
                         System.out.println("Output in new directory " + dirName);
                     }
-                    hostsHM.put(hostName, dirName);
+                    hostsDirnameHM.put(hostName, dirName);
                 }
 
                 StringBuilder masterRules = new StringBuilder("// rules\n");
@@ -301,29 +261,22 @@ public class AggregatorsFollowers {
                 for (Peer p : allPeers) {
                     String hostName = _netAddressMap.get(p.getId());
 
-                    String dirName = hostsHM.get(hostName);
+                    String dirName = hostsDirnameHM.get(hostName);
                     p.outputProgramToFile(readmeComment.toString(), dirName, knownPeers);
 
                     // Launcher file to start peer in order
                     File XPFile = new File(dirName + "/XP_NOACCESS");
                     if (XPFile.exists()) {
                         try (BufferedWriter outFP = new BufferedWriter(new FileWriter(dirName + "/XP_NOACCESS", true))) {
-                            //if (Constants.FULL_PATHS) {
-                            //	outFP.write("," + dirPath + "/run_" + p.getName());
-                            //} else {
                             outFP.write(",run_" + p.getName());
-                            //}
                         }
                     } else {
                         try (BufferedWriter outFP = new BufferedWriter(new FileWriter(dirName + "/XP_NOACCESS"))) {
-                            //if (Constants.FULL_PATHS) {
-                            //	outFP.write(dirPath + "/run_" + p.getName());
-                            //} else {
                             outFP.write("run_" + p.getName());
-                            //}
                         }
                     }
 
+                    // Write rules in master node
                     if (Constants.MASTER_ONLY_RULES) {
                         masterRules.append(p.outputRules());
                     }
@@ -332,15 +285,15 @@ public class AggregatorsFollowers {
                 if (Constants.MASTER_ONLY_RULES) {
                     // append rules to the master's program
                     String hostname = _netAddressMap.get(0);
-                    String dirName = hostsHM.get(hostname);
+                    String dirName = hostsDirnameHM.get(hostname);
                     String fileName = dirName + "/run_master0";
                     try (BufferedWriter outFP = new BufferedWriter(new FileWriter(fileName, true))) {
                         outFP.write(masterRules.toString());
                     }
                 }
 
-                for (String hostName : hostsHM.keySet()) {
-                    String dirName = hostsHM.get(hostName);
+                for (String hostName : hostsDirnameHM.keySet()) {
+                    String dirName = hostsDirnameHM.get(hostName);
                     try (BufferedWriter outFP = new BufferedWriter(new FileWriter(dirName + "/XP_NOACCESS", true))) {
                         outFP.write("\n");
                     }

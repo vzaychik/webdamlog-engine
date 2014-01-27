@@ -13,7 +13,7 @@ build = 2
 #
 # Executes the scenario given by scenID
 #
-def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep ):
+def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep, masterDelay ):
 
     stamp = int(time.time()*1000)
 
@@ -48,11 +48,28 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
 
     # inspect scenario for 'out_' directories, infer hosts
     outs = glob.glob( os.path.join(localScenPath,'out_*'))
-    outKey = os.path.split(outs[0])[1].split('_')[2]
-    hosts = [os.path.split(out)[1].split('_')[1] for out in outs]
+    outKey = os.path.split(outs[0])[1].split('_')[2]  # this gets common key from name of out* directories
+    hosts = []
+    masterHost = None
+    for out in outs:
+        extractedHostName = os.path.split(out)[1].split('_')[1]
+        if (len(glob.glob(os.path.join(out,'run_master*')))) == 1:
+            masterHost = extractedHostName
+        if (len(glob.glob(os.path.join(out,'run_sue*')))) == 1:
+            masterHost = extractedHostName
+        hosts.append(extractedHostName)
+    assert(masterHost != None)
 
-    env.hosts=hosts
+    execution.success = True
+    start = time.time()
+
+    env.hosts = hosts
     env.parallel = True     # execute on each host in parallel
+    try:
+        execute(fab.pull_both)         # each host should pull latest code and latest exp
+    except:
+        print >> sys.stderr, 'Pull failed: ', sys.exc_info()[0]
+        execution.success = False
 
     # prepare parameters for ruby script
     paramString = str(ticks) + ' '
@@ -62,12 +79,9 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     if (optim1Bool and accessBool):
         paramString += 'optim1'+' '
 
-    start = time.time()
+    # run on all hosts
     try:
-        # each host should pull latest code and latest exp
-        execute(fab.pull_both)
-        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
-        execution.success = True
+        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
     except:
         print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
         execution.success = False
@@ -78,7 +92,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     with open(os.path.join(localExecPath,str(stamp)+'.pckl'), 'w') as f:
         pickle.dump(execution, f)
 
-    # refresh database for this execution
+# refresh database for this execution
 #    execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
 #    loadBenchmark.processExecs( scenID, localExecPath)
 

@@ -18,7 +18,7 @@ import org.webdam.datagen.Constants.SCENARIO;
  * Example of command line to run this class (the two last arguments are
  * optional):
  * <ul>
- * <li> java -cp datagen.jar org.webdam.datagen.AggFolUnion 10 5 2 10 50
+ * <li> java -cp datagen.jar org.webdam.datagen.AggFolUnion 10 5 2 20 50
  * </ul>
  */
 public class AggFolUnion {

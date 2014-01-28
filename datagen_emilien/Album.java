@@ -21,8 +21,7 @@ import org.webdam.datagen.Constants.SCENARIO;
  * Example of command line to run this class (the two last arguments are
  * optional):
  *
- * java -cp datagen.jar org.webdam.datagen.Album ../network/facebook-u19-i10.txt
- * KNOWN 10 20 netAddr.txt 3
+ * java -cp datagen.jar org.webdam.datagen.Album ../network/facebook-u19-i10.txt KNOWN 10 20 netAddr.txt 3
  */
 public class Album {
 

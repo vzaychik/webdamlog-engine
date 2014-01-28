@@ -217,9 +217,9 @@ public class AggregatorsFollowers {
         int currentId = 0;
         Peer master = new Peer(currentId++, PEER_TYPE.MASTER);
         if (numExtraCols == 0) {
-            master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x"));
+            master.addCollection(new Collection("m", master.getName(), COL_TYPE.INT, 1, "field"));
         } else {
-            master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+            master.addCollection(new Collection("m", master.getName(), COL_TYPE.INT, 1, "field", nonKeys));
         }
         master.setPolicy(policy);
         master.setScenario(scenario);
@@ -230,10 +230,10 @@ public class AggregatorsFollowers {
             p.addMaster(master);
             if (numExtraCols == 0) {
                 master.addSlave(p);
-                p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x"));
+                p.addCollection(new Collection("f", p.getName(), COL_TYPE.INT, 1, "field"));
             } else {
                 master.addSlave(p, nonKeys);
-                p.addCollection(new Collection("s", p.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+                p.addCollection(new Collection("f", p.getName(), COL_TYPE.INT, 1, "field", nonKeys));
             }
             p.setPolicy(policy);
             p.setScenario(scenario);
@@ -245,9 +245,9 @@ public class AggregatorsFollowers {
             Peer p = new Peer(currentId++, PEER_TYPE.FOLLOWER);
             p.addKnownPeer(master);
             if (numExtraCols == 0) {
-                p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
+                p.addCollection(new Collection("a", p.getName(), COL_TYPE.EXT, 1, "field", numFacts, valRange));
             } else {
-                p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", nonKeys, numFacts, valRange));
+                p.addCollection(new Collection("a", p.getName(), COL_TYPE.EXT, 1, "field", nonKeys, numFacts, valRange));
             }
             HashSet<Integer> aggsToFollow = new HashSet<>();
             for (int j = 0; j < aggregators.size(); j++) {

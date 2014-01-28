@@ -98,9 +98,9 @@ public class Peer {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            _collections.add(new Collection("r" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
+            _collections.add(new Collection("a" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            _collections.add(new Collection("s" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
+            _collections.add(new Collection("f" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
         }
     }
 
@@ -108,9 +108,9 @@ public class Peer {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            _collections.add(new Collection("r" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+            _collections.add(new Collection("a" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            _collections.add(new Collection("s" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+            _collections.add(new Collection("f" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
         }
     }
 
@@ -202,16 +202,16 @@ public class Peer {
 
                 // send the contents of relation s@thispeer(x) to relation t@master(x), on each master
                 for (Peer m : _masters) {
-                    Collection headC = m.getCollectionByName("t");
-                    Collection bodyC = this.getCollectionByName("s");
+                    Collection headC = m.getCollectionByName("m");
+                    Collection bodyC = this.getCollectionByName("f");
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }
 
                 // take the join of r@follower_i(x*), store result in s@aggregator(x*)
-                Collection headC = this.getCollectionByName("s");
+                Collection headC = this.getCollectionByName("f");
                 String bodyOfJoinRule = "";
                 for (Peer f : _slaves) {
-                    Collection bodyC = f.getCollectionByName("r");
+                    Collection bodyC = f.getCollectionByName("a");
                     if (bodyOfJoinRule.length() > 0) {
                         bodyOfJoinRule += ", ";
                     }
@@ -228,10 +228,10 @@ public class Peer {
             if (_type == PEER_TYPE.MASTER) {
 
                 // take the join of s@aggregator_i(x*), store result in t@master(x*)
-                Collection headC = this.getCollectionByName("t");
+                Collection headC = this.getCollectionByName("m");
                 String bodyOfJoinRule = "";
                 for (Peer f : _slaves) {
-                    Collection bodyC = f.getCollectionByName("s");
+                    Collection bodyC = f.getCollectionByName("f");
                     if (bodyOfJoinRule.length() > 0) {
                         bodyOfJoinRule += ", ";
                     }
@@ -244,8 +244,8 @@ public class Peer {
             } else if (_type == PEER_TYPE.FOLLOWER) {
                 // send the contents of relation r@thispeer(x) into s@aggregator(x), for each aggregator
                 for (Peer m : _masters) {
-                    Collection headC = m.getCollectionByName("s");
-                    Collection bodyC = this.getCollectionByName("r");
+                    Collection headC = m.getCollectionByName("f");
+                    Collection bodyC = this.getCollectionByName("a");
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }
             }

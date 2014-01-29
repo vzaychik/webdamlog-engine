@@ -21,7 +21,7 @@ def checkScenario(s):
 def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)
-    tempDir = os.path.join(rootPath, scenario.scenType, str(stamp))
+    tempDir = os.path.join(rootPath, 'webdamlog-exp', scenario.scenType, str(stamp))
     os.makedirs(tempDir)
     os.chdir(tempDir)
     
@@ -73,7 +73,7 @@ def generateScenarioFiles(scenario, rootPath):
 if __name__ == "__main__":
 
     # set up path
-    rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
+    rootPath = pathToRepository
 
     scenarios = driver.simplePA()  # create a list of scenario instances
     for s in scenarios:

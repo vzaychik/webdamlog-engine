@@ -4,7 +4,7 @@ import itertools
 import os
 import sys
 from subprocess import call
-import models, driver, execution, scenario
+import models, driver, execution, scenario, loadBenchmark
 
 
 # input: scenList is a list of scenario model instances populated from config
@@ -89,9 +89,13 @@ def run(configFile):
                 numPeersPerHost = config.getint('scenarioMAF', 'numPeersPerHost') )
             scenarioList.append(scenario)
 
+
     if scenType == 'PA':
         # TODO
         pass
+
+    driver.localSVNCommit( os.path.join(rootPath, 'webdamlog-exp') )
+
 
     print '***  Starting to process %i scenarios...' % len(scenarioList)
     # get scenario IDs after matching or creating scenarios
@@ -114,7 +118,7 @@ def run(configFile):
     print '***  Done with executions.'
     print '***  Refreshing database to reflect new executions and any new scenarios.'
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem( os.path.join(rootPath,'webdamlog-exp'), min(scenIDList) )
+    loadBenchmark.refreshFromFileSystem( os.path.join(rootPath,'webdamlog-exp'), min(scenIDList) )
     
 
 if __name__ == "__main__":

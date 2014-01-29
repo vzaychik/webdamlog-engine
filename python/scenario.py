@@ -34,7 +34,7 @@ def generateScenarioFiles(scenario, rootPath):
     # construct java execution list (in format for subprocess.call)
     javaString = ['java']
     javaString.append('-cp')
-    javaString.append(os.path.join(pathToRepository,'webdamlog-engine/datagen','dataGen.jar'))
+    javaString.append(os.path.join(rootPath,'webdamlog-engine/datagen','dataGen.jar'))
     if (scenario.scenType == 'MAF'): # parameters for MAF
         javaString.append('org.stoyanovich.webdam.datagen.Network')
         javaString.append(str(scenario.numFollowers))
@@ -48,7 +48,7 @@ def generateScenarioFiles(scenario, rootPath):
     if (scenario.scenType == 'PA'): # parameters for PA
         javaString.append('org.stoyanovich.webdam.datagen.Album')
 #        javaString.append(scenario.networkFile)
-        javaString.append(os.path.join(pathToRepository,'webdamlog-engine/network',str(scenario.networkFile)))
+        javaString.append(os.path.join(rootPath,'webdamlog-engine/network',str(scenario.networkFile)))
         javaString.append(scenario.policy)
         javaString.append(str(scenario.numFacts))
         javaString.append(str(scenario.valRange))

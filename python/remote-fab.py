@@ -12,9 +12,9 @@ import fab
 #         run('python fab.py')
 # 
 # @hosts(['dbcluster.cs.umass.edu'])
-# def run_execution():
-#     with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
-#         run('python execution.py')
+def run_execute():
+     with cd(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+         run('python wdlexec.py')
 
 
 if __name__ == '__main__':
@@ -26,7 +26,5 @@ if __name__ == '__main__':
     # 
     # execute(fab.remote_run, filename='execution.py')
 
-    env.hosts=['dbcluster.cs.umass.edu']
-    execute(fab.pull_both)
-    
-    execute(fab.refreshDB)
+    env.hosts=['dbcluster.cs.umass.edu']    
+    execute(run_execute)

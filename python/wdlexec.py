@@ -13,14 +13,43 @@ def matchOrCreateScenario(scenList, rootPath):
     scenIDList = []
     for scen in scenList:
         try:
+            # this works for MAF
+            # TODO fix for PA
             scenID = models.Scenario.get( \
-                models.Scenario.scenType & 
-                # ..... all fields
-            ).scenID
+                models.Scenario.scenType == scen.scenType, \
+                models.Scenario.numFollowers == scen.numFollowers, \
+                models.Scenario.numAggregators == scen.numAggregators, \
+                models.Scenario.aggPerFollower == scen.aggPerFollower, \
+                models.Scenario.policy == scen.policy, \
+                models.Scenario.numFacts == scen.numFacts, \
+                models.Scenario.ruleScenario == scen.ruleScenario, \
+                models.Scenario.valRange == scen.valRange, \
+                models.Scenario.numExtraCols == scen.numExtraCols, \
+                models.Scenario.numHosts == scen.numHosts, \
+                models.Scenario.hosts == scen.hosts, \
+                models.Scenario.numPeersPerHost == scen.numPeersPerHost ).scenID
+            print 'Found matching with scenID %i.' % scenID
         except DoesNotExist:    # scenario was not found, create it
             scenID = generateScenarioFiles(scen, rootPath)
         scenIDList.append(scenID)
     return scenIDList
+
+
+# class Scenario(BaseModel):
+#     scenID = BigIntegerField(primary_key=True)
+#     scenType = CharField(null=True) # MAF or PA
+#     numFollowers = IntegerField(null=True)  # numFollowers - number of peers at the lowest layer
+#     numAggregators = IntegerField(null=True) # numAggregators - number of aggregators (middle layer)
+#     aggPerFollower = IntegerField(null=True) # aggregatorsPerFollower - degree of follower nodes
+#     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
+#     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
+#     ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
+#     valRange = IntegerField(null=True) #facts at follower peers are drawn randomly from the interval [0, valRange)
+#     numExtraCols = IntegerField(null=True) #number additional of non-key columns
+#     numHosts = IntegerField(null=True)  # number of hosts
+#     hosts = CharField(null=True) # optional argument; name of the file (on the local system) that lists names or IP addresses of the instances...
+#     numPeersPerHost = IntegerField(null=True)
+#     networkFile = CharField(null=True) 
 
 
 def run(configFile)
@@ -51,8 +80,9 @@ def run(configFile)
                 numFacts = config.getint('scenarioMAF', 'numFacts'), \
                 ruleScenario = tup[1], \
                 valRange = config.getint('scenarioMAF', 'valRange'), \
-                hosts = config.get('scenarioMAF', 'hosts').split(' '), \
+                numExtraCols = config.getint('scenarioMAF', 'numExtraCols'), \
                 numHosts = config.getint('scenarioMAF', 'numHosts'), \
+                hosts = config.get('scenarioMAF', 'hosts').split(' '), \
                 numPeersPerHost = config.getint('scenarioMAF', 'numPeersPerHost') )
             scenarioList.append(scenario)
 

@@ -32,7 +32,7 @@ def matchOrCreateScenario(scenList, rootPath):
                 ).scenID
             print 'Found matching with scenID %i.' % scenID
         except DoesNotExist:    # scenario was not found, create it
-            scenID = generateScenarioFiles(scen, rootPath)
+            scenID = scenario.generateScenarioFiles(scen, rootPath)
         scenIDList.append(scenID)
     return scenIDList
 

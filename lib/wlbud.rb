@@ -306,7 +306,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", name.to_s],["#{peername}", "W", name.to_s],["#{peername}", "R", name.to_s]]
         #need to add extended collection
         extended_collection = @wl_program.parse(collection.make_extended)
-        puts "Adding a collection: \n #{extended_collection.show}" if @options[:debug]
+        puts "Adding a collection for AC: \n #{extended_collection.show}" if @options[:debug]
         self.schema_init(extended_collection)
         @extended_collections_to_flush << extended_collection
         #now need to install a rule

@@ -33,6 +33,8 @@ module WLBud
     #   put in a waiting queue  instead of being added to the program.  Some
     #   external intervention will be required to validate them such as calling
     #   {WLRunner::update_add_rule} on @pending_delegations entries.
+    # * +:noprovenance+ if true the provenance is not kept and deletion use
+    #   recomputation strategy
     def initialize (peername, pgfilename, options={})
       # ### WLBud:Begin adding to Bud special bud parameter initialization
       if options[:measure]
@@ -271,19 +273,19 @@ module WLBud
           # Delete facts TODO here packet_value.facts_to_delete Declare all the
           # new relations and insert the rules
           packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?          
-          if @options[:filter_delegations]
-            @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
-          else
-            packet_value.rules.each{ |rule| add_rule(rule) } unless packet_value.rules.nil?
-          end
-          # Add new facts
-          add_facts(packet_value.facts) unless packet_value.facts.nil?
           # VZM
           if @options[:accessc]
             @extended_collections_to_flush.each {|col|
               @wl_program.wlcollections[col.fullrelname] = col
             }
           end
+          if @options[:filter_delegations]
+            @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
+          else
+            packet_value.rules.each{ |rule| add_rule(rule) } unless packet_value.rules.nil?
+          end
+          # Add new facts
+          add_facts(packet_value.facts) unless packet_value.facts.nil?          
         end
         # PENDING remove new_sprout_rules attribute add new rules from seeds
         @new_sprout_rules = make_seed_sprout

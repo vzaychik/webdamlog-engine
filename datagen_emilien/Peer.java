@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import org.webdam.datagen.Constants.COL_TYPE;
@@ -21,7 +23,8 @@ public class Peer {
     private ArrayList<Peer> _masters;
     private ArrayList<Peer> _slaves;
     private HashSet<Peer> _knownPeers;
-    private ArrayList<Collection> _collections;
+    private ArrayList<Collec> _collections;
+    private HashMap<String, Collec> _slave_coll;
 
     public Peer(int id, PEER_TYPE type) {
         _id = id;
@@ -31,6 +34,7 @@ public class Peer {
         _masters = new ArrayList<>();
         _knownPeers = new HashSet<>();
         _collections = new ArrayList<>();
+        _slave_coll = new HashMap<>();
     }
 
     public Peer(int id, PEER_TYPE type, SCENARIO scenario) {
@@ -41,7 +45,8 @@ public class Peer {
         _masters = new ArrayList<>();
         _knownPeers = new HashSet<>();
         _collections = new ArrayList<>();
-        _scenario = scenario;
+        _slave_coll = new HashMap<>();
+        _scenario = scenario;        
     }
 
     public void setAuxId(int auxId) {
@@ -76,12 +81,12 @@ public class Peer {
         return host + ":" + (Constants.PORT_OFFSET + _id);
     }
 
-    public ArrayList<Collection> getCollections() {
+    public ArrayList<Collec> getCollections() {
         return _collections;
     }
 
-    public Collection getCollectionByName(String name) {
-        for (Collection c : _collections) {
+    public Collec getCollectionByName(String name) {
+        for (Collec c : _collections) {
             if (c.getName().equalsIgnoreCase(name)) {
                 return c;
             }
@@ -89,18 +94,37 @@ public class Peer {
         return null;
     }
 
+    public ArrayList<Peer> getSlaves() {
+        return _slaves;
+    }
+
+    public Collection<Collec> getSlaveColls() {
+        return _slave_coll.values();
+    }
+
     public void addMaster(Peer p) {
         _masters.add(p);
         _knownPeers.add(p);
     }
 
+    /**
+     * Add the slave p to this peer.
+     *
+     * A slave is a peer that will send facts to a local relation in this peer.
+     *
+     * @param p
+     */
     public void addSlave(Peer p) {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            _collections.add(new Collection("a" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
+            Collec slave_rel = new Collec("a_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
+            _collections.add(slave_rel);
+            _slave_coll.put(slave_rel.getName(), slave_rel);
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            _collections.add(new Collection("f" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
+            Collec slave_rel = new Collec("m_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
+            _collections.add(slave_rel);
+            _slave_coll.put(slave_rel.getName(), slave_rel);
         }
     }
 
@@ -108,9 +132,9 @@ public class Peer {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            _collections.add(new Collection("a" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+            _collections.add(new Collec("a_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x", nonKeys));
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            _collections.add(new Collection("f" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
+            _collections.add(new Collec("m_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x", nonKeys));
         }
     }
 
@@ -127,7 +151,7 @@ public class Peer {
      *
      * @param c
      */
-    public void addCollection(Collection c) {
+    public void addCollection(Collec c) {
         _collections.add(c);
     }
 
@@ -153,7 +177,7 @@ public class Peer {
 
     public String outputCollections() {
         StringBuilder prog = new StringBuilder("// collections\n");
-        for (Collection c : _collections) {
+        for (Collec c : _collections) {
             prog.append("collection ").append(c.getType().toString()).append(c.isPersistentToString()).append(c.getSchema()).append(";\n");
         }
         return prog.toString();
@@ -161,7 +185,7 @@ public class Peer {
 
     public String outputFacts() {
         StringBuilder prog = new StringBuilder("// facts\n");
-        for (Collection c : _collections) {
+        for (Collec c : _collections) {
             for (String fact : c.getFacts()) {
                 prog.append("fact ").append(c.getName()).append(c.getSuffix()).append("@").append(this.getName()).append("(").append(fact).append(");\n");
             }
@@ -172,12 +196,12 @@ public class Peer {
     public String outputPolicy() {
         StringBuilder prog = new StringBuilder("// access control policy\n");
         if (_policy == POLICY.PUB) {
-            for (Collection c : _collections) {
+            for (Collec c : _collections) {
                 prog.append("policy ").append(c.getName()).append(c.getSuffix()).append(" read ALL;\n");
                 prog.append("policy ").append(c.getName()).append(c.getSuffix()).append(" write ALL;\n");
             }
         } else if (_policy == POLICY.KNOWN) {
-            for (Collection c : _collections) {
+            for (Collec c : _collections) {
                 for (Peer p : _knownPeers) {
                     prog.append("policy ").append(c.getName()).append(c.getSuffix()).append(" read ").append(p.getName()).append(";\n");
                     prog.append("policy ").append(c.getName()).append(c.getSuffix()).append(" write ").append(p.getName()).append(";\n");
@@ -202,16 +226,16 @@ public class Peer {
 
                 // send the contents of relation s@thispeer(x) to relation t@master(x), on each master
                 for (Peer m : _masters) {
-                    Collection headC = m.getCollectionByName("m");
-                    Collection bodyC = this.getCollectionByName("f");
+                    Collec headC = m.getCollectionByName("m");
+                    Collec bodyC = this.getCollectionByName("f");
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }
 
                 // take the join of r@follower_i(x*), store result in s@aggregator(x*)
-                Collection headC = this.getCollectionByName("f");
+                Collec headC = this.getCollectionByName("f");
                 String bodyOfJoinRule = "";
                 for (Peer f : _slaves) {
-                    Collection bodyC = f.getCollectionByName("a");
+                    Collec bodyC = f.getCollectionByName("a");
                     if (bodyOfJoinRule.length() > 0) {
                         bodyOfJoinRule += ", ";
                     }
@@ -228,10 +252,10 @@ public class Peer {
             if (_type == PEER_TYPE.MASTER) {
 
                 // take the join of s@aggregator_i(x*), store result in t@master(x*)
-                Collection headC = this.getCollectionByName("m");
+                Collec headC = this.getCollectionByName("m");
                 String bodyOfJoinRule = "";
                 for (Peer f : _slaves) {
-                    Collection bodyC = f.getCollectionByName("f");
+                    Collec bodyC = f.getCollectionByName("f");
                     if (bodyOfJoinRule.length() > 0) {
                         bodyOfJoinRule += ", ";
                     }
@@ -244,11 +268,12 @@ public class Peer {
             } else if (_type == PEER_TYPE.FOLLOWER) {
                 // send the contents of relation r@thispeer(x) into s@aggregator(x), for each aggregator
                 for (Peer m : _masters) {
-                    Collection headC = m.getCollectionByName("f");
-                    Collection bodyC = this.getCollectionByName("a");
+                    Collec headC = m.getCollectionByName("f");
+                    Collec bodyC = this.getCollectionByName("a");
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }
             }
+            
         } else if (_scenario == SCENARIO.ALBUM) {
 
             if (_type == PEER_TYPE.SUE) {
@@ -256,33 +281,35 @@ public class Peer {
                 Peer bob = Album._peersList.get(1);
 
                 // compute a union of friends@alice and friends@bob, store in all_friends@sue
-                Collection allFriends = this.getCollectionByName("all_friends");
-                Collection friendsAlice = alice.getCollectionByName("friends");
-                Collection friendsBob = bob.getCollectionByName("friends");
+                Collec allFriends = this.getCollectionByName("all_friends");
+                Collec friendsAlice = alice.getCollectionByName("friends");
+                Collec friendsBob = bob.getCollectionByName("friends");
                 prog.append("rule ").append(allFriends.getSchemaWithVars()).append(" :- ").append(friendsAlice.getSchemaWithVars()).append(";\n");
                 prog.append("rule ").append(allFriends.getSchemaWithVars()).append(" :- ").append(friendsBob.getSchemaWithVars()).append(";\n");
 
                 // compute the contents of album@sue($img,$peer)
-                Collection album = this.getCollectionByName("album");
+                Collec album = this.getCollectionByName("album");
                 prog.append("rule ").append(album.getSchemaWithVars()).append(" :- ").append(allFriends.getSchemaWithVars()).append(", photos@$peer($img), tags@$peer($img,\"").append(alice.getName()).append("\"), tags@$peer($img,\"").append(bob.getName()).append("\");\n");
             }
+
         } else if (_scenario == SCENARIO.AGGFOLUNION) {
+
             if (_type == PEER_TYPE.MASTER) {
                 // no rules
             } else if (_type == PEER_TYPE.AGGREGATOR) {
 
                 // send the contents of relation a@thispeer(x) to relation m@master(x), on each master
                 for (Peer m : _masters) {
-                    Collection headC = m.getCollectionByName("m");
-                    Collection bodyC = this.getCollectionByName("a");
+                    Collec headC = m.getCollectionByName("m");
+                    Collec bodyC = this.getCollectionByName("a");
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }
 
                 // take the join of f@follower_i(x*), store result in a@aggregator(x*)
-                Collection headC = this.getCollectionByName("a");
+                Collec headC = this.getCollectionByName("a");
                 String bodyOfJoinRule = "";
                 for (Peer f : _slaves) {
-                    Collection bodyC = f.getCollectionByName("f");
+                    Collec bodyC = f.getCollectionByName("f");
                     if (bodyOfJoinRule.length() > 0) {
                         bodyOfJoinRule += ", ";
                     }
@@ -291,7 +318,15 @@ public class Peer {
                 prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyOfJoinRule).append(";\n");
 
             } else if (_type == PEER_TYPE.FOLLOWER) {
-                // no rules
+                // TODO
+                for (int i=0; i<Constants.REL_IN_JOINS; i++) {
+                    
+                }
+                for (Peer m : _masters) {
+                    Collec headC = m.getCollectionByName("m");
+                    Collec bodyC = this.getCollectionByName("a");
+                    prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
+                }
             }
         }
 

@@ -12,9 +12,15 @@ public class Constants {
         INT, EXT
     };
 
-    // public policy says that all peers see all data
-    // private policy says that only the local peer can read its data
-    // KNOWN policy says that the local peer and all peers that it knows about (its masters and slaves) can read its data
+    /**
+     *
+     * <ul>
+     * <li> public policy says that all peers see all data
+     * <li> private policy says that only the local peer can read its data
+     * <li> KNOWN policy says that the local peer and all peers that it knows
+     * about(its masters and slaves) can read its data
+     * <ul>
+     */
     public static enum POLICY {
 
         PUB, PRIV, KNOWN
@@ -41,6 +47,7 @@ public class Constants {
      * Used to be sure that except master no peer will start processing.
      */
     public static boolean MASTER_ONLY_RULES = true;
+    
     /**
      * Set to true to create the program files.
      *
@@ -48,9 +55,18 @@ public class Constants {
      */
     public static boolean DO_FILE_IO = true;
 
+    
     // Album constants
     public static float PROB_ALICE_OR_BOB_IN_PHOTO = 0.5f;
     public static float PROB_OTHER_PEER_IN_PHOTO = 0.1f;
     // the length of the extra columns in the MAF scenario
     public static String EXTRA_COL = "\"ABCDEFGHIJ\"";
+
+    //AggFolUnion constants
+
+    /**
+     * Set the number of relations to join in the followers
+     */
+    public static int REL_IN_JOINS = 3;
+    
 }

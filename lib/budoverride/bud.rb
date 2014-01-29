@@ -4,7 +4,7 @@ module WLBud
   class WL
 
     # Hacky: attribute that store the rule_id currently evaluated while wiring
-    #  to be added to push_elems
+    #   to be added to push_elems
     attr_reader :current_eval_rule_id
 
     # The initializer for WLBud directly overrides the initializer from Bud.
@@ -147,6 +147,12 @@ module WLBud
       load_lattice_defs
       builtin_state
 
+      # VZM access control
+      @options[:accessc] ||= false
+      self.add_aclkind
+      self.add_access_optim
+      @extended_collections_to_flush = []
+      @packet_metrics = []
       # #### WLBud:Begin adding to Bud
       #
       if @options[:measure]
@@ -157,7 +163,7 @@ module WLBud
       @collection_added=false
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
       #   instance.
-      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug]})
+      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1], :optim2 => @options[:optim2]} )
       # By default provenance is used to spread deletion, use this tag for
       #   experimental comparisons
       @options[:noprovenance] ? @provenance = false : @provenance = true
@@ -262,10 +268,9 @@ module WLBud
           if @options[:debug]
             puts "Process packets received from #{packet_value.print_meta_data}"
           end
-          # Delete facts TODO here
-          # packet_value.facts_to_delete
-          # Declare all the new relations and insert the rules
-          packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?
+          # Delete facts TODO here packet_value.facts_to_delete Declare all the
+          # new relations and insert the rules
+          packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?          
           if @options[:filter_delegations]
             @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
           else
@@ -273,6 +278,12 @@ module WLBud
           end
           # Add new facts
           add_facts(packet_value.facts) unless packet_value.facts.nil?
+          # VZM
+          if @options[:accessc]
+            @extended_collections_to_flush.each {|col|
+              @wl_program.wlcollections[col.fullrelname] = col
+            }
+          end
         end
         # PENDING remove new_sprout_rules attribute add new rules from seeds
         @new_sprout_rules = make_seed_sprout
@@ -437,7 +448,23 @@ module WLBud
       end
       if @options[:measure]
         @measure_obj.append_measure @budtime-1
-        @measure_obj.dump_measures @budtime-1
+        # count number of tuples in user tables
+        tuplecount = 0;
+        wordcount = 0;
+        utables = @tables.keys - @builtin_tables.keys
+        utables.each do |tbl|
+          tuplecount += tables[tbl].length
+          tables[tbl].each { |fct|
+            fct.each { |elem|
+              if elem.is_a? PList
+                wordcount += elem.to_a.length
+              else
+                wordcount += 1
+              end
+            }
+          }
+        end
+        @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
       end
     end
 

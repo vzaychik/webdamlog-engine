@@ -188,8 +188,8 @@ public class Album {
                 if (p.getType().equals(PEER_TYPE.PEER)) {
 
                     // on peers other than alice, bob and sue, photos and tags contain data
-                    Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img", numFacts, valRange);
-                    Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
+                    Collec photos = new Collec("photos", p.getName(), COL_TYPE.EXT, 1, "img", numFacts, valRange);
+                    Collec tags = new Collec("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
 
                     for (String img : photos.getFacts()) {
 
@@ -219,16 +219,16 @@ public class Album {
                     p.addKnownPeer(sue);
                 } else {
                     // on alice, bob and sue these collections are empty
-                    Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img");
-                    Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
+                    Collec photos = new Collec("photos", p.getName(), COL_TYPE.EXT, 1, "img");
+                    Collec tags = new Collec("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
                     p.addCollection(photos);
                     p.addCollection(tags);
                 }
 
-                Collection album = new Collection("album", p.getName(), COL_TYPE.INT, 1, "img,peer");
+                Collec album = new Collec("album", p.getName(), COL_TYPE.INT, 1, "img,peer");
                 p.addCollection(album);
 
-                Collection friends = new Collection("friends", p.getName(), COL_TYPE.EXT, 1, "peer");
+                Collec friends = new Collec("friends", p.getName(), COL_TYPE.EXT, 1, "peer");
                 for (Peer f : p.getKnownPeers()) {
                     friends.addFact("\"" + f.getName() + "\"");
                 }
@@ -238,7 +238,7 @@ public class Album {
             }
 
             // set up sue's collections
-            Collection allFriends = new Collection("all_friends", sue.getName(), COL_TYPE.INT, 1, "peer");
+            Collec allFriends = new Collec("all_friends", sue.getName(), COL_TYPE.INT, 1, "peer");
             sue.addCollection(allFriends);
 
             // output to program files

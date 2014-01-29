@@ -7,7 +7,12 @@ import java.util.Random;
 
 import org.webdam.datagen.Constants.COL_TYPE;
 
-public class Collection {
+/**
+ * This represents a collection un Webdamlog.
+ *
+ * Rename to avoid clash with Java collections.
+ */
+public class Collec {
 
     public String _name;
     public String _suffix;
@@ -20,7 +25,16 @@ public class Collection {
     public int _isPersistent = 0;
     public HashSet<String> _facts;
 
-    public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys) {
+    /**
+     * 
+     * @param name
+     * @param peerName
+     * @param type
+     * @param isPersistent
+     * @param keys
+     * @param nonKeys
+     */
+    public Collec(String name, String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys) {
         _name = name;
         _peerName = peerName;
         _type = type;
@@ -48,16 +62,24 @@ public class Collection {
         _schemaWithVars = _name + _suffix + "@" + peerName + "(" + colsToString() + ")";
     }
 
-    public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys) {
+    /**
+     * 
+     * @param name
+     * @param peerName
+     * @param type
+     * @param isPersistent
+     * @param keys
+     */
+    public Collec(String name, String peerName, COL_TYPE type, int isPersistent, String keys) {
         this(name, peerName, type, isPersistent, keys, "");
     }
 
-    public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys, int numFacts, int valRange) {
+    public Collec(String name, String peerName, COL_TYPE type, int isPersistent, String keys, int numFacts, int valRange) {
         this(name, peerName, type, isPersistent, keys);
         this.addFacts(numFacts, valRange);
     }
 
-    public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys, int numFacts, int valRange) {
+    public Collec(String name, String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys, int numFacts, int valRange) {
         this(name, peerName, type, isPersistent, keys, nonKeys);
         this.addFacts(numFacts, valRange, this._nonKeys.size());
     }

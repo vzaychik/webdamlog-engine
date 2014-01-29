@@ -27,7 +27,6 @@ public class AggFolUnion {
      * List of ip addresses of machines
      */
     public static HashMap<Integer, String> _netAddressMap = new HashMap<>();
-    
     private static final SCENARIO SCENARIO_NAME = SCENARIO.AGGFOLUNION;
 
     /**
@@ -147,12 +146,13 @@ public class AggFolUnion {
      * <ul>
      * <li> numFollowers - number of peers at the lowest layer
      * <li> numAggregators - number of aggregators (middle layer)
-     * <li> aggregatorsPerFollower - input degree +1 of follower nodes
+     * <li> aggregatorsPerFollower - input degree of aggregator nodes
      * <li> numFacts - number of facts per extensional relation on a follower
      * peer. This is an upper bound - facts are not guaranteed to be unique, so
      * we’ll usually end up with fewer, after duplicate elimination.
      * <li> valRange - facts in the unary relations at follower peers are drawn
      * randomly from the interval [0, valRange)
+     * <li> [numRelFollowers] - number of relations per followers
      * <li> [instanceFile] - optional argument; name of the file (on the local
      * system) that lists names or IP addresses of the instances, one name or IP
      * address per line
@@ -195,28 +195,27 @@ public class AggFolUnion {
 
 
         // Setup each kind of peers
-        // One master
+        // One master with one Webdamlog collection
         int currentId = 0;
         Peer master = new Peer(currentId++, Constants.PEER_TYPE.MASTER, SCENARIO_NAME);
-        master.addCollection(new Collection("m", master.getName(), Constants.COL_TYPE.INT, 0, "field"));
-        // Aggregator peers
+        master.addCollection(new Collec("m", master.getName(), Constants.COL_TYPE.INT, 0, "field"));
+        // Set master and slave for each aggreagtors peers
         ArrayList<Peer> aggregators = new ArrayList<>();
         for (int i = 0; i < numAggregators; i++) {
             Peer p = new Peer(currentId++, Constants.PEER_TYPE.AGGREGATOR, SCENARIO_NAME);
             p.addMaster(master);
             master.addSlave(p);
-            p.addCollection(new Collection("a", p.getName(), Constants.COL_TYPE.INT, 0, "field"));
             aggregators.add(p);
         }
         // Follower peers
         ArrayList<Peer> followers = new ArrayList<>();
         for (int i = 0; i < numFollowers; i++) {
+            // add aggregators in which to send joins
             Peer follower = new Peer(currentId++, Constants.PEER_TYPE.FOLLOWER, SCENARIO_NAME);
             follower.addKnownPeer(master);
-            follower.addCollection(new Collection("f", follower.getName(), Constants.COL_TYPE.EXT, 1, "field", numFacts, valRange));
             HashSet<Integer> aggsToFollow = new HashSet<>();
             for (int j = 0; j < aggregators.size(); j++) {
-                for (int k = 0; k <= overlap; k++) {
+                for (int k = 0; k < overlap; k++) {
                     if ((follower.getId() + k) % numAggregators == aggregators.get(j).getId() - 1) {
                         // peer follower will follow the jth aggregator
                         aggsToFollow.add(j);
@@ -230,6 +229,34 @@ public class AggFolUnion {
                 }
             }
             followers.add(follower);
+            // add collection to followers to do join to send to aggregators
+            for (int j = 0; j < aggsToFollow.size(); j++) {
+                for (int k = 0; k < overlap; k++) {
+                    String name = "f_" + j + "_" + k;
+                    follower.addCollection(
+                            new Collec(
+                            name,
+                            follower.getName(),
+                            Constants.COL_TYPE.EXT,
+                            1,
+                            "field",
+                            numFacts,
+                            valRange));
+                }
+            }
+            // Set collection for each aggregators
+//            for (Peer aggregator : aggregators) {
+//                for (Peer tofollow : aggregator.getSlaves()) {
+//                    String name = "a_" + tofollow.getId();
+//                    aggregator.addCollection(
+//                            new Collec(
+//                            name,
+//                            aggregator.getName(),
+//                            Constants.COL_TYPE.INT,
+//                            0,
+//                            "field"));
+//                }
+//            }
         }
 
 
@@ -278,7 +305,7 @@ public class AggFolUnion {
 
                     // Write rules in master node
                     if (Constants.MASTER_ONLY_RULES) {
-                        masterRules.append(p.outputRules());
+                        //masterRules.append(p.outputRules());
                     }
                 }
 

@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
     # generate scenarios
     for s in scenarioList:
-        newScenID = scenario.generateScenarioFiles( s, rootPath )
+        newScenID =     scenario.generateScenarioFiles( s, rootPath )
         print 'Generated new scenario: ', newScenID
 
     localSVNCommit(rootPath)        # commit results

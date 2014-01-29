@@ -30,9 +30,10 @@ def matchOrCreateScenario(scenList, rootPath):
                 models.Scenario.hosts == str(scen.hosts), \
                 models.Scenario.numPeersPerHost == scen.numPeersPerHost \
                 ).scenID
-            print 'Found matching with scenID %i.' % scenID
+            print '***  Found matching with scenID %i.' % scenID
         except DoesNotExist:    # scenario was not found, create it
             scenID = scenario.generateScenarioFiles(scen, rootPath)
+            print '***  Scenario not found; created new scenario %i' % scenID
         scenIDList.append(scenID)
     return scenIDList
 

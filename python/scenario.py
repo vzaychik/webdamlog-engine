@@ -21,7 +21,7 @@ def checkScenario(s):
 def generateScenarioFiles(scenario, rootPath):
     
     stamp = int(time.time()*1000)
-    tempDir = os.path.join(rootPath, scenario.scenType, str(stamp))
+    tempDir = os.path.join(rootPath, 'webdamlog-exp', scenario.scenType, str(stamp))
     os.makedirs(tempDir)
     os.chdir(tempDir)
     
@@ -34,7 +34,7 @@ def generateScenarioFiles(scenario, rootPath):
     # construct java execution list (in format for subprocess.call)
     javaString = ['java']
     javaString.append('-cp')
-    javaString.append(os.path.join(pathToRepository,'webdamlog-engine/datagen','dataGen.jar'))
+    javaString.append(os.path.join(rootPath,'webdamlog-engine/datagen','dataGen.jar'))
     if (scenario.scenType == 'MAF'): # parameters for MAF
         javaString.append('org.stoyanovich.webdam.datagen.Network')
         javaString.append(str(scenario.numFollowers))
@@ -48,7 +48,7 @@ def generateScenarioFiles(scenario, rootPath):
     if (scenario.scenType == 'PA'): # parameters for PA
         javaString.append('org.stoyanovich.webdam.datagen.Album')
 #        javaString.append(scenario.networkFile)
-        javaString.append(os.path.join(pathToRepository,'webdamlog-engine/network',str(scenario.networkFile)))
+        javaString.append(os.path.join(rootPath,'webdamlog-engine/network',str(scenario.networkFile)))
         javaString.append(scenario.policy)
         javaString.append(str(scenario.numFacts))
         javaString.append(str(scenario.valRange))
@@ -73,7 +73,7 @@ def generateScenarioFiles(scenario, rootPath):
 if __name__ == "__main__":
 
     # set up path
-    rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
+    rootPath = pathToRepository
 
     scenarios = driver.simplePA()  # create a list of scenario instances
     for s in scenarios:

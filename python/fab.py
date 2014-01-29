@@ -5,9 +5,10 @@ from fabric.api import *
 from fabric.tasks import execute
 import os
 
-env.parallel = False
-#env.hosts=['dbcluster.cs.umass.edu','avid.cs.umass.edu']
-#env.hosts=['dbcluster.cs.umass.edu']
+#env.parallel = False
+
+rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
+#rubyPath = 'ruby'
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
@@ -19,11 +20,13 @@ rootPathDict = { \
     'miklau5':'/state/partition2/miklau', }
 
 #@task
-@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu','miklau1'])
+@parallel
+@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu'])
 def test():
+    if (env.host == 'avid.cs.umass.edu'):
+        run('sleep 10.0')
     run('hostname -f')
     run('pwd')
-#    run('echo %s' % env.host )
 
 @hosts(['dbcluster.cs.umass.edu'])
 def remote_run(filename):
@@ -54,7 +57,8 @@ def pull_both():
 
 def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]
-    runString = 'ruby %s %s %s' % ( \
+    runString = '%s %s %s %s' % ( \
+        rubyPath, \
         os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote.rb'), \
         os.path.join(rootPath,scenPath,'out_' + env.host + '_' + outKey), \
         paramString )
@@ -68,6 +72,4 @@ def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
 
 if __name__ == '__main__':
 
-    env.hosts=['localhost']
-    execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])
     execute(test)

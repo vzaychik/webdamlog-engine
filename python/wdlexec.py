@@ -52,7 +52,7 @@ def matchOrCreateScenario(scenList, rootPath):
 #     networkFile = CharField(null=True) 
 
 
-def run(configFile)
+def run(configFile):
 
     config = ConfigParser.ConfigParser()
     config.read(configFile)

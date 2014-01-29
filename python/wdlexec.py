@@ -94,12 +94,13 @@ def run(configFile):
         # TODO
         pass
 
-    driver.localSVNCommit( os.path.join(rootPath, 'webdamlog-exp') )
 
 
-    print '***  Starting to process %i scenarios...' % len(scenarioList)
+    print '***  Checking / creating %i scenarios...' % len(scenarioList)
     # get scenario IDs after matching or creating scenarios
     scenIDList = matchOrCreateScenario(scenarioList, rootPath)
+
+    driver.localSVNCommit( os.path.join(rootPath, 'webdamlog-exp') )
 
     # start on executions...
     # set-valued execution parameters (space delimited in config file)

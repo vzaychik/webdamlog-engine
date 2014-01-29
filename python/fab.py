@@ -5,9 +5,7 @@ from fabric.api import *
 from fabric.tasks import execute
 import os
 
-env.parallel = False
-#env.hosts=['dbcluster.cs.umass.edu','avid.cs.umass.edu']
-#env.hosts=['dbcluster.cs.umass.edu']
+#env.parallel = False
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
@@ -19,11 +17,13 @@ rootPathDict = { \
     'miklau5':'/state/partition2/miklau', }
 
 #@task
-@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu','miklau1'])
+@parallel
+@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu'])
 def test():
+    if (env.host == 'avid.cs.umass.edu'):
+        run('sleep 10.0')
     run('hostname -f')
     run('pwd')
-#    run('echo %s' % env.host )
 
 @hosts(['dbcluster.cs.umass.edu'])
 def remote_run(filename):
@@ -68,6 +68,4 @@ def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
 
 if __name__ == '__main__':
 
-    env.hosts=['localhost']
-    execute(pull_both, rootPath=rootPathDict['dbcluster.cs.umass.edu'])
     execute(test)

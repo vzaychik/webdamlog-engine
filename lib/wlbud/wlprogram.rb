@@ -1494,8 +1494,8 @@ In the string: #{line}
           str << " * formulas_at_#{@peername}"
         end
         # in regular access control check writeable at the source prior to
-        # writing #with optimization 1 check only with the original rule using
-        # the writeable relation #and assume no malicious peers
+        # writing with optimization 1 check only with the original rule using
+        # the writeable relation and assume no malicious peers
         if wlrule.author != @peername && bound_n_local?(wlrule.head) && !@options[:optim1]
           str << " * acl_at_#{wlrule.head.peername}"
         elsif @options[:optim1] && !bound_n_local?(wlrule.head) && wlrule.author == @peername

@@ -210,28 +210,32 @@ public class AggFolUnion {
         // Follower peers
         ArrayList<Peer> followers = new ArrayList<>();
         for (int i = 0; i < numFollowers; i++) {
-            // add aggregators in which to send joins
             Peer follower = new Peer(currentId++, Constants.PEER_TYPE.FOLLOWER, SCENARIO_NAME);
             follower.addKnownPeer(master);
-            HashSet<Integer> aggsToFollow = new HashSet<>();
+            // set aggregators in which to send joins
+            HashSet<Peer> aggsToFollow = new HashSet<>();
             for (int j = 0; j < aggregators.size(); j++) {
                 for (int k = 0; k < overlap; k++) {
+                    // aggregators are index from 1 to numAggregators
                     if ((follower.getId() + k) % numAggregators == aggregators.get(j).getId() - 1) {
                         // peer follower will follow the jth aggregator
-                        aggsToFollow.add(j);
+                        aggsToFollow.add(aggregators.get(j));
                     }
                 }
             }
-            for (int j = 0; j < aggregators.size(); j++) {
-                if (aggsToFollow.contains(j)) {
-                    follower.addMaster(aggregators.get(j));
-                    aggregators.get(j).addSlave(follower);
-                }
+            for (Peer aggToFollow : aggsToFollow) {
+                follower.addMaster(aggToFollow);
+                aggToFollow.addSlave(follower);
             }
             followers.add(follower);
+            ArrayList<Collec> relToSend = new ArrayList<>();
+            for (Peer aggToFollow : aggsToFollow) {
+                relToSend = aggToFollow.getCollectionsByPattern("_hasslave_");
+            }
+
             // add collection to followers to do join to send to aggregators
-            for (int j = 0; j < aggsToFollow.size(); j++) {
-                for (int k = 0; k < overlap; k++) {
+            for (int j = 0; j < relToSend.size(); j++) {
+                for (int k = 0; k < Constants.REL_IN_JOINS; k++) {
                     String name = "f_" + j + "_" + k;
                     follower.addCollection(
                             new Collec(
@@ -244,19 +248,6 @@ public class AggFolUnion {
                             valRange));
                 }
             }
-            // Set collection for each aggregators
-//            for (Peer aggregator : aggregators) {
-//                for (Peer tofollow : aggregator.getSlaves()) {
-//                    String name = "a_" + tofollow.getId();
-//                    aggregator.addCollection(
-//                            new Collec(
-//                            name,
-//                            aggregator.getName(),
-//                            Constants.COL_TYPE.INT,
-//                            0,
-//                            "field"));
-//                }
-//            }
         }
 
 

@@ -46,7 +46,7 @@ public class Peer {
         _knownPeers = new HashSet<>();
         _collections = new ArrayList<>();
         _slave_coll = new HashMap<>();
-        _scenario = scenario;        
+        _scenario = scenario;
     }
 
     public void setAuxId(int auxId) {
@@ -92,6 +92,16 @@ public class Peer {
             }
         }
         return null;
+    }
+
+    public ArrayList<Collec> getCollectionsByPattern(CharSequence cs) {
+        ArrayList<Collec> collecs = new ArrayList<> ();
+        for (Collec c : _collections) {
+            if (c.getName().contains(cs)) {
+                collecs.add(c);
+            }
+        }
+        return collecs;
     }
 
     public ArrayList<Peer> getSlaves() {
@@ -273,7 +283,7 @@ public class Peer {
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }
             }
-            
+
         } else if (_scenario == SCENARIO.ALBUM) {
 
             if (_type == PEER_TYPE.SUE) {
@@ -319,11 +329,14 @@ public class Peer {
 
             } else if (_type == PEER_TYPE.FOLLOWER) {
                 // TODO
-                for (int i=0; i<Constants.REL_IN_JOINS; i++) {
+                for (int i = 0; i < Constants.REL_IN_JOINS; i++) {
                     
                 }
-                for (Peer m : _masters) {
-                    Collec headC = m.getCollectionByName("m");
+                
+                for (Peer sl : _slaves) {
+                    ArrayList<Collec> relToSend = sl.getCollectionsByPattern(_hasslave_);
+                    // TODO
+                    Collec headC = sl.getCollectionByName("m");
                     Collec bodyC = this.getCollectionByName("a");
                     prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
                 }

@@ -1,5 +1,5 @@
 import ConfigParser
-#from peewee import *
+from peewee import *
 import itertools
 import os
 import sys

@@ -27,7 +27,7 @@ def matchOrCreateScenario(scenList, rootPath):
                 models.Scenario.valRange == scen.valRange, \
                 models.Scenario.numExtraCols == scen.numExtraCols, \
                 models.Scenario.numHosts == scen.numHosts, \
-                models.Scenario.hosts == scen.hosts, \
+                models.Scenario.hosts == str(scen.hosts), \
                 models.Scenario.numPeersPerHost == scen.numPeersPerHost \
                 ).scenID
             print 'Found matching with scenID %i.' % scenID
@@ -84,7 +84,7 @@ def run(configFile):
                 valRange = config.getint('scenarioMAF', 'valRange'), \
                 numExtraCols = config.getint('scenarioMAF', 'numExtraCols'), \
                 numHosts = config.getint('scenarioMAF', 'numHosts'), \
-                hosts = str(config.get('scenarioMAF', 'hosts').split(' ')), \
+                hosts = config.get('scenarioMAF', 'hosts').split(' '), \
                 numPeersPerHost = config.getint('scenarioMAF', 'numPeersPerHost') )
             scenarioList.append(scenario)
 

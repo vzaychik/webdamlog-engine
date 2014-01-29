@@ -116,5 +116,5 @@ def run(configFile)
 
 if __name__ == "__main__":
         
-    execute('exp.cfg')
+    run('exp.cfg')
     

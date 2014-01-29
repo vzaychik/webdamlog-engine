@@ -14,6 +14,7 @@ import fab
 # @hosts(['dbcluster.cs.umass.edu'])
 def run_execute():
      with cd(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+         run('git pull')
          run('python wdlexec.py')
 
 

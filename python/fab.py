@@ -7,6 +7,8 @@ import os
 
 #env.parallel = False
 
+rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
+
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
     'avid.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
@@ -54,7 +56,8 @@ def pull_both():
 
 def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]
-    runString = 'ruby %s %s %s' % ( \
+    runString = '%s %s %s %s' % ( \
+        rubyPath, \
         os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote.rb'), \
         os.path.join(rootPath,scenPath,'out_' + env.host + '_' + outKey), \
         paramString )

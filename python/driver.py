@@ -81,8 +81,6 @@ def simpleMAF():
     # prompt user?
     # run each execution
     # refresh database
-    
-
 
 # generates a list of scenario objects for  {policies} x {numFacts} x {ruleScenarios}
 def case1():

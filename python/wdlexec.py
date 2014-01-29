@@ -1,5 +1,6 @@
 import ConfigParser
 #from peewee import *
+import itertools
 import os
 import sys
 from subprocess import call

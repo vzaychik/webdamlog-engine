@@ -93,7 +93,7 @@ def run(configFile):
 
     print '***  Starting to process %i scenarios...' % len(scenarioList)
     # get scenario IDs after matching or creating scenarios
-    scenIDList = matchOrCreate(scenarioList, rootPath)
+    scenIDList = matchOrCreateScenario(scenarioList, rootPath)
 
     # start on executions...
     # set-valued execution parameters (space delimited in config file)

@@ -282,7 +282,7 @@ module WLBud
           if @options[:filter_delegations]
             @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
           else
-            packet_value.rules.each{ |rule| add_rule(rule) } unless packet_value.rules.nil?
+            packet_value.rules.each{ |rule| add_rule(rule, packet_value.peer_name) } unless packet_value.rules.nil?
           end
           # Add new facts
           add_facts(packet_value.facts) unless packet_value.facts.nil?          

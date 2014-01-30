@@ -68,5 +68,7 @@ public class Constants {
      * Set the number of relations to join in the followers
      */
     public static int REL_IN_JOINS = 3;
+
+    public static String SELECT_REL = "select";
     
 }

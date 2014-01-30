@@ -152,6 +152,8 @@ public class AggFolUnion {
      * we’ll usually end up with fewer, after duplicate elimination.
      * <li> valRange - facts in the unary relations at follower peers are drawn
      * randomly from the interval [0, valRange)
+     * <li> selectivity - the percentage of facts in aggregators to propagate on
+     * master
      * <li> [numRelFollowers] - number of relations per followers
      * <li> [instanceFile] - optional argument; name of the file (on the local
      * system) that lists names or IP addresses of the instances, one name or IP
@@ -177,6 +179,7 @@ public class AggFolUnion {
         int overlap = Integer.parseInt(args[2].trim());
         int numFacts = Integer.parseInt(args[3].trim());
         int valRange = Integer.parseInt(args[4].trim());
+        int selectivity = Integer.parseInt(args[5].trim());
 
         // Header comments in files
         readmeComment.append("# followers=").append(numFollowers);
@@ -184,10 +187,11 @@ public class AggFolUnion {
         readmeComment.append(", # aggregators per follower=").append(overlap);
         readmeComment.append(", # facts per relation=").append(numFacts);
         readmeComment.append(", value range=").append(valRange);
+        readmeComment.append(", selectivity=").append(selectivity);
 
-        if (args.length > 5) {
-            String instanceFile = args[5].trim();
-            int peersPerInstance = Integer.parseInt(args[6]);
+        if (args.length > 6) {
+            String instanceFile = args[6].trim();
+            int peersPerInstance = Integer.parseInt(args[7]);
             initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
         } else {
             initNetAddressMap(1 + numAggregators + numFollowers);
@@ -202,10 +206,20 @@ public class AggFolUnion {
         // Set master and slave for each aggreagtors peers
         ArrayList<Peer> aggregators = new ArrayList<>();
         for (int i = 0; i < numAggregators; i++) {
-            Peer p = new Peer(currentId++, Constants.PEER_TYPE.AGGREGATOR, SCENARIO_NAME);
-            p.addMaster(master);
-            master.addSlave(p);
-            aggregators.add(p);
+            Peer aggPeer = new Peer(currentId++, Constants.PEER_TYPE.AGGREGATOR, SCENARIO_NAME);
+            aggPeer.addMaster(master);
+            master.addSlave(aggPeer);
+            aggregators.add(aggPeer);
+            Collec select = new Collec(
+                    Constants.SELECT_REL,
+                    aggPeer.getName(),
+                    Constants.COL_TYPE.EXT,
+                    1,
+                    "field");
+            aggPeer.addCollection(select);
+            for (int j = 0; (float)(j) < ((float)(valRange) * ((float)(selectivity) / 100.00)); j++) {
+                select.addFact("" + j);
+            }
         }
         // Follower peers
         ArrayList<Peer> followers = new ArrayList<>();
@@ -214,29 +228,20 @@ public class AggFolUnion {
             follower.addKnownPeer(master);
             // set aggregators in which to send joins
             HashSet<Peer> aggsToFollow = new HashSet<>();
-            for (int j = 0; j < aggregators.size(); j++) {
-                for (int k = 0; k < overlap; k++) {
-                    // aggregators are index from 1 to numAggregators
-                    if ((follower.getId() + k) % numAggregators == aggregators.get(j).getId() - 1) {
-                        // peer follower will follow the jth aggregator
-                        aggsToFollow.add(aggregators.get(j));
-                    }
-                }
+            for (int k = 0; k < overlap; k++) {
+                int j = (follower.getId() + k) % numAggregators;
+                aggsToFollow.add(aggregators.get(j));
             }
             for (Peer aggToFollow : aggsToFollow) {
                 follower.addMaster(aggToFollow);
                 aggToFollow.addSlave(follower);
             }
             followers.add(follower);
-            ArrayList<Collec> relToSend = new ArrayList<>();
-            for (Peer aggToFollow : aggsToFollow) {
-                relToSend = aggToFollow.getCollectionsByPattern("_hasslave_");
-            }
 
             // add collection to followers to do join to send to aggregators
-            for (int j = 0; j < relToSend.size(); j++) {
+            for (Collec remoteColl : follower.getMasterColl()) {
                 for (int k = 0; k < Constants.REL_IN_JOINS; k++) {
-                    String name = "f_" + j + "_" + k;
+                    String name = "f_" + remoteColl.getName() + "_" + k;
                     follower.addCollection(
                             new Collec(
                             name,
@@ -296,7 +301,7 @@ public class AggFolUnion {
 
                     // Write rules in master node
                     if (Constants.MASTER_ONLY_RULES) {
-                        //masterRules.append(p.outputRules());
+                        masterRules.append(p.outputRules());
                     }
                 }
 

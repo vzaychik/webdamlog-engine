@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.webdam.datagen.Constants.COL_TYPE;
 import org.webdam.datagen.Constants.PEER_TYPE;
@@ -25,6 +27,7 @@ public class Peer {
     private HashSet<Peer> _knownPeers;
     private ArrayList<Collec> _collections;
     private HashMap<String, Collec> _slave_coll;
+    private ArrayList<Collec> _master_coll;
 
     public Peer(int id, PEER_TYPE type) {
         _id = id;
@@ -35,6 +38,7 @@ public class Peer {
         _knownPeers = new HashSet<>();
         _collections = new ArrayList<>();
         _slave_coll = new HashMap<>();
+        _master_coll = new ArrayList<>();
     }
 
     public Peer(int id, PEER_TYPE type, SCENARIO scenario) {
@@ -46,6 +50,7 @@ public class Peer {
         _knownPeers = new HashSet<>();
         _collections = new ArrayList<>();
         _slave_coll = new HashMap<>();
+        _master_coll = new ArrayList<>();
         _scenario = scenario;
     }
 
@@ -95,7 +100,7 @@ public class Peer {
     }
 
     public ArrayList<Collec> getCollectionsByPattern(CharSequence cs) {
-        ArrayList<Collec> collecs = new ArrayList<> ();
+        ArrayList<Collec> collecs = new ArrayList<>();
         for (Collec c : _collections) {
             if (c.getName().contains(cs)) {
                 collecs.add(c);
@@ -128,13 +133,16 @@ public class Peer {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            Collec slave_rel = new Collec("a_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
+            Collec slave_rel = new Collec("a" + this.getId() + "_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
             _collections.add(slave_rel);
             _slave_coll.put(slave_rel.getName(), slave_rel);
+            p.addMasterColl(slave_rel);
+
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            Collec slave_rel = new Collec("m_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
+            Collec slave_rel = new Collec("m" + this.getId() + "_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
             _collections.add(slave_rel);
             _slave_coll.put(slave_rel.getName(), slave_rel);
+            p.addMasterColl(slave_rel);
         }
     }
 
@@ -154,6 +162,14 @@ public class Peer {
 
     public HashSet<Peer> getKnownPeers() {
         return _knownPeers;
+    }
+
+    public boolean addMasterColl(Collec coll) {
+        return _master_coll.add(coll);
+    }
+
+    public ArrayList<Collec> getMasterColl() {
+        return _master_coll;
     }
 
     /**
@@ -308,41 +324,31 @@ public class Peer {
                 // no rules
             } else if (_type == PEER_TYPE.AGGREGATOR) {
 
-                // send the contents of relation a@thispeer(x) to relation m@master(x), on each master
-                for (Peer m : _masters) {
-                    Collec headC = m.getCollectionByName("m");
-                    Collec bodyC = this.getCollectionByName("a");
-                    prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
-                }
-
-                // take the join of f@follower_i(x*), store result in a@aggregator(x*)
-                Collec headC = this.getCollectionByName("a");
-                String bodyOfJoinRule = "";
-                for (Peer f : _slaves) {
-                    Collec bodyC = f.getCollectionByName("f");
-                    if (bodyOfJoinRule.length() > 0) {
-                        bodyOfJoinRule += ", ";
+                for (Collec slaveColl : this.getSlaveColls()) {                  
+                    for(Collec headColl : this.getMasterColl()) {
+                        prog.append("rule ").append(headColl.getSchemaWithVars()).append(" :- ").append(slaveColl.getSchemaWithVars()).append(", ").append(this.getCollectionByName(Constants.SELECT_REL).getSchemaWithVars()).append(";\n");
                     }
-                    bodyOfJoinRule += bodyC.getSchemaWithVars();
-                }
-                prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyOfJoinRule).append(";\n");
-
-            } else if (_type == PEER_TYPE.FOLLOWER) {
-                // TODO
-                for (int i = 0; i < Constants.REL_IN_JOINS; i++) {
-                    
                 }
                 
-                for (Peer sl : _slaves) {
-                    ArrayList<Collec> relToSend = sl.getCollectionsByPattern(_hasslave_);
-                    // TODO
-                    Collec headC = sl.getCollectionByName("m");
-                    Collec bodyC = this.getCollectionByName("a");
-                    prog.append("rule ").append(headC.getSchemaWithVars()).append(" :- ").append(bodyC.getSchemaWithVars()).append(";\n");
+            } else if (_type == PEER_TYPE.FOLLOWER) {
+                for (Collec remoteColl : this.getMasterColl()) {
+                    ArrayList<Collec> bodyColls = new ArrayList<>();
+                    for (int i = 0; i < Constants.REL_IN_JOINS; i++) {
+                        String relName = "f_" + remoteColl.getName() + "_" + i;
+                        bodyColls.add(this.getCollectionByName(relName));
+                    }
+                    prog.append("rule ").append(remoteColl.getSchemaWithVars()).append(" :- ");
+                    for (Iterator<Collec> iterBodyColl = bodyColls.iterator(); iterBodyColl.hasNext();) {
+                        Collec bodyColl = iterBodyColl.next();
+                        prog.append(bodyColl.getSchemaWithVars());
+                        if (iterBodyColl.hasNext()) {
+                            prog.append(", ");
+                        }
+                    }
+                    prog.append(";\n");
                 }
             }
         }
-
 
         return prog.toString();
     }

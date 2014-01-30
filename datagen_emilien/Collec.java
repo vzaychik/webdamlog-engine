@@ -8,7 +8,7 @@ import java.util.Random;
 import org.webdam.datagen.Constants.COL_TYPE;
 
 /**
- * This represents a collection un Webdamlog.
+ * This represents a collection in Webdamlog.
  *
  * Rename to avoid clash with Java collections.
  */

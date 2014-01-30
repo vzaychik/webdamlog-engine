@@ -1387,7 +1387,48 @@ In the string: #{line}
           str << "#{WLTools::quote_string(textfield)}, "
         end
       end
-      str.slice!(-2..-1) unless fields.empty?
+
+      if @options[:accessc]        
+        #add priv and plist computation        
+        if @options[:optim1]          
+          str << "atom0.priv, "        
+        else          
+          str << "\"R\", "        
+        end        
+        str << "Omega.instance"        
+
+        if extensional_head?(wlrule)          
+          #only intersect those that have preserve on them          
+          wlrule.body.each do |atom|            
+            if !atom.provenance.empty? && atom.provenance.type == :Preserve              
+              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"                            
+              if bound_n_local?(atom) && !intermediary?(atom)                
+                if !@options[:optim1]                  
+                  str << ".intersect(#{atom.relname}acl.plist)"                
+                end              
+              end            
+            end          
+          end        
+        else          
+          #if there is a hide, do not carry over the access restrictions          
+          wlrule.body.each do |atom|            
+            if atom.provenance.empty? || atom.provenance.type != :Hide              
+              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist)"              
+              if bound_n_local?(atom) && !intermediary?(atom)                
+                if !@options[:optim1]                  
+                  str << ".intersect(#{atom.relname}acl.plist)"                
+                end              
+              end            
+            end          
+          end        
+        end        
+        
+        if @options[:optim1] && !extensional_head?(wlrule)          
+          str << ".intersect(capc.plist)"        
+        end      
+      else #regular non-access control execution        
+        str.slice!(-2..-1) unless fields.empty?      
+      end
 
       unless bound_n_local?(wlrule.head)
         str << "]"

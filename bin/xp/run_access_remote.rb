@@ -50,6 +50,7 @@ def run_access_remote!
   
   runners.reverse_each do |runner|
     runner.sync_do do
+      runner.measure_obj.dump_measures
       p "Final tick step of #{runner.peername} : #{runner.budtime}"
     end
   end

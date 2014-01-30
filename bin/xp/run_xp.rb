@@ -76,7 +76,7 @@ def run_xp_peers
     runner.run_engine
     p "#{runner.peername} started"
   end
-  sleep 3  
+  sleep 3
   runners.each do |runner|
     runner.stop
   end

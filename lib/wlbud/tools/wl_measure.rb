@@ -50,7 +50,7 @@ module WLBud
       @counts_per_ticks[budtime].concat channelcounts
     end
 
-    def dump_measures budtime
+    def dump_measures
       CSV.open(@measure_file.path, "w", :force_quotes=>true) do |csv|
         @stats_per_ticks.each do |stat_tick|
           csv << stat_tick
@@ -58,7 +58,7 @@ module WLBud
         @counts_per_ticks.each do |stat_tick|
           csv << stat_tick
         end
-      end      
+      end    
     end # def dump_mesures budtime
   end # class WlMeasure
 end # module WLBud

@@ -2,14 +2,22 @@ require_relative '../../lib/webdamlog_runner'
 require_relative '../../lib/wlbud/wlerror'
 require 'csv'
 
-#XP_FILE_DIR = "/home/ec2-user/out1384232017478"
+# XP_FILE_DIR = "/home/ec2-user/out1384232017478"
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
-NUM_ITER = 200
+NUM_ITER = 20
 NUM_ITER = ARGV[1].to_i if (ARGV[1] != nil)
 SLEEP_TIME = 1
 SLEEP_TIME = ARGV[2].to_f if (ARGV[2] != nil)
 XPFILE = "XP_NOACCESS"
 
+# Parameters:
+# * XP_FILE_DIR : The path to the directory with the data generator
+#
+# By convention :
+# * there should be a CSV file named XP_NOACCESS with the list of peer name to
+#   start.
+# * the program file name of each peer must be an underscore separated string.
+#   The last field must be the peername.
 def run_access_remote!
   if ARGV.include?("access")
     @access_mode = true
@@ -30,7 +38,7 @@ def run_access_remote!
   end
   runners = []
   xpfiles.each do |f|
-    runners << create_wl_runner(XP_FILE_DIR+"/"+f)
+    runners << create_wl_runner(File.join(XP_FILE_DIR,f))
     p "#{runners.last.peername} created"
   end
   NUM_ITER.times do
@@ -60,12 +68,12 @@ def create_wl_runner pg_file
       peerline = line.split("=").last.strip
       peerline.slice!(-1) # remove last ;
       ip_addr, port = peerline.split ":"
-      loop = false    
+      loop = false
     end
   end
   file.close
   raise WLError, "impossible to find the peername given in the end of the program \
-filename: #{peername} in the list of peer specified in the program" if ip_addr.nil? or port.nil?  
+filename: #{peername} in the list of peer specified in the program" if ip_addr.nil? or port.nil?
   puts "creating peer #{peername} on #{ip_addr}:#{port}"
   return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1})
 end # def start_peer

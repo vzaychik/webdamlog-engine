@@ -142,7 +142,6 @@ public class AggFolUnion {
      *
      * @param args array of arguments, see below.
      *
-     *
      * <ul>
      * <li> numFollowers - number of peers at the lowest layer
      * <li> numAggregators - number of aggregators (middle layer)
@@ -217,7 +216,7 @@ public class AggFolUnion {
                     1,
                     "field");
             aggPeer.addCollection(select);
-            for (int j = 0; (float)(j) < ((float)(valRange) * ((float)(selectivity) / 100.00)); j++) {
+            for (int j = 0; (float) (j) < ((float) (valRange) * ((float) (selectivity) / 100.00)); j++) {
                 select.addFact("" + j);
             }
         }

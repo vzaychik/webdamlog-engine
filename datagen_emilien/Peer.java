@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.webdam.datagen.Constants.COL_TYPE;
 import org.webdam.datagen.Constants.PEER_TYPE;
@@ -133,13 +132,13 @@ public class Peer {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            Collec slave_rel = new Collec("a" + this.getId() + "_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
+            Collec slave_rel = new Collec("a" + this.getId() + "_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "field");
             _collections.add(slave_rel);
             _slave_coll.put(slave_rel.getName(), slave_rel);
             p.addMasterColl(slave_rel);
 
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            Collec slave_rel = new Collec("m" + this.getId() + "_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x");
+            Collec slave_rel = new Collec("m" + this.getId() + "_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "field");
             _collections.add(slave_rel);
             _slave_coll.put(slave_rel.getName(), slave_rel);
             p.addMasterColl(slave_rel);
@@ -150,9 +149,9 @@ public class Peer {
         _slaves.add(p);
         _knownPeers.add(p);
         if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-            _collections.add(new Collec("a_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x", nonKeys));
+            _collections.add(new Collec("a_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "field", nonKeys));
         } else if (_type.equals(PEER_TYPE.MASTER)) {
-            _collections.add(new Collec("m_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "x", nonKeys));
+            _collections.add(new Collec("m_hasslave_" + p.getId(), this.getName(), COL_TYPE.INT, 0, "field", nonKeys));
         }
     }
 

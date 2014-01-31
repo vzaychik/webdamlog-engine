@@ -4,9 +4,9 @@ require 'csv'
 
 # XP_FILE_DIR = "/home/ec2-user/out1384232017478"
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
-NUM_ITER = 20
+NUM_ITER = 5
 NUM_ITER = ARGV[1].to_i if (ARGV[1] != nil)
-SLEEP_TIME = 1
+SLEEP_TIME = 0.2
 SLEEP_TIME = ARGV[2].to_f if (ARGV[2] != nil)
 XPFILE = "XP_NOACCESS"
 

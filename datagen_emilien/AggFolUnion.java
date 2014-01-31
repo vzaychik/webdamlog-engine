@@ -153,7 +153,7 @@ public class AggFolUnion {
      * randomly from the interval [0, valRange)
      * <li> selectivity - the percentage of facts in aggregators to propagate on
      * master
-     * <li> [numRelFollowers] - number of relations per followers
+     * <li> numRelFollowers - number of relations per followers
      * <li> [instanceFile] - optional argument; name of the file (on the local
      * system) that lists names or IP addresses of the instances, one name or IP
      * address per line
@@ -254,8 +254,7 @@ public class AggFolUnion {
             }
         }
 
-
-        String knownPeers = AggregatorsFollowers.peersToString(numAggregators, numFollowers);
+        String knownPeers = AggFolUnion.peersToString(numAggregators, numFollowers);
         ArrayList<Peer> allPeers = new ArrayList<>();
         allPeers.add(master);
         allPeers.addAll(aggregators);

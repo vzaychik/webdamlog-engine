@@ -331,6 +331,7 @@ public class Peer {
                 
             } else if (_type == PEER_TYPE.FOLLOWER) {
                 for (Collec remoteColl : this.getMasterColl()) {
+                    // Add one follower rule
                     ArrayList<Collec> bodyColls = new ArrayList<>();
                     for (int i = 0; i < Constants.REL_IN_JOINS; i++) {
                         String relName = "f_" + remoteColl.getName() + "_" + i;
@@ -345,6 +346,10 @@ public class Peer {
                         }
                     }
                     prog.append(";\n");
+                    // Add expected content
+                    for(Collec bodyColl : bodyColls) {
+                        
+                    }
                 }
             }
         }

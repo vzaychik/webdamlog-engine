@@ -33,7 +33,7 @@ end
     begin
       runner1 = nil
       assert_nothing_raised do
-        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true, :optim2 => true })
+        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true, :optim2 => true, :noprovenance => true })
       end
 
       runner1.tick

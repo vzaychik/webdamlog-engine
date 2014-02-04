@@ -118,17 +118,20 @@ module WLBud
       local_rules.each { |lrule| install_rule lrule }
 
       if @options[:accessc]
-        #apply policies
+        # #apply policies
         @wl_program.wlpolicies.each {|p| apply_policy(p)}
         @extended_collections_to_flush.each {|col|
           @wl_program.wlcollections[col.fullrelname] = col
         }
-        #Until this implementation can have variables for a peer name, have to do this manually
+        # #Until this implementation can have variables for a peer name, have to
+        # do this manually
         if @options[:optim1]
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
-              #str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
+              # #str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\",
+              # \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if
+              # rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
               str_res << "sbuffer <= acle_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.peer == \"#{p[0]}\"};"
             end
           }
@@ -165,7 +168,6 @@ module WLBud
     # Because of new 0.9.1 bud evaluation system, it is needed to create a file
     # in which bud is supposed to read the rule instead of just reading a block
     # dynamically created.
-    #
     def translate_rule(wlrule)
       raise "Impossible to add in bud a rule that is either unbound or non-local" unless @wl_program.bound_n_local?(wlrule)
       puts "Adding a rule: #{wlrule}" if @options[:debug]
@@ -177,8 +179,8 @@ module WLBud
       rule = "#{@wl_program.translate_rule_str(wlrule)}"
       name = "webdamlog_#{@peername}_#{wlrule.rule_id}"
 
-      #this is a bit hacky - with access control we generate 2 rules instead of one
-      #one for grant priv and one for read
+      # this is a bit hacky - with access control we generate 2 rules instead of
+      # one for grant priv and one for read
       if @options[:accessc] && !@options[:optim1]
         rule2 = "#{rule}"
         rule2.gsub! "\"R\"", "\"G\""
@@ -189,9 +191,34 @@ module WLBud
       #FIXME - this will take care of joins/intersections, but what about unions?
       rule << @wl_program.translate_formula_str(wlrule) #this is for optim2
 
-      str = build_string_rule_to_include(name, rule)
+      install_bud_rule rule, name
+      @rule_installed << wlrule
+      # the last element is the bud name for the block created
+      return wlrule.rule_id, wlrule.show_wdl_format, "__bloom__#{name}"
+    end
+
+    # Install any rule given in a bud format. This is not the proper method to
+    # insert rule in Webdamlog you should use translate_rule that takes a
+    # wlrule.
+    #
+    # Take care of the fact that it allows to insert any kind of rule that may
+    # break the Webdamlog semantics. For this reason the provenance of such
+    # rules is not supported and may even break the consistency of the
+    # provenance for the whole program, for instance if this rule updates
+    # Webdamlog relations.
+    def install_bud_rule bud_rule, name
+      if name.nil?
+        if @@bud_custom_rule_id.nil?
+          @@bud_custom_rule_id = 0
+        else
+          @@bud_custom_rule_id = @@bud_custom_rule_id + 1
+        end
+        str = build_string_rule_to_include("bud_custom_rule_#{@@bud_custom_rule_id}", bud_rule)
+      else
+        str = build_string_rule_to_include(name, bud_rule)
+      end        
       fullfilename = File.join(@rule_dir,name)
-      raise WLErrorPeerId, "there must be an error in unique id: #{wlrule.rule_id} of this rule: #{wlrule} \n \
+      raise WLErrorPeerId, "there must be an error in unique id: #{name} of this rule: \n #{bud_rule} \n \
 engine is trying to write this new rule in an existing file: #{fullfilename}" if File.exists?(fullfilename)
       fout = File.new("#{fullfilename}", "w+")
       fout.puts "#{str}"
@@ -200,16 +227,13 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         puts "Content of the tmp file is:\n#{File.readlines(fullfilename).each{|f| f }}\n"
       end
       load fullfilename
-      @rule_installed << wlrule
       @need_rewrite_strata = true
-      # the last element is the bud name for the block created
-      return wlrule.rule_id, wlrule.show_wdl_format, "__bloom__#{name}"
     end
 
     # Build the bloom block to insert in bud with the given rule inside and as
     # name of the block "sym_name"
-    #
-    def build_string_rule_to_include (sym_name, rule)
+    def build_string_rule_to_include (name, rule)
+      sym_name = name.to_sym unless name.is_a?(Symbol)
       # Does not require to load anything since it is suppose to be loaded in
       # the good environment str = "require '#{__FILE__}'\n"
       str = "class #{self.class}\n"
@@ -225,7 +249,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
     # in bloom.
     #
     # @param [WLCollection] wlcollection that should be declared in bud @param
-    # colltype must be a sub class of Bud::Collection. It is use to force the
+    # colltype must be a sub class of Bud::Collection. It is used to force the
     # declaration of the given type of Bud Collection for this WLCollection. Use
     # it in test only as the method is supposed to parse correctly the
     # WLCollection @param args optional args if colltype is a channel then args
@@ -267,7 +291,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
     end # schema_init
 
     # Adds dynamically facts
-    # @return valid, err
+    #  @return valid, err
     def add_facts(wl_facts)
       converted_facts = convert_facts_into_valid_hash wl_facts
       return insert_facts_in_coll(converted_facts)
@@ -281,7 +305,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       return delete_facts_in_coll(converted_facts)
     end
 
-    # It will dynamically add a collection to the program
+    #   It will dynamically add a collection to the program
     #
     # * +wlpg_relation+ is a string representing the rule in the wl_program file
     #   format(wlgrammar). @return [String, Hash] name, schema of the collection
@@ -300,19 +324,19 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       name, schema = self.schema_init(collection)
       @collection_added = true
 
-      #VZM Need to update kind relation
+      #   #VZM Need to update kind relation
       if @options[:accessc]
         tables["t_kind".to_sym] <+ [[name.to_s, collection.get_type.to_s, collection.arity]]	  
         tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", name.to_s],["#{peername}", "W", name.to_s],["#{peername}", "R", name.to_s]]
-        #need to add extended collection
+        #   #need to add extended collection
         extended_collection = @wl_program.parse(collection.make_extended)
         puts "Adding a collection for AC: \n #{extended_collection.show}" if @options[:debug]
         self.schema_init(extended_collection)
         @extended_collections_to_flush << extended_collection
-        #now need to install a rule
-        #have to make a string to pass into bloom to evaluate
+        #   #now need to install a rule #have to make a string to pass into
+        #   bloom to evaluate
         
-        #need to insert Omega
+        #   #need to insert Omega
         str_res = "#{extended_collection.fullrelname} <= #{name} {|t| ["
         collection.fields.each {|field|
           str_res << "t." << field << ", "
@@ -325,7 +349,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         str_res << "\"G\", Omega.instance]};"
 
         puts "Installing bud rule #{str_res}" if @options[:debug]
-        #write to a file
+        #   #write to a file
         extrulename = "webdamlog_#{@peername}_#{name}_extrule"
         filestr = build_string_rule_to_include(extrulename, str_res)
         fullfilename = File.join(@rule_dir, extrulename)
@@ -338,8 +362,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       return name.to_s, schema
     end
 
-    # This is for special collections acl and kind
-    # VZM access control
+    #   This is for special collections acl and kind VZM access control
     def add_aclkind
       keys=[]
       values=[]
@@ -348,9 +371,10 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         keys << :"priv"
         values << :"plist"
         aclschema = {keys => values}
-        #acl is intensional, so declared as scratch
+        #   #acl is intensional, so declared as scratch
         self.scratch("acl_at_#{peername}".to_sym, aclschema)
-        #need some basic default facts so need a separate extentional table acle
+        #   #need some basic default facts so need a separate extentional table
+        #   acle
         keys = []
         keys << :"peer"
         keys << :"priv"
@@ -365,21 +389,24 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         kindschema = {keys => values}
         self.table(:t_kind, kindschema)
 
-        #install default rules into acl
-        #have to make a string to pass into bloom to evaluate
+        #   #install default rules into acl #have to make a string to pass into
+        #   bloom to evaluate
         str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| [t.peer, t.priv, PList.new(t.rel)]};"
-        #any time kind is updated because a new relation is added, need to install into acl
+        #   #any time kind is updated because a new relation is added, need to
+        #   install into acl
 
-        #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'G', k.rel]};"
-        #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'W', k.rel]};"
-        #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\", 'R', k.rel]};"
-        #peer has full privs to his own acl
-        #str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"G\", \"acl_at_#{peername}\"]];"
-        #str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"W\", \"acl_at_#{peername}\"]];"
-        #str_res << "acle_at_#{peername} <= [[\"#{peername}\", \"R\", \"acl_at_#{peername}\"]];"
+        #   #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\",
+        #   'G', k.rel]};" #str_res << "acle_at_#{peername} <= t_kind {|k|
+        #   [\"#{peername}\", 'W', k.rel]};" #str_res << "acle_at_#{peername} <=
+        #   t_kind {|k| [\"#{peername}\", 'R', k.rel]};" #peer has full privs to
+        #   his own acl #str_res << "acle_at_#{peername} <= [[\"#{peername}\",
+        #   \"G\", \"acl_at_#{peername}\"]];" #str_res << "acle_at_#{peername}
+        #   <= [[\"#{peername}\", \"W\", \"acl_at_#{peername}\"]];" #str_res <<
+        #   "acle_at_#{peername} <= [[\"#{peername}\", \"R\",
+        #   \"acl_at_#{peername}\"]];"
         tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", "acl_at_#{peername}"],["#{peername}", "W", "acl_at_#{peername}"],["#{peername}", "R", "acl_at_#{peername}"]]
         puts "Installing bud rule #{str_res}" if @options[:debug]
-        #write to a file
+        #   #write to a file
         aclrulename = "webdamlog_#{@peername}_aclkind"
         filestr = build_string_rule_to_include(aclrulename, str_res)
         fullfilename = File.join(@rule_dir, aclrulename)
@@ -399,9 +426,9 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         keys << :"rel"
         writeableschema = {keys => values}
         self.scratch("writeable_at_#{peername}".to_sym, writeableschema)
-        #now need to put in the rule
-        #FIXME! - no way to write a bud rule with variable in the rule name
-        #so at least for now just delegate to all my peers knowledge of what they can write to
+        #   #now need to put in the rule #FIXME! - no way to write a bud rule
+        #   with variable in the rule name #so at least for now just delegate to
+        #   all my peers knowledge of what they can write to
       end
 
       if @options[:accessc] and @options[:optim2]
@@ -423,8 +450,10 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         aclschema = {keys => values}
         self.scratch("aclf_at_#{peername}".to_sym, aclschema)
 
-        #FIXME - if I can figure out how to grab unique plists from acl, then no need for this intermediary step
-        #TODO - how can we make formula combinations? since we can only self-join once and cannot have the same relation in head and body...
+        #   #FIXME - if I can figure out how to grab unique plists from acl,
+        #   then no need for this intermediary step #TODO - how can we make
+        #   formula combinations? since we can only self-join once and cannot
+        #   have the same relation in head and body...
         str_res = "formula_at_#{peername} <= acl_at_#{peername}.reduce({}) {|memo,t| memo[t.plist.to_a] = 1; memo};"
         str_res << "symbols_at_#{peername} <= formula_at_#{peername}.each_with_index {|t,i| [\"#{peername}_\"+i.to_s,t[0]]};"
         str_res << "formulas_at_#{peername} <= symbols_at_#{peername};"
@@ -433,7 +462,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         str_res << "aclf_at_#{peername} <= (symbols_at_#{peername} * acl_at_#{peername}).combos {|a,b| [b.rel, b.priv, a.id] if a.plist == b.plist.to_a && b.priv !=\"W\"};"
 
         puts "Installing bud rule #{str_res}" if @options[:debug]
-        #write out
+        #   #write out
         formularulename = "webdamlog_#{peername}_formulas"
         filestr = build_string_rule_to_include(formularulename, str_res)
         fullfilename = File.join(@rule_dir, formularulename)
@@ -444,7 +473,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       end
     end
 
-    #make capc for each relation in the body of the rule
+    #   #make capc for each relation in the body of the rule
     def add_capcs(wlrule)
       if wlrule.body.length > 1
         wlrule.body.each do |atom|
@@ -478,19 +507,20 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       self.schema_init(rext)
     end
 
-    # Takes in an access policy and updates acl
+    #   Takes in an access policy and updates acl
     def apply_policy(policy)
       puts "Applying access policy #{policy.show}" if @options[:debug]
-      #TODO - need to give automatic read/write for a peer who has grant priv
+      #   #TODO - need to give automatic read/write for a peer who has grant
+      #   priv
       priv = policy.access_type.to_s
       rel = policy.relname + "_at_" + self.peername
       peer = policy.access.value
 
-      #support special case of peer list from a relation
+      #   #support special case of peer list from a relation
       if policy.access.relation?
-        #have to make a string to pass into bloom to evaluate
+        #   #have to make a string to pass into bloom to evaluate
         str_res = "acle_at_#{self.peername} <= #{policy.access.fullrelname} {|t| [t[0],'#{priv}',\"#{rel}\"]};"
-        #write to a file
+        #   #write to a file
         policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{policy.access.relname}"
         filestr = build_string_rule_to_include(policyname, str_res)
         fullfilename = File.join(@rule_dir, policyname)
@@ -501,7 +531,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
       elsif policy.access.all?
         puts "adding to acl Omega for #{rel} for priv #{priv}" if @options[:debug]
         str_res = "acl_at_#{self.peername} <= [[\"#{rel}\",\"#{priv}\",Omega.instance]]"
-        #write to a file
+        #   #write to a file
         policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
         filestr = build_string_rule_to_include(policyname, str_res)
         fullfilename = File.join(@rule_dir, policyname)
@@ -510,7 +540,8 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         fout.close
         load fullfilename
 
-        #tables["acl_at_#{self.peername}".to_sym] <= [["#{rel}","#{priv}",Omega.new]]
+        # #tables["acl_at_#{self.peername}".to_sym] <=
+        # [["#{rel}","#{priv}",Omega.new]]
       else
         tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
       end
@@ -657,7 +688,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
             if tuple.is_a? Array or tuple.is_a? Struct
               if tuple.size == @wl_program.wlcollections[relation_name].arity
                 begin
-                  #VZM access control need to change plist arrays back to sets
+                  # #VZM access control need to change plist arrays back to sets
                   if @options[:accessc]
                     tuple.collect! {|x|
                       if x.is_a? Array
@@ -697,10 +728,9 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
             end
           end # tuples.each do |tuple|
         else
-          puts "relation name #{k} translated to #{relation_name} has not been declared previously"
           err[[k,tuples]] = "relation name #{k} translated to #{relation_name} has not been declared previously"
         end
-      end # end facts.each_pair
+      end # facts.each_pair
       return valid, err
     end # insert_updates
 
@@ -914,6 +944,20 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
     end
 
     public
+
+    # Schedule a tick to start after the end of the current tick. Note that
+    # extra_tick does not stack, i.e. only one could be scheduled, the next tick
+    # will reset the do_extra_tick variable at the beginning of its computation.
+    def schedule_extra_tick
+      if @running_async
+        if not @do_extra_tick
+          @do_extra_tick = true
+          EventMachine::next_tick do
+            tick_internal
+          end
+        end
+      end
+    end
 
     # Register a callback triggered during the tick at the moment specified by
     # *step*, it will execute &blk

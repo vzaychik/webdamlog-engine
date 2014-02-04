@@ -42,14 +42,7 @@ module Bud
         if ou.class <= Bud::PushElement
           ou.insert(item, self)
         elsif ou.class <= Bud::BudCollection
-          if @bud_instance.kind_of? WLBud::WL and @bud_instance.provenance
-            # PENDING remove group predicate from provenance tracking. It is not
-            # in Webdamlog but this it is used in provenance optimizations.
-            unless self.is_a? Bud::PushGroup
-              inferred = item
-              @bud_instance.provenance_graph.add_new_proof @orig_rule_id, source, inferred
-            end
-          end
+          add_new_proof source, item
           ou.do_insert(item, ou.new_delta)
         elsif ou.class <= Bud::LatticeWrapper
           ou.insert(item, self)
@@ -67,11 +60,27 @@ module Bud
         if o.class <= Bud::LatticeWrapper
           o <+ item
         else
+          add_new_proof source, item, true
           o.pending_merge([item])
         end
       end
     end
 
+    # Add a new proof in the provenance graph and schedule an extra_tick usually
+    # used the proof is an update, i.e. is an insertion in extensional
+    # relation.
+    def add_new_proof source, inferred, extra_tick=false
+      if @bud_instance.kind_of? WLBud::WL and @bud_instance.provenance
+        # hacky, remove group predicate from provenance tracking. It is not in
+        # Webdamlog but this it is used in provenance optimizations.
+        unless self.is_a? Bud::PushGroup or self.is_a? Bud::PushNotIn or self.is_a? Bud::PushSort or self.is_a? Bud::PushReduce
+          # if the proof is not a duplicate the proof tree is returned and the extra tick may be scheduled
+          if @bud_instance.provenance_graph.add_new_proof @orig_rule_id, source, inferred
+            @bud_instance.schedule_extra_tick if extra_tick
+          end
+        end
+      end
+    end
 
     # Remove the object id from the name to perform test and display the push
     # element for stdout

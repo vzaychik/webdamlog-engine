@@ -503,13 +503,19 @@ In the string: #{line}
       str_res = ""
       body = wlrule.body
 
-      # Generate rule head Send fact buffer if non-local head
+      # Generate rule head:
+      # + send fact buffer if non-local head
+      # + use deferred for pure extensional (pure means not intermediary rules)
       unless bound_n_local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
           str_res << "temp :#{wlrule.head.fullrelname} <= "
         else
-          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
+          if pure_extensional_head? wlrule
+            str_res << "#{wlrule.head.fullrelname} <+ "
+          else
+            str_res << "#{wlrule.head.fullrelname} <= "
+          end
         end
       end
 
@@ -1672,12 +1678,14 @@ In the string: #{line}
     # Return true if the whole program to evaluate is empty
     def empty? ; return (rules_empty? and facts_empty? and collection_empty?) ; end
 
+    # True if the relation in the head is extensional or an intermediary rule
+    # rewritten from an extensional
     def extensional_head? (wlrule)
-      # We want to always check the rule head which for imtermediary relations
+      # We want to always check the rule head which for intermediary relations
       #  means finding their parents
       if intermediary?(wlrule.head)
         headrule = nil
-        @rule_mapping.keys.each {|id|
+        @rule_mapping.keys.each { |id|
           headrule = @rule_mapping[id]
           break if headrule.include?(wlrule.rule_id)
           headrule = nil
@@ -1691,7 +1699,17 @@ In the string: #{line}
       else
         return extensional?(wlrule.head)
       end
-    end      
+    end
+
+    # True iff the relation in the head is declared as extensional. Intermediary
+    # rules are not considered as extensional
+    def pure_extensional_head? wlrule
+      if intermediary?(wlrule.head)
+        false
+      else
+        return extensional?(wlrule.head)
+      end
+    end
 
     def extensional? (wlatom)
       if wlatom.is_a? WLBud::WLAtom

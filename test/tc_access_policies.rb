@@ -84,7 +84,7 @@ end
     begin
        runner = nil
        assert_nothing_raised do
-        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true })
+        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true, :noprovenance => true })
        end
 
       assert_equal(["policy local1 read local2@test_access"], runner.snapshot_policies)

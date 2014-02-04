@@ -33,8 +33,7 @@ module WLBud
     #   put in a waiting queue  instead of being added to the program.  Some
     #   external intervention will be required to validate them such as calling
     #   {WLRunner::update_add_rule} on @pending_delegations entries.
-    # * +:noprovenance+ if true the provenance is not kept and deletion use
-    #   recomputation strategy
+    # * +:noprovenance+ if true all the provenance mechanisms are skipped
     def initialize (peername, pgfilename, options={})
       # ### WLBud:Begin adding to Bud special bud parameter initialization
       if options[:measure]
@@ -209,7 +208,6 @@ module WLBud
     # the tick_internal.
     #
     # Override bud method Bud.tick_internal
-    #
     def tick_internal
       # ### WLBud:Begin adding to Bud
       #
@@ -246,6 +244,11 @@ module WLBud
         @inside_tick = true
 
         # ### WLBud:Begin adding to Bud
+        
+        # reset the do_extra_tick variable that is set to true by perform extra
+        # tick used to start a new tick when extensional relations are updated
+        # locally
+        @do_extra_tick = false
         if @options[:measure]
           @measure_obj.append_measure @budtime
         end
@@ -285,7 +288,7 @@ module WLBud
             packet_value.rules.each{ |rule| add_rule(rule, packet_value.peer_name) } unless packet_value.rules.nil?
           end
           # Add new facts
-          add_facts(packet_value.facts) unless packet_value.facts.nil?          
+          add_facts(packet_value.facts) unless packet_value.facts.nil?
         end
         # PENDING remove new_sprout_rules attribute add new rules from seeds
         @new_sprout_rules = make_seed_sprout
@@ -467,7 +470,8 @@ module WLBud
           }
         end
         @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
-      end
+		@measure_obj.dump_measures      
+	  end
     end
 
 

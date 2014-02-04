@@ -40,7 +40,7 @@ end
     begin
        runner = nil
        assert_nothing_raised do
-        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true })
+        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true, :noprovenance => true })
        end
 
       assert_equal({1=> "rule local1@test_access($x) :- [PRESERVE local2@test_access($x)];", 2=> "rule local3_i@test_access($x) :- [HIDE local2@test_access($x)];"}, runner.snapshot_rules)

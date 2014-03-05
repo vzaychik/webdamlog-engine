@@ -271,6 +271,9 @@ public class Network {
 					String dirName = "out_" + hostName + "_" + ts; 
 					BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS", true));
 					outFP.write("\n");
+					//write the needed ticks number
+					outFP.write(String.valueOf(aggregators.get(0).getNumSlaves()+2));
+					outFP.write("\n");
 					outFP.close();						
 				}
 				

@@ -107,6 +107,10 @@ public class Peer {
 		}		
 	}
 
+        public int getNumSlaves() {
+	    return _slaves.size();
+	}
+
 	public void addKnownPeer(Peer p) {
 		_knownPeers.add(p);
 	}

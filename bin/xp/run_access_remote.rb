@@ -4,7 +4,6 @@ require 'csv'
 
 # XP_FILE_DIR = "/home/ec2-user/out1384232017478"
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
-NUM_ITER = 5
 NUM_ITER = ARGV[1].to_i if (ARGV[1] != nil)
 SLEEP_TIME = 0.2
 SLEEP_TIME = ARGV[2].to_f if (ARGV[2] != nil)
@@ -32,16 +31,29 @@ def run_access_remote!
   end
 
   xpfiles = []
+  ticks = 0
+  #first row is the list of peers
+  #the second row is the number of ticks for this test
+  CSV
   CSV.foreach(get_run_xp_file) do |row|
-    xpfiles = row
-    p "Start experiments with #{xpfiles}"
+    if (xpfiles == [])
+      xpfiles = row
+      p "Start experiments with #{xpfiles}"
+    else
+      ticks = row.first.to_i
+    end
   end
+
+  #add a buffer of 10 ticks
+  ticks += 10
+  p "Running for #{ticks} ticks"
+
   runners = []
   xpfiles.each do |f|
     runners << create_wl_runner(File.join(XP_FILE_DIR,f))
     p "#{runners.last.peername} created"
   end
-  NUM_ITER.times do
+  ticks.times do
     runners.reverse_each do |runner|
       runner.tick
       sleep SLEEP_TIME

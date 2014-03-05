@@ -926,16 +926,16 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         wlpacketsdata.keys.each do |packet|
           unless packet[1].nil?
             data = packet[1]
-            unless data[2]["rules"].nil?
-              rulect += data[2]["rules"].length
+            unless data[2][:rules].nil?
+              rulect += data[2][:rules].length
             end
-            unless data[2]["facts"].nil?
-              data[2]["facts"].values.each {|vals|
+            unless data[2][:facts].nil?
+              data[2][:facts].values.each {|vals|
                 fctct += vals.length
               }
             end
-            unless data[2]["declarations"].nil?
-              declct += data[2]["declarations"].length
+            unless data[2][:declarations].nil?
+              declct += data[2][:declarations].length
             end
           end
         end

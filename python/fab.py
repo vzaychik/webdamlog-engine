@@ -8,7 +8,6 @@ import os
 #env.parallel = False
 
 rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
-#rubyPath = 'ruby'
 
 rootPathDict = { \
     'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \

@@ -38,23 +38,6 @@ def matchOrCreateScenario(scenList, rootPath):
     return scenIDList
 
 
-# class Scenario(BaseModel):
-#     scenID = BigIntegerField(primary_key=True)
-#     scenType = CharField(null=True) # MAF or PA
-#     numFollowers = IntegerField(null=True)  # numFollowers - number of peers at the lowest layer
-#     numAggregators = IntegerField(null=True) # numAggregators - number of aggregators (middle layer)
-#     aggPerFollower = IntegerField(null=True) # aggregatorsPerFollower - degree of follower nodes
-#     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
-#     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
-#     ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
-#     valRange = IntegerField(null=True) #facts at follower peers are drawn randomly from the interval [0, valRange)
-#     numExtraCols = IntegerField(null=True) #number additional of non-key columns
-#     numHosts = IntegerField(null=True)  # number of hosts
-#     hosts = CharField(null=True) # optional argument; name of the file (on the local system) that lists names or IP addresses of the instances...
-#     numPeersPerHost = IntegerField(null=True)
-#     networkFile = CharField(null=True) 
-
-
 def run(configFile):
 
     config = ConfigParser.ConfigParser()
@@ -107,14 +90,15 @@ def run(configFile):
     accessCList = config.get('execution', 'accessControl').split(' ')
     
     for scenID in scenIDList:   # run all the executions, for each scenID
-        print 'Running executions for scenID %i' % scenID
-        for tup in itertools.product(accessCList):       # not much of a crossproduct at this point (could be extended later)
-            boolString = tup[0]
-            accessBool = bool( boolString[0] )
-            optim1Bool = bool( boolString[1] )
-            execID = execution.executeScenario( rootPath, scenID, scenType, accessBool, optim1Bool, config.getint('execution', 'ticks'),  \
-                             config.getfloat('execution', 'sleep'), config.getfloat('execution', 'masterDelay')   )
-            print '***  Finished execution %i.' % execID
+        for run in range( config.getint('execution', 'numRuns') ):
+            print 'Running executions for scenID %i' % scenID
+            for tup in itertools.product(accessCList):       # not much of a crossproduct at this point (could be extended later)
+                boolString = tup[0]
+                accessBool = bool( boolString[0] )
+                optim1Bool = bool( boolString[1] )
+                execID = execution.executeScenario( rootPath, scenID, scenType, accessBool, optim1Bool, config.getint('execution', 'ticks'),  \
+                                 config.getfloat('execution', 'sleep'), config.getfloat('execution', 'masterDelay')   )
+                print '***  Finished run %i of execution %i.' % (run, execID)
     
     print '***  Done with executions.'
     print '***  Refreshing database to reflect new executions and any new scenarios.'

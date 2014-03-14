@@ -64,10 +64,10 @@ class TcAccessLocalRules < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection int local1_i@test_access(atom1*);
-collection ext per local2@test_access(atom1*);
-fact local2@test_access(1);
-fact local2@test_access(2);
-rule local1_i@test_access($x) :- local2@test_access($x);
+collection ext per local2@test_access(atom1*, atom2);
+fact local2@test_access(1, 3);
+fact local2@test_access(2, 4);
+rule local1_i@test_access($x) :- local2@test_access($x, $y);
 end
     EOF
     @username = "test_access"
@@ -368,3 +368,4 @@ end
   end
 
 end
+

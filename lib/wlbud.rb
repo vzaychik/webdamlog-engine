@@ -337,16 +337,16 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
         #   bloom to evaluate
         
         #   #need to insert Omega
-        str_res = "#{extended_collection.fullrelname} <= #{name} {|t| ["
+        str_res = "#{extended_collection.fullrelname} <= #{name} {|t| [\"R\", "
         collection.fields.each {|field|
           str_res << "t." << field << ", "
         }
-        str_res << "\"R\", Omega.instance]};"
-        str_res << "#{extended_collection.fullrelname} <= #{name} {|t| ["
+        str_res << "Omega.instance]};"
+        str_res << "#{extended_collection.fullrelname} <= #{name} {|t| [\"G\", "
         collection.fields.each {|field|
           str_res << "t." << field << ", "
         }
-        str_res << "\"G\", Omega.instance]};"
+        str_res << "Omega.instance]};"
 
         puts "Installing bud rule #{str_res}" if @options[:debug]
         #   #write to a file

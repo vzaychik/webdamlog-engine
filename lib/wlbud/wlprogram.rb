@@ -1372,6 +1372,15 @@ In the string: #{line}
         str << "["
       end
 
+      if @options[:accessc]
+        #add privilege
+        if @options[:optim1]          
+          str << "atom0.priv, "        
+        else          
+          str << "\"R\", "        
+        end        
+      end
+
       # add the list of variable and constant that should be projected
       fields = wlrule.head.fields
       fields.each do |field|
@@ -1379,6 +1388,11 @@ In the string: #{line}
         if field.variable?
           if wlrule.dic_wlvar.has_key?(textfield)
             relation , attribute = wlrule.dic_wlvar.fetch(textfield).first.split('.')
+            if @options[:accessc]
+              #priv is the first element in all extended collections with access control
+              #thus have to adjust all by 1
+              attribute = attribute.to_i + 1
+            end
             str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation)}[#{attribute}], "
           else
             if field.anonymous?
@@ -1395,12 +1409,7 @@ In the string: #{line}
       end
 
       if @options[:accessc]        
-        #add priv and plist computation        
-        if @options[:optim1]          
-          str << "atom0.priv, "        
-        else          
-          str << "\"R\", "        
-        end        
+        #add plist computation        
         str << "Omega.instance"        
 
         if extensional_head?(wlrule)          

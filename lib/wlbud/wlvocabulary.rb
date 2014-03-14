@@ -538,15 +538,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       str << relname
       str << "_ext@"
       str << peername
-      str << "( #{col_fields.keys.text_value}"
-      if not col_fields.values.text_value.empty?
-        str << "priv*, #{col_fields.values.text_value}, "
-      else
-        str << ", priv*, "
-      end
-      str << "plist ) ;"
-      puts "made extended collection string: #{str}"
-      return str
+      str << "( priv*, #{col_fields.text_value}, plist ) ;"
     end
 
     def make_rext(id)

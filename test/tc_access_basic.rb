@@ -13,6 +13,7 @@ class TcAccessBasic < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local1@test_access(atom1*);
+collection ext per local2@test_access(atom1*, atom2);
 fact local1@test_access(1);
 fact local1@test_access(2);
 end
@@ -37,10 +38,10 @@ end
        end
        runner.run_engine
        #verify acl contents
-       assert_equal [{:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"local1_at_test_access"}],
+       assert_equal [{:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"local2_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"local2_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"local2_at_test_access"}],
 				  runner.snapshot_facts(:acl_at_test_access)
       #verify kind contents
-      assert_equal [{:rel=>"local1_at_test_access", :kind=>"Extensional", :arity=>1}], runner.snapshot_facts(:t_kind)
+      assert_equal [{:rel=>"local1_at_test_access", :kind=>"Extensional", :arity=>1}, {:rel=>"local2_at_test_access", :kind=>"Extensional", :arity=>2}], runner.snapshot_facts(:t_kind)
 
       assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner.snapshot_facts(:local1_at_test_access)
       assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner.snapshot_facts(:local1_ext_at_test_access)
@@ -367,4 +368,3 @@ end
   end
 
 end
-

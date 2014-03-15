@@ -94,8 +94,8 @@ def run(configFile):
             print 'Running executions for scenID %i' % scenID
             for tup in itertools.product(accessCList):       # not much of a crossproduct at this point (could be extended later)
                 boolString = tup[0]
-                accessBool = bool( boolString[0] )
-                optim1Bool = bool( boolString[1] )
+                accessBool = bool( int(boolString[0]))
+                optim1Bool = bool( int(boolString[1]))
                 execID = execution.executeScenario( rootPath, scenID, scenType, accessBool, optim1Bool, config.getint('execution', 'ticks'),  \
                                  config.getfloat('execution', 'sleep'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)

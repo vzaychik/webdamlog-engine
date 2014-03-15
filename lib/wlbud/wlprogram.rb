@@ -798,12 +798,13 @@ In the string: #{line}
           str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} <= #{make_rel_name(atom.fullrelname)} {|t| t if t.plist.include?(\"#{wlrule.author}\") && t.priv == \"G\"};"
           str_res << "rext_#{wlrule.rule_id}_#{atom.relname}_at_#{@peername} <= #{make_rel_name(atom.fullrelname)} {|t| ["
           # add the list of variable and constant that should be projected
+          str_res << "\"R\", "
           fields = wlcollections[atom.fullrelname].fields
           puts "#{atom.fullrelname} has #{fields.length}"
           fields.each do |f|
             str_res << "t.#{f}, "
           end
-          str_res << "\"R\",t.plist] if t.plist.include?(\"#{wlrule.author}\") && t.priv == \"G\"};"
+          str_res << "t.plist] if t.plist.include?(\"#{wlrule.author}\") && t.priv == \"G\"};"
         end
       end
 

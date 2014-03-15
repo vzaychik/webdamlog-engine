@@ -79,6 +79,13 @@ end
       runner2.tick
 
       assert_equal [{:rel=>"delegated1_i_at_p1",:peer=>"p1"}], runner1.tables[:writeable_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+
+      assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}],
+      runner1.tables[:rext_1_local2_at_test_access].map{|t| Hash[t.each_pair.to_a]}
+
+      assert_equal [{:priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}],
+      runner1.tables[:capc_1__at_test_access].map{|t| Hash[t.each_pair.to_a]}
+
       assert_equal [{:atom1=>"1", :priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2",:priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}],
         runner2.tables[:delegated1_i_ext_at_p1].map{|t| Hash[t.each_pair.to_a]}
 
@@ -94,7 +101,6 @@ end
 
   end
 end
-
 
 class TcAccessCapc < Test::Unit::TestCase
   include MixinTcWlTest
@@ -392,4 +398,3 @@ end
   end
 
 end
-

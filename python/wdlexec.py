@@ -96,6 +96,7 @@ def run(configFile):
                 boolString = tup[0]
                 accessBool = bool( boolString[0] )
                 optim1Bool = bool( boolString[1] )
+                print 'Flags are: ', accessBool, optim1Bool
                 execID = execution.executeScenario( rootPath, scenID, scenType, accessBool, optim1Bool, config.getint('execution', 'ticks'),  \
                                  config.getfloat('execution', 'sleep'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)

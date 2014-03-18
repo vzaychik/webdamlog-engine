@@ -88,7 +88,7 @@ def create_wl_runner pg_file
   raise WLError, "impossible to find the peername given in the end of the program \
 filename: #{peername} in the list of peer specified in the program" if ip_addr.nil? or port.nil?
   puts "creating peer #{peername} on #{ip_addr}:#{port}"
-  return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1})
+  return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :noprovenance => true})
 end # def start_peer
 
 def get_run_xp_file

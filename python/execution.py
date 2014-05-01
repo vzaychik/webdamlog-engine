@@ -25,7 +25,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         sleep = sleep, \
         access = accessBool, \
         optim1 = optim1Bool, \
-        build = build )
+        build = build )          # numTicks is now ignored; remove 
     
     # this is the directory containing the scenario: e.g. webdamlog-exp/MAF/1385388824301
     scenPath = os.path.join('webdamlog-exp',scenType,str(scenID))
@@ -72,7 +72,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         execution.success = False
 
     # prepare parameters for ruby script
-    paramString = str(ticks) + ' '
+#    paramString = str(ticks) + ' '         REMOVED for run_ruby_timed
     paramString += str(sleep) + ' '
     if accessBool:
         paramString += 'access'+' '
@@ -81,7 +81,8 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
 
     # run on all hosts
     try:
-        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
+#        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
+        execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
     except:
         print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
         execution.success = False

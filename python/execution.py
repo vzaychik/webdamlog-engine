@@ -72,6 +72,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
         execution.success = False
 
     # prepare parameters for ruby script
+    paramString = ''
 #    paramString = str(ticks) + ' '         REMOVED for run_ruby_timed
     paramString += str(sleep) + ' '
     if accessBool:

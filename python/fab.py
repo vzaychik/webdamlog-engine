@@ -54,7 +54,7 @@ def pull_both():
 # ruby sample execution
 # ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
 
-def run_ruby_timed(execPath, scenPath, paramString, outKey):
+def run_ruby_timed(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]
     runString = '%s %s %s %s' % ( \
         rubyPath, \
@@ -63,8 +63,8 @@ def run_ruby_timed(execPath, scenPath, paramString, outKey):
         paramString )
     # need to be in the execution directory because benchmark files will be created there
     with cd(os.path.join(rootPath, execPath)):
-#        if (env.host == master):
-#            run('sleep ' + str(masterDelay))
+        if (env.host == master):
+           run('sleep ' + str(masterDelay))
         run(runString)
         run('svn add --force .')
         run("""svn commit -m '' """)

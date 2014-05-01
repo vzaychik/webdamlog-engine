@@ -82,7 +82,7 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     # run on all hosts
     try:
 #        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
-        execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
+        execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
     except:
         print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
         execution.success = False

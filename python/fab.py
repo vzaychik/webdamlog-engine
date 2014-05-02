@@ -58,7 +58,7 @@ def run_ruby_timed(execPath, scenPath, paramString, outKey, master, masterDelay)
     rootPath = rootPathDict[env.host]
     runString = '%s %s %s %s' % ( \
         rubyPath, \
-        os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote.rb'), \
+        os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote_timed.rb'), \
         os.path.join(rootPath,scenPath,'out_' + env.host + '_' + outKey), \
         paramString )
     # need to be in the execution directory because benchmark files will be created there

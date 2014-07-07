@@ -1021,7 +1021,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
           file_to_delete = File.join(@rule_dir, filename)
           File.delete(file_to_delete) if File.file?(file_to_delete)
         end
-        Dir.rmdir(@rule_dir)
+        FileUtils.rm_rf(@rule_dir)
         return true
       else
         # silent quit

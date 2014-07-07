@@ -214,7 +214,7 @@ module WLBud
       # part 1: setup
       if @options[:debug]
         puts "==================================================================\n"
-        puts "\t\t\tOutput for internal tick turn #{budtime}\n"
+        puts "\t\t\tOutput for internal tick turn #{budtime} at peer #{peername} \n"
       end
       if @options[:measure]
         @measure_obj.initialize_measures @budtime

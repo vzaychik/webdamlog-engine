@@ -87,6 +87,22 @@ module WLRunner
     end
   end
 
+
+    # The method remove_acl removes the priviledges from a running peer
+    # In WebdamLog <- operator is used to delete a fact
+    # The method takes three arguments relation, peername and priviledge and removes the set from the table
+    def delete_acl (rel, peer, priv)
+        sync_do do
+            begin
+                self.tables["acle_at_#{self.peername}".to_sym] <- [["#{peer}","#{priv}","#{rel}"]]
+                 # WLError raises error if something goes wrong
+                rescue WLError => e
+                puts e
+            end
+        end
+    end
+
+
   # Async update of rules
   # @raise [WLError] if something goes wrong
   # @return [Array] rule_id, rule string of the local rule installed or nil if the rule is fully delegated.

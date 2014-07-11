@@ -103,15 +103,24 @@ module WLRunner
     end
 
 
-  # Async update of rules
-  # @raise [WLError] if something goes wrong
-  # @return [Array] rule_id, rule string of the local rule installed or nil if the rule is fully delegated.
+  # Async update of rules @raise [WLError] if something goes wrong
+  # @return [Array] rule_id, rule string of the local rule installed
+  # or nil if the rule is fully delegated.
   def update_add_rule rule
     rule_id, rule_string = nil
     sync_do do
       rule_id, rule_string = self.add_rule rule
     end
     return rule_id, rule_string
+  end
+
+  # Async update of rules @raise [WLError] if something goes wrong
+  def update_add_rules rules
+    sync_do do
+      rules.each do |rule|
+        self.add_rule rule
+      end
+    end
   end
 
   # Helpers to check syntax of webdamlog program

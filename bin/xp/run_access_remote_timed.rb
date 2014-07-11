@@ -5,6 +5,7 @@ require 'csv'
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
 SLEEP_TIME = ARGV[1].to_f if (ARGV[1] != nil)
 XPFILE = "XP_NOACCESS"
+RULEFILE = "rules.wdm"
 
 # Parameters:
 # * XP_FILE_DIR : The path to the directory with the data generator
@@ -28,16 +29,14 @@ def run_access_remote!
   end
 
   xpfiles = []
-  ticks = 0
+  numpeers = 0
   #first row is the list of peers
-  #the second row is the number of ticks for this test
-  CSV
   CSV.foreach(get_run_xp_file) do |row|
     if (xpfiles == [])
       xpfiles = row
       p "Start experiments with #{xpfiles}"
     else
-      ticks = row.first.to_i
+      numpeers = row.first.to_i
     end
   end
 
@@ -47,20 +46,63 @@ def run_access_remote!
     p "#{runners.last.peername} created"
   end
 
-  runners.reverse_each do |runner|
+  runners.each do |runner|
     runner.on_shutdown do
       p "Final tick step of #{runner.peername} : #{runner.budtime}"
     end
   end
-  runners.reverse_each do |runner|
+
+  runners.each do |runner|
     runner.run_engine
     p "#{runner.peername} started"
+    if runner.peername == "master0"
+      @masterp = runner
+    end
   end
-  
+
+  #see if all the other peers have come up before sending rules out
+  total_attempts = 0
+  if @masterp != nil
+    if @access_mode == true
+      relname = "peers_up_i_ext_at_master0"
+    else
+      relname = "peers_up_i_at_master0"
+    end
+    until @masterp.snapshot_facts(relname.to_sym).length == numpeers
+      if total_attempts > (numpeers + 10)
+        p "experiment run failed down to timeout on getting all peers up"
+        exit 1
+      else
+        p "at tick #{@masterp.budtime} not all peers are up yet, sleeping"
+        sleep 1
+        total_attempts += 1
+      end
+    end
+
+    #inject rules now
+    rules = []
+    File.readlines("#{XP_FILE_DIR}/#{RULEFILE}").each do |rule|
+      if rule.start_with?("//") == false
+        rules << rule
+      end
+    end
+    p "at tick #{@masterp.budtime} injecting rules: #{rules}"
+    @masterp.update_add_rules rules
+  end
+
   @sleep_time = SLEEP_TIME
+  p "running for #{@sleep_time} seconds"
   sleep @sleep_time
 
   p "stopping runners now that #{@sleep_time} seconds expired"
+
+  if @masterp != nil
+    if @access_mode == true
+      puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_ext_at_master0)}"
+    else
+      puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_at_master0)}"
+    end
+  end
 
   runners.each do |runner|
     runner.stop
@@ -87,7 +129,7 @@ def create_wl_runner pg_file
   raise WLError, "impossible to find the peername given in the end of the program \
 filename: #{peername} in the list of peer specified in the program" if ip_addr.nil? or port.nil?
   puts "creating peer #{peername} on #{ip_addr}:#{port}"
-  return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :noprovenance => true})
+  return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :noprovenance => true, :debug => false})
 end # def start_peer
 
 def get_run_xp_file

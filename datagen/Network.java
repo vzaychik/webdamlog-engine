@@ -25,12 +25,12 @@ import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
 public class Network {
 
 	public static HashMap<Integer,String> _netAddressMap = new HashMap<Integer, String>();
-	
-	public static void initNetAddressMap(String inFileName, int peersPerInstance, int numAggregators, int numFollowers) {
+
+	public static boolean initNetAddressMap(String inFileName, int peersPerInstance, int numAggregators, int numFollowers) {
 		try {
 			BufferedReader inFP = new BufferedReader(new FileReader(inFileName));
 			int i=0;
-			
+
 			// master is the sole peer on the first instance
 			String host = inFP.readLine().trim();
 			_netAddressMap.put(i++, host);
@@ -45,7 +45,7 @@ public class Network {
 				_netAddressMap.put(i++, host);
 				j++;
 			}
-			
+
 			// the final numFollowers / peersPerInstance instances are for the followers
 			j=peersPerInstance;
 			while ( i < (numFollowers + numAggregators + 1))  {
@@ -58,19 +58,25 @@ public class Network {
 			}
 			inFP.close();
 		} catch (IOException ioe) {
-			System.out.println(ioe.toString());
+		        System.out.println("WARNING: Please check your IP address file. It does not have enough hosts for the requested setup. Using localhost.");
+			return false;
+			//System.out.println(ioe.toString());
+		} catch (NullPointerException noe) {
+		        System.out.println("WARNING: Please check your IP address file. It does not have enough hosts for the requested setup. Using localhost.");
+			return false;
 		}
+		return true;
 	}
-	
+
 	public static void initNetAddressMap(int numPeers) {
 
 		for (int i=0; i<numPeers; i++) {
 			_netAddressMap.put(i, "localhost");
 		}
 	}
-	
+
 	public static String peersToString(int numAggregators, int numFollowers) {
-		
+
 		StringBuffer res = new StringBuffer("// known peers\n");
 		for (int i=0; i<1+numAggregators+numFollowers; i++) {
 			String name = "follower";
@@ -87,9 +93,9 @@ public class Network {
 		}
 		return res.toString();
 	}
-	
+
 	public static String peerProgramsToCSV(int numAggregators, int numFollowers, String dirPath) {
-		
+
 		StringBuffer res = new StringBuffer(dirPath + "/run_master0");
 		for (int i=1; i<1+numAggregators+numFollowers; i++) {
 			String name = "follower" + i;
@@ -100,32 +106,32 @@ public class Network {
 		}
 		return res.toString();
 	}
-	
+
 	public static void main(String[] args) {
 		if (args.length < 8) {
 			//System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
 			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange numExtraCols [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
-				
+
 		StringBuffer readmeComment = new StringBuffer("");
 		int numFollowers = Integer.parseInt(args[0].trim()); 
-		int numAggregators = Integer.parseInt(args[1].trim()); 		
+		int numAggregators = Integer.parseInt(args[1].trim()); 
 		int overlap = Integer.parseInt(args[2].trim()); 
-		
+
 		POLICY policy = POLICY.valueOf(args[3]);
 		int numFacts = Integer.parseInt(args[4].trim());
 		SCENARIO scenario = SCENARIO.valueOf(args[5]);
-		int valRange = Integer.parseInt(args[6].trim()); 		
+		int valRange = Integer.parseInt(args[6].trim()); 
 		int numExtraCols = Integer.parseInt(args[7].trim()); 
-		
+
 		String nonKeys="col0";
 		for (int col=1; col<numExtraCols; col++) {
 			nonKeys += ",col" + col;
 		}
-		
+
 		// String dirPath = args[6].trim();
-		
+
 		readmeComment.append("# followers=" + numFollowers);
 		readmeComment.append(", # aggregators=" + numAggregators);
 		readmeComment.append(", # aggregators per follower=" + overlap);
@@ -134,17 +140,19 @@ public class Network {
 		readmeComment.append(", scenario=" + scenario.toString());
 		readmeComment.append(", value range=" + valRange);
 		readmeComment.append(", # extra cols=" + numExtraCols);
-				
+
 		if (args.length > 8) {
 			String instanceFile = args[8].trim();
 			int peersPerInstance = Integer.parseInt(args[9]);
-			initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
+			if (!initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers)) {
+			    initNetAddressMap(1+numAggregators+numFollowers);
+			}
 		} else {
 			initNetAddressMap(1+numAggregators+numFollowers);
 		}
-		
+
 		int currentId = 0;
-		
+
 		Peer master = new Peer(currentId++, PEER_TYPE.MASTER);
 		if (numExtraCols == 0) {
 			master.addCollection(new Collection("t", master.getName(), COL_TYPE.INT, 1, "x"));
@@ -181,14 +189,14 @@ public class Network {
 			}
 			HashSet<Integer> aggsToFollow = new HashSet<Integer>();
 			for (int j=0; j <aggregators.size(); j++) {
-				for (int k=0; k<=overlap; k++) {
+				for (int k=0; k<=overlap-1; k++) {
 					if ((p.getId() + k) % numAggregators == aggregators.get(j).getId() - 1) {
 						// peer p will follow the jth aggregator
 						aggsToFollow.add(j);
 					}
 				}
-			}			
-			
+			}
+
 			for (int j=0; j <aggregators.size(); j++) {
 				if (aggsToFollow.contains(j)) {
 					p.addMaster(aggregators.get(j));
@@ -198,38 +206,38 @@ public class Network {
 						aggregators.get(j).addSlave(p, nonKeys);
 					}
 					p.setPolicy(policy);
-					p.setScenario(scenario);					
+					p.setScenario(scenario);
 				}
 			}
-			
+
 			followers.add(p);
-		}	
-		
+		}
+
 		String knownPeers = Network.peersToString(numAggregators, numFollowers);
 		ArrayList<Peer> allPeers = new ArrayList<Peer>();
 		allPeers.add(master);
 		allPeers.addAll(aggregators);
 		allPeers.addAll(followers);
-			
+
 		if (Constants.DO_FILE_IO) {
 			try {
-				
+
 				long ts = System.currentTimeMillis();
 				HashSet<String> hostsHS = new HashSet<String>(_netAddressMap.values());
-				
+
 				for (String hostName : hostsHS) {
 					// make a directory for each instance
 					String dirName = "out_" + hostName + "_" + ts; 
 					File outDir = new File(dirName);
-					outDir.mkdir();				
+					outDir.mkdir();
 					System.out.println("Output in " + dirName);
 				}
-				
+
 				StringBuffer masterRules = new StringBuffer("// rules\n");
-				
+
 				for (Peer p : allPeers) {
 					String hostName = _netAddressMap.get(p.getId());
-					
+
 					String dirName = "out_" + hostName + "_" + ts; 
 					p.outputProgramToFile(readmeComment.toString(), dirName, knownPeers);
 
@@ -240,19 +248,19 @@ public class Network {
 						//if (Constants.FULL_PATHS) {
 						//	outFP.write("," + dirPath + "/run_" + p.getName());
 						//} else {
-						outFP.write(",run_" + p.getName());							
+						outFP.write(",run_" + p.getName());
 						//}
-						outFP.close();						
+						outFP.close();
 					} else {
 						BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS"));
 						//if (Constants.FULL_PATHS) {
 						//	outFP.write(dirPath + "/run_" + p.getName());
 						//} else {
-						outFP.write("run_" + p.getName());	
+						outFP.write("run_" + p.getName());
 						//}
 						outFP.close();
 					}
-					
+
 					if (Constants.MASTER_ONLY_RULES) {
 						masterRules.append(p.outputRules());
 					}
@@ -260,23 +268,24 @@ public class Network {
 
 				if (Constants.MASTER_ONLY_RULES) {
 					// append rules to the master's program
+				        //VZM - write rules to a separate file for later injection run-time
 					String dirName = "out_" + _netAddressMap.get(0) + "_" + ts; 
-					String fileName = dirName + "/run_master0";
+					String fileName = dirName + "/rules.wdm";
 					BufferedWriter outFP = new BufferedWriter(new FileWriter(fileName, true));
 					outFP.write(masterRules.toString());
 					outFP.close();
-				}				
-			
+				}
+
 				for (String hostName : hostsHS) {
 					String dirName = "out_" + hostName + "_" + ts; 
 					BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS", true));
 					outFP.write("\n");
-					//write the needed ticks number
-					outFP.write(String.valueOf(aggregators.get(0).getNumSlaves()+2));
+					//VZM write the total number of peers in the experiment for coordinated experiment start
+					outFP.write(String.valueOf(allPeers.size()-1));
 					outFP.write("\n");
-					outFP.close();						
+					outFP.close();
 				}
-				
+
 			} catch (IOException ioe) {
 				System.out.println(ioe.toString());
 			}

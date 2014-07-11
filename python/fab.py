@@ -52,7 +52,8 @@ def pull_both():
         run('svn up')
         
 # ruby sample execution
-# ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
+# ruby ~/webdamlog-engine/bin/xp/run_access_remote_timed.rb ~/Experiments/scenario_blah/ 100 access
+# deprecated: ruby ~/webdamlog-engine/bin/xp/run_access_remote.rb ~/Experiments/scenario_blah/ 100 0.5 access
 
 def run_ruby_timed(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]
@@ -63,27 +64,28 @@ def run_ruby_timed(execPath, scenPath, paramString, outKey, master, masterDelay)
         paramString )
     # need to be in the execution directory because benchmark files will be created there
     with cd(os.path.join(rootPath, execPath)):
-        if (env.host == master):
+        #VZM now we make sure master comes up first 
+        if (env.host != master):
            run('sleep ' + str(masterDelay))
         run(runString)
         run('svn add --force .')
         run("""svn commit -m '' """)
 
 
-def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
-    rootPath = rootPathDict[env.host]
-    runString = '%s %s %s %s' % ( \
-        rubyPath, \
-        os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote.rb'), \
-        os.path.join(rootPath,scenPath,'out_' + env.host + '_' + outKey), \
-        paramString )
-    # need to be in the execution directory because benchmark files will be created there
-    with cd(os.path.join(rootPath, execPath)):
-        if (env.host == master):
-            run('sleep ' + str(masterDelay))
-        run(runString)
-        run('svn add --force .')
-        run("""svn commit -m '' """)
+#def run_ruby(execPath, scenPath, paramString, outKey, master, masterDelay):
+#    rootPath = rootPathDict[env.host]
+#    runString = '%s %s %s %s' % ( \
+#        rubyPath, \
+#        os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_remote.rb'), \
+#        os.path.join(rootPath,scenPath,'out_' + env.host + '_' + outKey), \
+#        paramString )
+#    # need to be in the execution directory because benchmark files will be created there
+#    with cd(os.path.join(rootPath, execPath)):
+#        if (env.host == master):
+#            run('sleep ' + str(masterDelay))
+#        run(runString)
+#        run('svn add --force .')
+#        run("""svn commit -m '' """)
 
 if __name__ == '__main__':
 

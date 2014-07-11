@@ -26,7 +26,7 @@ public class Network {
 
 	public static HashMap<Integer,String> _netAddressMap = new HashMap<Integer, String>();
 
-	public static void initNetAddressMap(String inFileName, int peersPerInstance, int numAggregators, int numFollowers) {
+	public static boolean initNetAddressMap(String inFileName, int peersPerInstance, int numAggregators, int numFollowers) {
 		try {
 			BufferedReader inFP = new BufferedReader(new FileReader(inFileName));
 			int i=0;
@@ -58,8 +58,14 @@ public class Network {
 			}
 			inFP.close();
 		} catch (IOException ioe) {
-			System.out.println(ioe.toString());
+		        System.out.println("WARNING: Please check your IP address file. It does not have enough hosts for the requested setup. Using localhost.");
+			return false;
+			//System.out.println(ioe.toString());
+		} catch (NullPointerException noe) {
+		        System.out.println("WARNING: Please check your IP address file. It does not have enough hosts for the requested setup. Using localhost.");
+			return false;
 		}
+		return true;
 	}
 
 	public static void initNetAddressMap(int numPeers) {
@@ -138,7 +144,9 @@ public class Network {
 		if (args.length > 8) {
 			String instanceFile = args[8].trim();
 			int peersPerInstance = Integer.parseInt(args[9]);
-			initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers);
+			if (!initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers)) {
+			    initNetAddressMap(1+numAggregators+numFollowers);
+			}
 		} else {
 			initNetAddressMap(1+numAggregators+numFollowers);
 		}

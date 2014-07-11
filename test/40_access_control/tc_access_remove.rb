@@ -69,7 +69,7 @@ def test_remove_priviledge
         runner1.tick
  
         #checking that data is materialized
-assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)}, {:priv=>"R", :atom1=>"5", :plist=>PList.new(["p1", "p2"].to_set)}],runner2.tables[:rel2_i_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)}, {:priv=>"R", :atom1=>"5", :plist=>PList.new(["p1", "p2"].to_set)}],runner2.tables[:rel2_i_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
         
         
         #removing the fact
@@ -88,7 +88,7 @@ assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)},
         assert_equal [],runner1.snapshot_facts(:acl_at_p1)
         
         # after removing the facts, nothing should be materialized
-        assert_equal [], runner2.tables[:rel2_i_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [], runner2.tables[:rel2_i_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
         
         
         

@@ -64,7 +64,7 @@ def run_access_remote!
   total_attempts = 0
   if @masterp != nil
     if @access_mode == true
-      relname = "peers_up_i_ext_at_master0"
+      relname = "peers_up_i_plus_at_master0"
     else
       relname = "peers_up_i_at_master0"
     end
@@ -98,7 +98,7 @@ def run_access_remote!
 
   if @masterp != nil
     if @access_mode == true
-      puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_ext_at_master0)}"
+      puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_plus_at_master0)}"
     else
       puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_at_master0)}"
     end

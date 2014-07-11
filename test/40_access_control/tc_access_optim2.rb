@@ -41,7 +41,7 @@ end
       #check that formulas has the peer itself as one symbol
       assert_equal [{:plist=>["test_access"],:id=>"test_access_0"}], runner1.tables[:formulas_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:rel=>"local2_at_test_access",:priv=>"Grant",:plist=>"test_access_0"}, {:rel=>"local2_at_test_access",:priv=>"Read",:plist=>"test_access_0"}, {:rel=>"local1_at_test_access",:priv=>"Grant",:plist=>"test_access_0"}, {:rel=>"local1_at_test_access",:priv=>"Read",:plist=>"test_access_0"}, {:rel=>"acl_at_test_access",:priv=>"Grant",:plist=>"test_access_0"}, {:rel=>"acl_at_test_access",:priv=>"Read",:plist=>"test_access_0"}], runner1.tables[:aclf_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"1",:priv=>"Read",:plist=>Omega.new},{:atom1=>"1",:priv=>"Grant",:plist=>Omega.new},{:atom1=>"2",:priv=>"Read",:plist=>Omega.new},{:atom1=>"2",:priv=>"Grant",:plist=>Omega.new},{:atom1=>"3",:priv=>"Read",:plist=>Omega.new},{:atom1=>"3",:priv=>"Grant",:plist=>Omega.new}], runner1.tables[:local2_ext_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1",:priv=>"Read",:plist=>Omega.new},{:atom1=>"1",:priv=>"Grant",:plist=>Omega.new},{:atom1=>"2",:priv=>"Read",:plist=>Omega.new},{:atom1=>"2",:priv=>"Grant",:plist=>Omega.new},{:atom1=>"3",:priv=>"Read",:plist=>Omega.new},{:atom1=>"3",:priv=>"Grant",:plist=>Omega.new}], runner1.tables[:local2_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
       #now give some permissions and see more symbols
       runner1.update_acl("local2_at_test_access","p1","Read")

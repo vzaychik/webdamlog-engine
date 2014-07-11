@@ -536,7 +536,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       str = "collection #{get_type.to_s.downcase} "
       str << "persistent" + " " if self.persistent?
       str << relname
-      str << "_ext@"
+      str << "_plus@"
       str << peername
       str << "( priv*, #{col_fields.text_value}, plist ) ;"
     end

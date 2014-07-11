@@ -1163,7 +1163,7 @@ In the string: #{line}
       str_res = "#{rel}"
 
       if @options[:accessc]
-        str_res << "_ext"
+        str_res << "_plus"
       end
 
       str_res << "_at_#{pname}"

@@ -1,5 +1,5 @@
 $:.unshift File.dirname(__FILE__)
-require '../header_test'
+require_relative '../header_test'
 require_relative '../../lib/webdamlog_runner'
 
 require 'test/unit'
@@ -251,7 +251,7 @@ class TcAccessExtensionalRules < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local2@test_access(atom1*);
-collection ext local3@test_access(atom1*, atom2*);
+collection ext per local3@test_access(atom1*, atom2*);
 fact local2@test_access(1);
 fact local2@test_access(2);
 rule delegated1@p1($x) :- local2@test_access($x);
@@ -268,8 +268,8 @@ end
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local1@p1(atom1*);
-collection ext delegated1@p1(atom1*);
-collection ext delegated_join@p1(atom1*, atom2*);
+collection ext per delegated1@p1(atom1*);
+collection ext per delegated_join@p1(atom1*, atom2*);
 fact local1@p1(3);
 end
     EOF

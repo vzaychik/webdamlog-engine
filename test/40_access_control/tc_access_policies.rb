@@ -1,5 +1,5 @@
 $:.unshift File.dirname(__FILE__)
-require '../header_test'
+require_relative '../header_test'
 require_relative '../../lib/webdamlog_runner'
 
 require 'test/unit'
@@ -13,7 +13,7 @@ class TcAccessGrammar < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local2@test_access(atom1*);
-collection ext local1@test_access(atom1*);
+collection ext per local1@test_access(atom1*);
 collection int local3_i@test_access(atom1*);
 fact local2@test_access(1);
 fact local2@test_access(2);
@@ -61,7 +61,7 @@ class TcAccessGrammar2 < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local2@test_access(atom1*);
-collection ext local1@test_access(atom1*);
+collection ext per local1@test_access(atom1*);
 collection int local3_i@test_access(atom1*);
 fact local2@test_access("p1");
 fact local2@test_access("p2");

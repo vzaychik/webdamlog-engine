@@ -1,6 +1,3 @@
-# To change this template, choose Tools | Templates and open the template in the
-# editor.
-
 module WLTools
 
   # Sanitize the string ie. + Remove leading and trailing whitespace + Downcase
@@ -75,7 +72,35 @@ module WLTools
     end
     grouped
   end
-
+      
+  def self.transform_first_inner_array_into_set enum
+    res = {}
+    enum.each_pair do |key,value|
+      if value.kind_of? Hash
+        res[key] = transform_first_inner_array_into_set value
+      elsif value.kind_of?(Enumerable)
+        res[key] = value.to_set
+      else
+        res[key]= value
+      end
+    end
+    res
+  end
+  
+  def self.transform_first_inner_set_into_array enum
+    res = {}
+    enum.each_pair do |key,value|
+      if value.kind_of? Hash
+        res[key] = transform_first_inner_set_into_array value
+      elsif value.kind_of?(Set)
+        res[key] = value.to_a
+      else
+        res[key]= value
+      end
+    end
+    res
+  end
+  
   module SerializeObjState
     # ===return
     # a hash with variable name as key with their value as hash value
@@ -114,7 +139,7 @@ module WLTools
       return s
     end
   
-    # #Pretty print with id
+    # Pretty print with id
     def self.p_print_id(print_table)
       s =""
       if print_table[3]!=nil

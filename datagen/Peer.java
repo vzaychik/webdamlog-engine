@@ -139,12 +139,6 @@ public class Peer {
 		for (Collection c : _collections) {
 			prog.append("collection " + c.getType().toString() + c.isPersistentToString() + c.getSchema() + ";\n");
 		}
-		//VZM add a special collection to keep track of peers being present
-		if (_type == PEER_TYPE.MASTER) {		
-		    prog.append("collection int peers_up_i@master0(x*);\n");
-		} else {
-		    prog.append("collection ext per up@" + this.getName() + "(x*);\n");
-		}
 		return prog.toString();
 	}
 
@@ -154,11 +148,6 @@ public class Peer {
 			for (String fact : c.getFacts()) {
 				prog.append("fact " +  c.getName() + c.getSuffix() +"@" + this.getName() + "(" + fact  + ");\n");				
 			}
-		}
-		//VZM special for start condition
-		if (_type != PEER_TYPE.MASTER) {
-		    prog.append("fact up@" + this.getName() + "(" + this.getId() + ");\n");
-		    prog.append("rule peers_up_i@master0($x) :- up@" + this.getName() + "($x);\n");
 		}
 		return prog.toString();
 	}
@@ -179,13 +168,6 @@ public class Peer {
 				    }
 				}
 			}	
-		}
-		//VZM add policy statement for special peers_up collection
-		//this has to be public no matter what scenario we are running
-		if (_type == PEER_TYPE.MASTER) {
-		    prog.append("policy peers_up_i write ALL;\n");
-		} else {
-		    prog.append("policy up read ALL;\n");
 		}
 		return prog.toString();
 	}

@@ -57,28 +57,14 @@ def run_access_remote!
     p "#{runner.peername} started"
     if runner.peername == "master0"
       @masterp = runner
+      @scenario = "network"
+    elsif runner.peername.start_with?("sue")
+      @masterp = runner
+      @scenario = "album"
     end
   end
 
-  #see if all the other peers have come up before sending rules out
-  total_attempts = 0
   if @masterp != nil
-    if @access_mode == true
-      relname = "peers_up_i_plus_at_master0"
-    else
-      relname = "peers_up_i_at_master0"
-    end
-    until @masterp.snapshot_facts(relname.to_sym).length == numpeers
-      if total_attempts > (numpeers + 10)
-        p "experiment run failed down to timeout on getting all peers up"
-        exit 1
-      else
-        p "at tick #{@masterp.budtime} not all peers are up yet, sleeping"
-        sleep 1
-        total_attempts += 1
-      end
-    end
-
     #inject rules now
     rules = []
     File.readlines("#{XP_FILE_DIR}/#{RULEFILE}").each do |rule|
@@ -97,11 +83,18 @@ def run_access_remote!
   p "stopping runners now that #{@sleep_time} seconds expired"
 
   if @masterp != nil
-    if @access_mode == true
-      puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_plus_at_master0)}"
-    else
-      puts "final contents of master's facts: #{@masterp.snapshot_facts(:t_i_at_master0)}"
+    if @scenario == "network"
+      resultrel = "t_i"
+    elsif @scenario == "album"
+      resultrel = "album_i"
     end
+    if @access_mode == true
+      resultrel += "_plus_at_#{@masterp.peername}"
+    else
+      resultrel += "_at_#{@masterp.peername}"
+    end
+    results = @masterp.snapshot_facts(resultrel.to_sym)
+    puts "final contents of master's facts: #{results}"
   end
 
   runners.each do |runner|
@@ -129,7 +122,7 @@ def create_wl_runner pg_file
   raise WLError, "impossible to find the peername given in the end of the program \
 filename: #{peername} in the list of peer specified in the program" if ip_addr.nil? or port.nil?
   puts "creating peer #{peername} on #{ip_addr}:#{port}"
-  return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :noprovenance => true, :debug => false})
+  return WLRunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :noprovenance => true, :debug => false, :tcp => true })
 end # def start_peer
 
 def get_run_xp_file

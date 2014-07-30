@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require_relative '../header_test'
-require_relative '../../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -38,7 +38,7 @@ class TcAccessRemovePriviledge < Test::Unit::TestCase
     end
 
     def teardown
-        ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+        ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
         ObjectSpace.garbage_collect
     end
 
@@ -46,8 +46,8 @@ def test_remove_priviledge
         runner1 = nil
         runner2 = nil
         assert_nothing_raised do
-            runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true })
-            runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => true })
+            runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true })
+            runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => true })
     end
         
         runner2.tick

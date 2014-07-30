@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require_relative '../header_test'
-require_relative '../../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -61,7 +61,7 @@ end
   end
 
   def teardown
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -71,9 +71,9 @@ end
       runner2 = nil
       runner3 = nil
       assert_nothing_raised do
-        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:debug => true, :tag => "test_access" })
-        runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:debug => true, :tag => "p1"  })
-        runner3 = WLRunner.create(@username3, @pg_file3, @port3, {:debug => true, :tag => "p2"  })
+        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:debug => true, :tag => "test_access" })
+        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:debug => true, :tag => "p1"  })
+        runner3 = WLARunner.create(@username3, @pg_file3, @port3, {:debug => true, :tag => "p2"  })
       end
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)
@@ -134,7 +134,7 @@ end
   end
 
   def teardown
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -143,10 +143,8 @@ end
       runner1 = nil
       runner2 = nil
       assert_nothing_raised do
-        #runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :mesure => true, :tag => "test_access" })
-        #runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :mesure => true, :tag => "p1"  })
-        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :optim1 => true, :measure => true, :tag => "test_access" })
-        runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :optim1 => true, :measure => true, :tag => "p1"  })
+        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :optim1 => true, :measure => true, :tag => "test_access" })
+        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :optim1 => true, :measure => true, :tag => "p1"  })
       end
 
       runner2.tick
@@ -198,7 +196,7 @@ end
 #  end
 
 #  def teardown    
-#    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+#    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
 #    ObjectSpace.garbage_collect
 #  end
 
@@ -207,7 +205,7 @@ end
 #    begin
 #       runner = nil
 #       assert_nothing_raised do
-#        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :mesure => true, :metrics => true })
+#        runner = WLARunner.create(@username, @pg_file, @port, {:accessc => true, :mesure => true, :metrics => true })
 #       end
 
 #      runner.run_engine

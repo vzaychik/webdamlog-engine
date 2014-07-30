@@ -1,39 +1,11 @@
-# Bud methods overridden in Webdamlog
+# Bud methods overriden specifically access control
 module WLBud
-  
+  attr_accessor :connections_buffer
+  attr_accessor :connections_status
+
   class WL
 
-    # Hacky: attribute that store the rule_id currently evaluated while wiring
-    #   to be added to push_elems
-    attr_reader :current_eval_rule_id
-    
-    # The initializer for WLBud directly overrides the initializer from Bud.
-    #
-    # Override bud method
-    #
-    # ==== Attributes
-    #
-    # * +peername+ identifier for this peer, should be a string unique
-    # * +pgfilename+ the filename containing the program (or any IO object
-    #   readable)
-    # * +options+
-    #
-    # ==== Options
-    #
-    # * +:rule_dir+ the name of the directory in which the file with the rule
-    #   will be stored.
-    # * +:debug+ very verbose debug
-    # * +:measure+ put this flag to generate a report with measurement of
-    #   internal tick steps.
-    # * +:delay_fact_loading+ if true does not load the program hence before you
-    #   can run the peer you shall call the load_program method. Used with
-    #   wrapper that required to be bind before we have started to add facts
-    #   into them
-    # * +:filter_delegations+ if true all rules received on the channel will be
-    #   put in a waiting queue  instead of being added to the program.  Some
-    #   external intervention will be required to validate them such as calling
-    #   {WLRunner::update_add_rule} on @pending_delegations entries.
-    # * +:noprovenance+ if true all the provenance mechanisms are skipped
+    #FIXME - refactor to avoid full copy-and-paste from original
     def initialize (peername, pgfilename, options = {})
       # ### WLBud:Begin adding to Bud special bud parameter initialization
       if options[:measure]
@@ -154,6 +126,16 @@ module WLBud
       load_lattice_defs
       builtin_state
 
+      # VZM connections
+      @connections_buffer = {}
+      @connections_status = {}
+
+      # VZM access control
+      @options[:accessc] ||= false
+      self.add_aclkind
+      self.add_access_optim
+      @extended_collections_to_flush = []
+      @packet_metrics = []
       # #### WLBud:Begin adding to Bud
       #
       if @options[:measure]
@@ -164,7 +146,7 @@ module WLBud
       @collection_added=false
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
       #   instance.
-      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug]} )
+      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1], :optim2 => @options[:optim2]} )
       # By default provenance is used to spread deletion, use this tag for
       #   experimental comparisons
       @options[:noprovenance] ? @provenance = false : @provenance = true
@@ -201,13 +183,7 @@ module WLBud
       # ### WLBud:End alternative to Bud
     end
 
-    
-
-    # It is not intended to be called directly by client code. From client code,
-    # call tick which will call start(true) allowing the EventMachine to call
-    # the tick_internal.
-    #
-    # Override bud method Bud.tick_internal
+    #FIXME - refactor to avoid this copy-and-paste
     def tick_internal
       # ### WLBud:Begin adding to Bud
       #
@@ -288,6 +264,12 @@ collection int peer_done#{@peername}(key*);"
           end
           delete_facts(packet_value.facts_to_delete) unless packet_value.facts_to_delete.nil?
           packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?          
+          # VZM
+          if @options[:accessc]
+            @extended_collections_to_flush.each {|col|
+              @wl_program.wlcollections[col.fullrelname] = col
+            }
+          end
           if @options[:filter_delegations]
             @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
           else
@@ -456,6 +438,23 @@ collection int peer_done#{@peername}(key*);"
       end
       if @options[:measure]
         @measure_obj.append_measure @budtime-1
+        # count number of tuples in user tables
+        tuplecount = 0;
+        wordcount = 0;
+        utables = @tables.keys - @builtin_tables.keys
+        utables.each do |tbl|
+          tuplecount += tables[tbl].length
+          tables[tbl].each { |fct|
+            fct.each { |elem|
+              if elem.is_a? PList
+                wordcount += elem.to_a.length
+              else
+                wordcount += 1
+              end
+            }
+          }
+        end
+        @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
         @measure_obj.dump_measures      
       end
 
@@ -480,131 +479,6 @@ collection int peer_done#{@peername}(key*);"
       end      
     end
 
+  end #class
 
-    # Override the method in bud to create some additional relations. It is
-    # called in init_state in the initializer in the bud original class. The bud
-    # builtin_state define the builtin collections of bud such as local-tick,
-    # stdio, signals, halt and periodics_tbl. In this method we add our
-    # communication methods needed to send package as big pack of data using
-    # WLchannel.
-    #
-    # Extend bud method
-    #
-    def builtin_state
-      super
-      @builtin_tables = @tables.clone if toplevel
-      # Unique channel that serves for all messages. Each timestep exactly one
-      # or zero packet is sent to each peer (see wlpacket).
-      wlchannel :chan, [:@dst,:packet] => []
-      # This is the buffer in which we put all the facts we want to send, its
-      # schema is very simple [:@dst, :rel_name, :facts] where :@dst should be
-      # the destination where to send the facts in the same format as :@dst in
-      # standard bud channel "ip:port"
-      scratch :sbuffer, [:dst, :rel_name, :fact] => []
-    end
-
-
-
-    # WLBud:Begin alternative to Bud rewrite_strata rewrites the dependency
-    # graph of the program in a topological order. This is a necessary step each
-    # time the program is modified. It's nearly the same code as in bud but we
-    # put it in a separated method to be called after program update.
-    #
-    def rewrite_strata
-      WLTools::Debug_messages.h2 "Peer #{@peername} start to rewrite strata" if @options[:debug]
-      # Rebuild the list of methods to shred in do_rewrite->shred_rules
-      @declarations = self.class.instance_methods.select {|m| m =~ /^__bloom__.+$/}.map {|m| m.to_s}
-      # Erase all previous rules and dependence as we rebuild the graph from
-      # scratch
-      self.t_rules.storage.clear
-      self.t_depends.storage.clear
-      # self.t_table_info.send :init_buffers self.t_table_schema.send
-      # :init_buffers Need to manually erase strata
-      self.t_stratum.storage.clear
-      self.t_stratum.delta.clear
-      # WLBud:End the rest is the legacy bud code
-
-      do_rewrite
-
-      if toplevel == self
-        # initialize per-stratum state
-        @num_strata = @stratified_rules.length
-        @scanners = @num_strata.times.map{{}}
-        @push_sources = @num_strata.times.map{{}}
-        @push_joins = @num_strata.times.map{[]}
-        @merge_targets = @num_strata.times.map{Set.new}
-      end
-    end
-
-
-    # WLBud:Begin alternative to Bud this is the preamble to do_wiring which
-    # prepare active tables in the application to be used in fixpoint
-    def update_app_tables
-      # Prepare list of tables that will be actively used at run time. First,
-      # all the user-defined tables and lattices.  We start @app_tables off as a
-      # set, then convert to an array later.
-      @app_tables = (@tables.keys - @builtin_tables.keys).map {|t| @tables[t]}.to_set
-      @app_tables.merge(@lattices.values)
-
-      # Check scan and merge_targets to see if any builtin_tables need to be
-      # added as well.
-      @scanners.each do |scs|
-        @app_tables.merge(scs.values.map {|s| s.collection})
-      end
-      @merge_targets.each do |mts| #mts == merge_targets at stratum
-        @app_tables.merge(mts)
-      end
-      @app_tables = @app_tables.to_a
-    end
-
-
-    
-    # WLBud:Begin alternative to Bud override do_wiring to force all merge
-    # target to accumulate tick delta for callback in applications
-    def do_wiring
-      super
-      @merge_targets.each_with_index do |stratum_targets, stratum|
-        stratum_targets.each {|tab|
-          tab.accumulate_tick_deltas = true # if stratum_accessed[tab] and stratum_accessed[tab] > stratum # no condition
-        }
-      end
-      if self.kind_of? WLBud::WL and @provenance
-        @push_sorted_elems.each do |stratum|
-          stratum.each do |pshelt|
-            @provenance_graph.add_new_push_elem(pshelt)
-          end
-        end
-        @provenance_graph.consolidate
-      end
-    end
-    
-    # WLBud:Begin Override bud to add the rule id to inject when creating the
-    # push element
-    def eval_rule(__obj__, __src__, id)
-      __obj__.instance_eval "@current_eval_rule_id = #{id}"
-      super(__obj__, __src__)
-    end
-
-    # WLBud:Begin Override bud to pass the rule id to eval_rule
-    def eval_rules(rules, strat_num)
-      # This routine evals the rules in a given stratum, which results in a
-      # wiring of PushElements
-      @this_stratum = strat_num
-      rules.each_with_index do |rule, i|
-        @this_rule_context = rule.bud_obj # user-supplied code blocks will be evaluated in this context at run-time
-        begin
-          eval_rule(rule.bud_obj, rule.src, rule.rule_id)
-        rescue Exception => e
-          err_msg = "** Exception while wiring rule: #{rule.orig_src}\n ****** #{e}"
-          # Create a new exception for accomodating err_msg, but reuse original
-          # backtrace
-          new_e = (e.class <= Bud::Error) ? e.class.new(err_msg) : Bud::Error.new(err_msg)
-          new_e.set_backtrace(e.backtrace)
-          raise new_e
-        end
-      end
-    end
-
-  end # class WL
-
-end # module WLBud
+end #module

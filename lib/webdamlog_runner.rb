@@ -74,32 +74,6 @@ module WLRunner
     return fct, err
   end
 
-  def update_acl (rel, peer, priv)
-    sync_do do
-      begin
-        self.tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
-      rescue WLError => e
-        puts e
-      end
-    end
-  end
-
-
-    # The method remove_acl removes the priviledges from a running peer
-    # In WebdamLog <- operator is used to delete a fact
-    # The method takes three arguments relation, peername and priviledge and removes the set from the table
-    def delete_acl (rel, peer, priv)
-        sync_do do
-            begin
-                self.tables["acle_at_#{self.peername}".to_sym] <- [["#{peer}","#{priv}","#{rel}"]]
-                 # WLError raises error if something goes wrong
-                rescue WLError => e
-                puts e
-            end
-        end
-    end
-
-
   # Async update of rules @raise [WLError] if something goes wrong
   # @return [Array] rule_id, rule string of the local rule installed
   # or nil if the rule is fully delegated.
@@ -168,15 +142,6 @@ module WLRunner
       coll = self.tables[relname].map{ |t| Hash[t.each_pair.to_a] }
     end
     return coll
-  end
-
-  # @return [Array] list of policies declared in wdl
-  def snapshot_policies
-    coll = []
-    sync_do do
-      coll = self.wl_program.wlpolicies
-    end
-    return coll.map{ |p| p.show_wdl_format}
   end
 
   # This method filter out the relation created by the webdamlog engine for bud

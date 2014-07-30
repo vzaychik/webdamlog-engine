@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require_relative '../header_test'
-require_relative '../../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -25,7 +25,7 @@ end
   end
 
   def teardown
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -33,7 +33,7 @@ end
     begin
       runner1 = nil
       assert_nothing_raised do
-        runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true, :optim2 => true, :noprovenance => true })
+        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true, :optim2 => true, :noprovenance => true })
       end
 
       runner1.tick

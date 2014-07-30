@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require_relative '../header_test'
-require_relative '../../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -29,7 +29,7 @@ end
   end
 
   def teardown    
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -38,7 +38,7 @@ end
     begin
        runner = nil
        assert_nothing_raised do
-        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true, :noprovenance => true })
+        runner = WLARunner.create(@username, @pg_file, @port, {:accessc => true, :debug => false, :noprovenance => true })
        end
 
       assert_equal(["policy local2 read ALL","policy local1 read p1","policy local3_i write p1"], runner.snapshot_policies)
@@ -75,7 +75,7 @@ end
   end
 
   def teardown    
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -84,7 +84,7 @@ end
     begin
        runner = nil
        assert_nothing_raised do
-        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true, :noprovenance => true })
+        runner = WLARunner.create(@username, @pg_file, @port, {:accessc => true, :debug => false, :noprovenance => true })
        end
 
       assert_equal(["policy local1 read local2@test_access"], runner.snapshot_policies)

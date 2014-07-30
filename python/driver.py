@@ -2,19 +2,26 @@ from peewee import *
 from datetime import date
 import os
 import sys
+import subprocess
+import commands
 from subprocess import call
 import models, scenario
 
-pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
+pathToRepository = commands.getoutput("echo $HOME")
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 import itertools
 
 def localSVNCommit( commitPath ):
     cwd = os.getcwd()
+    print "Running inside Driver"
+    print cwd
     os.chdir(commitPath)
+    print commitPath
     callString = ['svn','add','--force','.']
+    print callString
     call(callString)
     callString = ['svn', 'commit', '-m', """ "" """]
+    print callString
     call(callString)
     os.chdir(cwd)
 
@@ -45,22 +52,22 @@ def simplePA():
     return [scenario]
 
 
-def simpleMAF():
+def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _policy, _numFacts, _valRange, _ruleScenario, _numPeers):
     scenario = models.Scenario( \
         # scenID = ?? filled in later
-        scenType = 'MAF', \
-        numFollowers = 6*3, \
-        numAggregators = 3*3, \
-        aggPerFollower = 1*3, \
-        policy = 'PUB', \
-        numFacts = 10000, \
-        valRange = 1000, \
+        scenType = _scenType, \
+        numFollowers = _numFollowers, \
+        numAggregators = _numAggregators, \
+        aggPerFollower = _aggPerFollower, \
+        policy = _policy, \
+        numFacts = _numFacts, \
+        valRange = _valRange, \
         numExtraCols = 6, \
-        ruleScenario = 'UNION_OF_JOINS', \
+        ruleScenario = _ruleScenario, \
         hosts = ['miklau1','miklau2','miklau3','miklau4'], \
         numHosts = 4, \
-        numPeersPerHost = 3*3 )
-    
+        numPeersPerHost = _numPeers, \
+   ) 
     return [scenario]
 
 
@@ -99,7 +106,7 @@ def case1():
     
 if __name__ == "__main__":
 
-    rootPath = os.path.join(pathToRepository, 'webdamlog-exp')
+    rootPath = os.path.join(pathToRepository, '/webdamlog-exp')
 
     # create scenario instances
     scenarioList = case1()

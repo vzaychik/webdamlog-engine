@@ -2,6 +2,7 @@ from peewee import *
 from peewee import drop_model_tables
 from datetime import date
 import os
+import commands
 
 #database = SqliteDatabase(None)  # Create a database instance.
 database = MySQLDatabase("webdamlog", host="avid.cs.umass.edu", port=3306, user="miklau", passwd="ilovedb")
@@ -31,10 +32,8 @@ class Scenario(BaseModel):
 class Execution(BaseModel):
     execID = BigIntegerField(primary_key=True)
     scenID = ForeignKeyField(Scenario)
-    numTicks = IntegerField()
-    sleep = FloatField()
-    access = BooleanField()
-    optim1 = BooleanField()
+    TimeToRun = FloatField()
+    mode = IntegerField()
     runTime = FloatField()
     success = BooleanField()
     build = IntegerField()
@@ -57,7 +56,7 @@ class Tick(BaseModel):
     tickCount5 = IntegerField(null=True) # number of tuples this peer is sending to other peers
         
 def setupDatabaseTest():
-    pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
+    pathToRepository = commands.getoutput("echo $HOME")
     database.init( os.path.join(pathToRepository,'webdamlog-engine/python/test/test.sqlite'))
 #    database.init(':memory:')
     

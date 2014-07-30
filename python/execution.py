@@ -3,9 +3,13 @@ from datetime import date
 import time
 import os, sys, time, glob, pickle
 from subprocess import call
-import models, driver, fab, loadBenchmark
+import commands
+import models, driver, loadBenchmark
 from fabric.api import *
 from fabric.tasks import execute
+import fab
+import fabric
+fabric.state.output['debug']=True
 
 build = 2
 
@@ -13,18 +17,18 @@ build = 2
 #
 # Executes the scenario given by scenID
 #
-def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool, ticks, sleep, masterDelay ):
+def executeScenario( pathToRepository, scenID, scenType, mode, TimeToRun, masterDelay ):
 
     stamp = int(time.time()*1000)
-
+    
     # construct execution record, to be pickled
     execution = models.Execution( \
         execID = stamp, \
         scenID = scenID, \
-        numTicks = ticks, \
-        sleep = sleep, \
-        access = accessBool, \
-        optim1 = optim1Bool, \
+        #numTicks = ticks, \
+        TimeToRun = TimeToRun, \
+        mode = mode, \
+        #optim1 = optim1Bool, \
         build = build )          # numTicks is now ignored; remove 
     
     # this is the directory containing the scenario: e.g. webdamlog-exp/MAF/1385388824301
@@ -46,14 +50,20 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     os.makedirs(os.path.join(localExecPath,'bench_files'))  # also create this directory to avoid svn conflict at peers
     driver.localSVNCommit(localScenPath)
 
+    print localScenPath
+
     # inspect scenario for 'out_' directories, infer hosts
-    outs = glob.glob( os.path.join(localScenPath,'out_*'))
+    outs =[]
+    for output in  glob.glob( os.path.join(localScenPath,'out_*')):
+    	outs.append(output)
+    print outs
     outKey = os.path.split(outs[0])[1].split('_')[2]  # this gets common key from name of out* directories
+    print outKey
     hosts = []
     masterHost = None
     for out in outs:
         extractedHostName = os.path.split(out)[1].split('_')[1]
-        if (len(glob.glob(os.path.join(out,'run_master*')))) == 1:
+	if (len(glob.glob(os.path.join(out,'run_master*')))) == 1:
             masterHost = extractedHostName
         if (len(glob.glob(os.path.join(out,'run_sue*')))) == 1:
             masterHost = extractedHostName
@@ -75,9 +85,11 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
     paramString = ''
 #    paramString = str(ticks) + ' '         REMOVED for run_ruby_timed
     paramString += str(sleep) + ' '
+    accessBool = mode && (1<<1)
+    optim1Bool = mode && (1<<2)
     if accessBool:
         paramString += 'access'+' '
-    if (optim1Bool and accessBool):
+    if optim1Bool:
         paramString += 'optim1'+' '
 
     # run on all hosts
@@ -105,12 +117,14 @@ def executeScenario( pathToRepository, scenID, scenType, accessBool, optim1Bool,
 if __name__ == "__main__":
 
     rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
-
-    runs = 5
-    
-    for scenID in [1386295710927, 1386295708991, 1386295710003, 1386295710488, 1386295709543, 1386295711376]:
-        for r in range(runs):
-            executeScenario( rootPath, scenID, 'MAF', False, False, 20, 0.25 )
-            executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
-            executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
+    #getting the scenId of the last generated scenario
+    scenID = commands.getoutput("ls  ~/webdamlog-exp/MAF | tail -1 ")
+    runs = 1
+    print scenID 
+    #p1 = int(p)
+    #for scenID in p:
+      #  for r in range(runs):
+    executeScenario( rootPath, scenID, 'MAF', False, False, 10, 30, 5 )
+           # executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
+           # executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
     

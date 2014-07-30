@@ -4,19 +4,26 @@ import argparse
 from fabric.api import *
 from fabric.tasks import execute
 import os
+import commands
 
 #env.parallel = False
 
 rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
 
+dbclusterPath = os.environ["HOME"]
+avidPath = dbclusterPath + "/webdamlog"
+#user = commands.getoutput("whoami")
+machinePath = '/state/partition2/diwakar02'
+
+
 rootPathDict = { \
-    'dbcluster.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
-    'avid.cs.umass.edu':'/nfs/avid/users1/miklau/webdamlog', \
-    'miklau1':'/state/partition2/miklau', \
-    'miklau2':'/state/partition2/miklau', \
-    'miklau3':'/state/partition2/miklau', \
-    'miklau4':'/state/partition2/miklau', \
-    'miklau5':'/state/partition2/miklau', }
+    'dbcluster.cs.umass.edu':dbclusterPath, \
+    'avid.cs.umass.edu':avidPath, \
+    'miklau1':machinePath, \
+    'miklau2':machinePath, \
+    'miklau3':machinePath, \
+    'miklau4':machinePath, \
+    'miklau5':machinePath, }
 
 #@task
 @parallel
@@ -42,7 +49,6 @@ def refreshDB():
         run('svn up')
     with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
         run('python loadBenchmark.py')
-
 
 def pull_both():
     rootPath = rootPathDict[env.host]

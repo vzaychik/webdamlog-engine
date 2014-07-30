@@ -3,9 +3,11 @@ from peewee import drop_model_tables
 from datetime import date
 import sys, os, glob, pickle
 import models, fab
+import subprocess
+import commands
 from subprocess import call
 
-pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
+pathToRepository = commands.getoutput("echo $HOME")
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
 
 

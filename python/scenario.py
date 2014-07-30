@@ -3,10 +3,21 @@ from datetime import date
 import os, time, math
 import sys, pickle
 from subprocess import call
+from sys import argv
 import models, driver
+import subprocess
+import commands
+from fabric.api import *
+from fabric.tasks import execute
+import fab
+import fabric
+fabric.state.output['debug']=True
 
-pathToRepository = '/Users/miklau/Documents/Projects/Webdam'
+
+pathToRepository = commands.getoutput("echo $HOME")
 sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
+commitPath = os.path.join(pathToRepository,'webdamlog-exp')
+print commitPath
 
 def checkScenario(s):
     masterHosts = 1
@@ -74,11 +85,21 @@ if __name__ == "__main__":
 
     # set up path
     rootPath = pathToRepository
-
-    scenarios = driver.simplePA()  # create a list of scenario instances
+    script = argv[0]
+    _scenType = argv[1]
+    _numFollowers = int(argv[2])
+    _numAggregators = int(argv[3])
+    _aggPerFollower = int(argv[4])
+    _policy = argv[5]
+    _numFacts = int(argv[6])
+    _valRange = int(argv[7])
+    _ruleScenario = argv[8]
+    _numPeers = int(argv[9])
+    scenarios = driver.simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _policy, _numFacts, _valRange, _ruleScenario, _numPeers)  # create a list of scenario instances
     for s in scenarios:
         generateScenarioFiles( s, rootPath )    # generate each scenario
+    #sys.path.append(os.path.join(rootPath,'/webdamlog-exp'))
     
-#    driver.localSVNCommit( rootPath )   # commit the results
+    driver.localSVNCommit( commitPath )   # commit the results
     
     exit()

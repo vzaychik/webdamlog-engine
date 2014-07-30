@@ -1,0 +1,139 @@
+diff -rupN gems/gems/bud-0.9.7/lib/bud/collections.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb
+--- gems/gems/bud-0.9.7/lib/bud/collections.rb	2014-07-03 13:49:01.138955198 -0400
++++ /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb	2014-07-25 19:11:20.755909300 -0400
+@@ -520,6 +520,21 @@ module Bud
+       end
+     end
+ 
++    def send_tcp_data(the_locspec)
++      establish_connection(the_locspec) if toplevel.connections[the_locspec].nil?
++      # if the connection failed, we silently ignore and let the tuples be cleared.
++      # if we didn't clear them here, we'd be clearing them at end-of-tick anyhow
++      unless toplevel.connections[the_locspec].nil?
++          toplevel.connections[the_locspec].send_data @wire_buf.string
++      end
++    end
++
++    def establish_connection(l)
++      toplevel = @bud_instance.toplevel
++      toplevel.connections[l] = EventMachine::connect l[0], l[1], BudServer, @bud_instance
++      toplevel.connections.delete(l) if toplevel.connections[l].error?
++    end
++
+     # Assign self a schema, by hook or by crook.  If +o+ is schemaless *and*
+     # empty, will leave @cols as is.
+     private
+@@ -1010,9 +1025,12 @@ module Bud
+         end
+         @packer.write(marshall_indexes)
+         @packer.flush
+-        toplevel.dsock.send_datagram(@wire_buf.string,
+-                                     the_locspec[0], the_locspec[1])
+ 
++        if toplevel.options[:tcp] 
++          send_tcp_data(the_locspec)
++        else 
++          toplevel.dsock.send_datagram(@wire_buf.string, the_locspec[0], the_locspec[1])
++        end
+         # Reset output buffer
+         @wire_buf.rewind
+         @wire_buf.truncate(0)
+diff -rupN gems/gems/bud-0.9.7/lib/bud/server.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb
+--- gems/gems/bud-0.9.7/lib/bud/server.rb	2014-06-26 14:10:27.786990033 -0400
++++ /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb	2014-07-25 13:59:40.960221631 -0400
+@@ -1,7 +1,7 @@
+ require 'socket'
+ 
+ class Bud::BudServer < EM::Connection #:nodoc: all
+-  def initialize(bud, channel_filter)
++  def initialize(bud, channel_filter=nil)
+     @bud = bud
+     @channel_filter = channel_filter
+     @filter_buf = {}
+@@ -39,7 +39,7 @@ class Bud::BudServer < EM::Connection #:
+       # If we raise an exception here, EM dies, which causes problems (e.g.,
+       # other Bud instances in the same process will crash). Ignoring the
+       # error isn't best though -- we should do better (#74).
+-      puts "Exception handling network messages: #{e}"
++      puts "Exception handling network messages: #{e.class}:#{e}"
+       puts e.backtrace
+       puts "Inbound messages:"
+       @bud.inbound.each do |chn_name, t|
+diff -rupN gems/gems/bud-0.9.7/lib/bud.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb
+--- gems/gems/bud-0.9.7/lib/bud.rb	2014-06-26 14:10:27.794989209 -0400
++++ /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb	2014-07-21 23:56:54.071825681 -0400
+@@ -75,6 +75,7 @@ module Bud
+   attr_accessor :stratified_rules
+   attr_accessor :metrics, :periodics
+   attr_accessor :this_rule_context, :qualified_name
++  attr_accessor :connections
+   attr_reader :running_async
+ 
+   # options to the Bud runtime are passed in a hash, with the following keys
+@@ -143,6 +144,7 @@ module Bud
+     @push_sorted_elems = nil
+     @running_async = false
+     @bud_started = false
++    @connections = {}
+ 
+     # Setup options (named arguments), along with default values
+     @options = options.clone
+@@ -150,6 +152,7 @@ module Bud
+     @ip = @options[:ip]
+     @options[:port] ||= 0
+     @options[:port] = @options[:port].to_i
++
+     # NB: If using an ephemeral port (specified by port = 0), the actual port
+     # number won't be known until we start EM
+ 
+@@ -989,7 +992,11 @@ module Bud
+     @timers.each {|t| t.cancel}
+     @tables.each_value {|t| t.close}
+     if EventMachine::reactor_running? and @bud_started
+-      @dsock.close_connection
++      if @options[:tcp] 
++        EventMachine::stop_server @server
++      else
++        @dsock.close_connection
++      end
+     end
+     @bud_started = false
+     @running_async = false
+@@ -999,10 +1006,33 @@ module Bud
+   end
+ 
+   def do_start_server
+-    @dsock = EventMachine::open_datagram_socket(@ip, @options[:port],
+-                                                BudServer, self,
+-                                                @options[:channel_filter])
+-    @port = Socket.unpack_sockaddr_in(@dsock.get_sockname)[0]
++
++    if @options[:tcp] 
++      if @options[:port] == 0
++        success = false
++        15.times do
++          @port = 5000 + rand(20000)
++          begin
++            @server = EventMachine::start_server(@ip, @port, BudServer, self, @options[:channel_filter])
++            success = true
++            @connections = {}
++            break
++          rescue Exception
++            next
++          end
++        end
++        raise "Failed to bind to local TCP port #{@port}" unless success
++      else
++        @port = @options[:port]
++        @server = EventMachine::start_server(@ip, @port, BudServer, self)
++        @connections = {}
++      end
++    else
++      @dsock = EventMachine::open_datagram_socket(@ip, @options[:port],
++                                                  BudServer, self,
++                                                  @options[:channel_filter])
++      @port = Socket.unpack_sockaddr_in(@dsock.get_sockname)[0]
++    end
+   end
+ 
+   public

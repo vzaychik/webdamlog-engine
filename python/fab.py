@@ -12,8 +12,7 @@ rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
 
 dbclusterPath = os.environ["HOME"]
 avidPath = dbclusterPath + "/webdamlog"
-#user = commands.getoutput("whoami")
-machinePath = '/state/partition2/diwakar02'
+machinePath = '/state/partition2/' + os.environ["USER"]
 
 
 rootPathDict = { \

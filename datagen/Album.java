@@ -202,12 +202,16 @@ public class Album {
 					p.addCollection(tags);
 
 					p.addKnownPeer(sue);
+					p.addMaster(sue);
 				} else {
 					// on alice, bob and sue these collections are empty
 					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img"); 
 					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
 					p.addCollection(photos);
 					p.addCollection(tags);
+					if (p != sue) {
+					    p.addMaster(sue);
+					}
 				}
 				
 				Collection album = new Collection("album", p.getName(), COL_TYPE.INT, 1, "img,peer");
@@ -269,8 +273,9 @@ public class Album {
 	
 					if (Constants.MASTER_ONLY_RULES) {
 						// append rules to sue's program
+					        //VZM - write rules to a separate file for later injection run-time
 						String dirName = "out_" + _netAddressMap.get(sue.getId()) + "_" + ts; 
-						String fileName = dirName + "/run_" + sue.getName();
+						String fileName = dirName + "/rules.wdm";
 						BufferedWriter outFP = new BufferedWriter(new FileWriter(fileName, true));
 						outFP.write(masterRules.toString());
 						outFP.close();

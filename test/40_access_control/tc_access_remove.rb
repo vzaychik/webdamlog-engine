@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require 'header_test'
-require_relative '../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -38,16 +38,16 @@ class TcAccessRemovePriviledge < Test::Unit::TestCase
     end
 
     def teardown
-        ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+        ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
         ObjectSpace.garbage_collect
     end
 
-def test_remove_priviledge
+    def test_remove_priviledge
         runner1 = nil
         runner2 = nil
         assert_nothing_raised do
-            runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true })
-            runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => true })
+            runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false })
+            runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false })
     end
         
         runner2.tick
@@ -69,7 +69,7 @@ def test_remove_priviledge
         runner1.tick
  
         #checking that data is materialized
-assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)}, {:priv=>"R", :atom1=>"5", :plist=>PList.new(["p1", "p2"].to_set)}],runner2.tables[:rel2_i_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)}, {:priv=>"R", :atom1=>"5", :plist=>PList.new(["p1", "p2"].to_set)}],runner2.tables[:rel2_i_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
         
         
         #removing the fact
@@ -84,11 +84,8 @@ assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)},
         runner2.tick
         runner1.tick
         
-        #verify acl contents
-        assert_equal [],runner1.snapshot_facts(:acl_at_p1)
-        
         # after removing the facts, nothing should be materialized
-        assert_equal [], runner2.tables[:rel2_i_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [], runner2.tables[:rel2_i_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
         
         
         

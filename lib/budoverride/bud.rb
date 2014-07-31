@@ -6,7 +6,7 @@ module WLBud
     # Hacky: attribute that store the rule_id currently evaluated while wiring
     #   to be added to push_elems
     attr_reader :current_eval_rule_id
-
+    
     # The initializer for WLBud directly overrides the initializer from Bud.
     #
     # Override bud method
@@ -34,7 +34,7 @@ module WLBud
     #   external intervention will be required to validate them such as calling
     #   {WLRunner::update_add_rule} on @pending_delegations entries.
     # * +:noprovenance+ if true all the provenance mechanisms are skipped
-    def initialize (peername, pgfilename, options={})
+    def initialize (peername, pgfilename, options = {})
       # ### WLBud:Begin adding to Bud special bud parameter initialization
       if options[:measure]
         @start_time = Time.now
@@ -91,6 +91,12 @@ module WLBud
       @new_sprout_rules = {}
       # Rules generated from a seed
       @sprout_rules = {}
+      # Schedule the end of the Webdamlog engine at the given tick it will dies
+      # by itself
+      @dies_at_tick = options[:dies_at_tick] ||= 0
+      # Store the state of the relations at the previous tick (used for
+      # differential computation)
+      @cached_facts = {}
 
       if options[:wl_test]
         @test_received_on_chan = []
@@ -148,12 +154,6 @@ module WLBud
       load_lattice_defs
       builtin_state
 
-      # VZM access control
-      @options[:accessc] ||= false
-      self.add_aclkind
-      self.add_access_optim
-      @extended_collections_to_flush = []
-      @packet_metrics = []
       # #### WLBud:Begin adding to Bud
       #
       if @options[:measure]
@@ -164,7 +164,7 @@ module WLBud
       @collection_added=false
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
       #   instance.
-      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1], :optim2 => @options[:optim2]} )
+      @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug]} )
       # By default provenance is used to spread deletion, use this tag for
       #   experimental comparisons
       @options[:noprovenance] ? @provenance = false : @provenance = true
@@ -230,6 +230,19 @@ module WLBud
       # already in bud but I moved receive_inbound before all the stuff about
       # app_tables, push_sorted_elements, ...
       receive_inbound
+
+      # termination condition
+      if @dies_at_tick > 0 and @budtime == @dies_at_tick
+        # kill himself when dies_at_tick is reached
+        rel_name = "peer_done_at_#{@peername}"
+        if @tables[rel_name.to_sym]
+          add_facts({ rel_name => [[true]] })
+        else
+          raise WLError, "the special table peer_done should have been declared \
+to kill this peer, in a webdamlog program it is expected that you add \n \
+collection int peer_done#{@peername}(key*);"
+        end
+      end
       # ### WLBud:End adding to Bud
 
       puts "#{object_id}/#{port} : ============================================= (#{@budtime})" if $BUD_DEBUG
@@ -268,26 +281,18 @@ module WLBud
             end
           end
         end
-        # add updates of facts and rules
+        # add/remove facts, add new relations declaration and rules
         read_packet_channel.each do |packet_value|
           if @options[:debug]
             puts "Process packets received from #{packet_value.print_meta_data}"
           end
-          # Delete facts TODO here packet_value.facts_to_delete Declare all the
-          # new relations and insert the rules
+          delete_facts(packet_value.facts_to_delete) unless packet_value.facts_to_delete.nil?
           packet_value.declarations.each { |dec| add_collection(dec) } unless packet_value.declarations.nil?          
-          # VZM
-          if @options[:accessc]
-            @extended_collections_to_flush.each {|col|
-              @wl_program.wlcollections[col.fullrelname] = col
-            }
-          end
           if @options[:filter_delegations]
             @pending_delegations[packet_value.peer_name.to_sym][packet_value.src_time_stamp] << packet_value.rules
           else
             packet_value.rules.each{ |rule| add_rule(rule, packet_value.peer_name) } unless packet_value.rules.nil?
           end
-          # Add new facts
           add_facts(packet_value.facts) unless packet_value.facts.nil?
         end
         # PENDING remove new_sprout_rules attribute add new rules from seeds
@@ -394,8 +399,7 @@ module WLBud
 
         # part 3: transition
         #
-        # ##WLBud:Begin adding to Bud
-        #
+        # WLBud:Begin adding to Bud
         if @options[:measure]
           @measure_obj.append_measure @budtime
         end
@@ -418,8 +422,7 @@ module WLBud
         if @options[:measure]
           @measure_obj.append_measure @budtime
         end
-        #
-        # ### WLBud:End adding to Bud
+        # WLBud:End adding to Bud
 
         do_flush
 
@@ -453,25 +456,28 @@ module WLBud
       end
       if @options[:measure]
         @measure_obj.append_measure @budtime-1
-        # count number of tuples in user tables
-        tuplecount = 0;
-        wordcount = 0;
-        utables = @tables.keys - @builtin_tables.keys
-        utables.each do |tbl|
-          tuplecount += tables[tbl].length
-          tables[tbl].each { |fct|
-            fct.each { |elem|
-              if elem.is_a? PList
-                wordcount += elem.to_a.length
-              else
-                wordcount += 1
-              end
-            }
-          }
+        @measure_obj.dump_measures      
+      end
+
+      # This peer dies if the tick finished is the last one
+      peer_done_rel_name = "peer_done_at_#{@peername}"
+      if @dies_at_tick > 0 and @budtime-1 == @dies_at_tick
+        stop        
+        if @tables[peer_done_rel_name.to_sym].first.key == :kill
+          # Bud.shutdown_all_instances
+          # Bud.stop_em_loop
         end
-        @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
-		@measure_obj.dump_measures      
-	  end
+      elsif @dies_at_tick == 0
+        unless @tables[peer_done_rel_name.to_sym].nil?
+          if @tables[peer_done_rel_name.to_sym].length > 0
+            stop
+            if @tables[peer_done_rel_name.to_sym].first.key == :kill
+              # Bud.shutdown_all_instances
+              # Bud.stop_em_loop
+            end
+          end
+        end
+      end      
     end
 
 
@@ -486,9 +492,6 @@ module WLBud
     #
     def builtin_state
       super
-      # Contains the times nodes informations TODO: facts should be the list of
-      # facts used to derive head: define field to use(some kind of id)
-      table :t_derivation, [:rule_id, :facts] => [:derivated]
       @builtin_tables = @tables.clone if toplevel
       # Unique channel that serves for all messages. Each timestep exactly one
       # or zero packet is sent to each peer (see wlpacket).
@@ -574,8 +577,6 @@ module WLBud
         @provenance_graph.consolidate
       end
     end
-
-
     
     # WLBud:Begin Override bud to add the rule id to inject when creating the
     # push element

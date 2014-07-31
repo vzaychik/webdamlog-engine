@@ -11,13 +11,13 @@ import fab
 import fabric
 fabric.state.output['debug']=True
 
-build = 2
+build = 3
 
 # Now executed at dbcluster.cs
 #
 # Executes the scenario given by scenID
 #
-def executeScenario( pathToRepository, scenID, scenType, mode, TimeToRun, masterDelay ):
+def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, masterDelay ):
 
     stamp = int(time.time()*1000)
     
@@ -25,10 +25,8 @@ def executeScenario( pathToRepository, scenID, scenType, mode, TimeToRun, master
     execution = models.Execution( \
         execID = stamp, \
         scenID = scenID, \
-        #numTicks = ticks, \
-        TimeToRun = TimeToRun, \
+        timeToRun = timeToRun, \
         mode = mode, \
-        #optim1 = optim1Bool, \
         build = build )          # numTicks is now ignored; remove 
     
     # this is the directory containing the scenario: e.g. webdamlog-exp/MAF/1385388824301
@@ -83,10 +81,9 @@ def executeScenario( pathToRepository, scenID, scenType, mode, TimeToRun, master
 
     # prepare parameters for ruby script
     paramString = ''
-#    paramString = str(ticks) + ' '         REMOVED for run_ruby_timed
     paramString += str(sleep) + ' '
-    accessBool = mode && (1<<1)
-    optim1Bool = mode && (1<<2)
+    accessBool = mode & 1
+    optim1Bool = mode & (1<<1)
     if accessBool:
         paramString += 'access'+' '
     if optim1Bool:
@@ -94,7 +91,6 @@ def executeScenario( pathToRepository, scenID, scenType, mode, TimeToRun, master
 
     # run on all hosts
     try:
-#        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
         execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
     except:
         print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]

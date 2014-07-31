@@ -61,7 +61,6 @@ module WLBud
       @dic_made = false
       # unique id of the rule for this peer
       @rule_id = nil
-      @author = nil
       @body = nil
       # The dic_relation_name is a hash that defines variables included in the
       # conversion from webdamlog-formatted rule to bud-formatted rule. Its key
@@ -213,15 +212,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       else
         return @rule_id
       end
-    end
-
-    def author= name
-      @author = name
-    end
-
-    # Get the name of the peer who created this rule
-    def author
-      return @author
     end
 
     # show the instruction as stored in the wl_program
@@ -532,22 +522,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
       return "#{relname}_at_#{peername}"
     end
 
-    def make_extended
-      str = "collection #{get_type.to_s.downcase} "
-      str << "persistent" + " " if self.persistent?
-      str << relname
-      str << "_ext@"
-      str << peername
-      str << "( priv*, #{col_fields.text_value}, plist ) ;"
-    end
-
-    def make_rext(id)
-      str = "collection #{get_type.to_s.downcase} "
-      str << "persistent" + " " if self.persistent?
-      str << "rext_#{id}_#{relname}@#{self.peername}"
-      str << "(priv*, #{col_fields.text_value}, plist) ;"
-    end
-
     # Return the name of this atom in the format "relation_at_peer"
     #
     # Create a string for the name of the relation that fits bud restriction
@@ -639,9 +613,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     end
   end
 
-  module WLFields
-  end
-
   # This is the text part of fields in relation, it could be a constant or a
   # variable
   module WLRToken
@@ -680,7 +651,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
   class WLAtom < WLVocabulary
     include WLBud::NamedSentence
 
-    attr_accessor :peername, :rproven
+    attr_accessor :peername
 
     def initialize (a1,a2,a3)
       @name_choice=false
@@ -705,10 +676,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
         @relname = self.rrelation.text_value
       end
       return @relname
-    end
-
-    def relname= name
-        @relname = name
     end
 
     def map_peername! &block
@@ -738,10 +705,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     # constants) in an array format
     def fields
       self.rfields.fields
-    end
-
-    def provenance
-      self.rproven
     end
 
     # This method gives the name of the relation. It may also change the name of
@@ -776,49 +739,7 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
     end
 
     def show_wdl_format
-      if self.rproven == nil || self.rproven.empty?
-        return "#{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})"
-      else
-        if self.rproven.type == :Hide
-          return "[HIDE #{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})]"
-        elsif self.rproven.type == :Preserve
-          return "[PRESERVE #{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})]"
-        end
-      end
-    end
-  end
-
-  class WLProvenance < WLVocabulary
-    attr_reader :type
-    def initialize (a1,a2,a3)
-      super(a1,a2,a3)
-      @type=nil
-    end
-    def hide?
-      return @type == :Hide
-    end
-    def preserve?
-      return @type == :Preserve
-    end
-  end
-
-  class WLProvHide < WLProvenance
-    def initialize (a1,a2,a3=nil)
-      super(a1,a2,a3)
-      @type = :Hide
-    end
-    def to_s
-      return "hide"
-    end
-  end
-
-  class WLProvPreserve < WLProvenance
-    def initialize (a1,a2,a3=nil)
-      super(a1,a2,a3)
-      @type = :Preserve
-    end
-    def to_s
-      return "preserve"
+      return "#{self.relname}@#{self.peername}(#{self.rfields.show_wdl_format})"
     end
   end
 
@@ -920,132 +841,6 @@ this rule has been parsed but no valid id has been assigned for unknown reasons
 
     def comment?
       true
-    end
-  end
-
-  class WLPolicy < WLVocabulary
-
-    attr_reader :ractype
-
-    def initialize (a1,a2,a3)
-      super(a1,a2,a3)
-    end
-
-    public
-    def show
-      puts "Class name : #{self.class}"
-      puts "Relation name : #{self.relname}"
-      puts "Peers : #{self.access.text_value}"
-      puts "Privilege : #{self.ractype.text_value}"
-    end
-
-    def show_wdl_format
-      str = "policy "
-      str << self.relname
-      str << " "
-      if self.access_type.read?
-        str << "read "
-      elsif self.access_type.write?
-        str << "write "
-      elsif self.access_type.grant?
-        str << "grant "
-      end
-      if self.access.all?
-        str << "ALL"
-      else
-        str << self.access.value
-      end
-    end
-
-    def relname
-      unless @relname
-        @relname = self.relation_name.text_value
-      end
-      return @relname
-    end
-
-    def access_type
-      self.ractype
-    end
-  end      
-
-  class WLAccessType < WLVocabulary
-    attr_reader :type
-    def initialize (a1,a2,a3)
-      super(a1,a2,a3)
-      @type=nil
-    end
-    def read?
-      return @type == :Read
-    end
-    def write?
-      return @type == :Write
-    end
-    def grant?
-      return @type == :Grant
-    end
-  end
-
-  class WLRead < WLAccessType
-    def initialize (a1,a2,a3=nil)
-      super(a1,a2,a3)
-      @type = :Read
-    end
-    def to_s
-      return "R"
-    end
-  end
-
-  class WLWrite < WLAccessType
-    def initialize (a1,a2,a3=nil)
-      super(a1,a2,a3)
-      @type = :Write
-    end
-    def to_s
-      return "W"
-    end
-  end
-
-  class WLGrant < WLAccessType
-    def initialize (a1,a2,a3=nil)
-      super(a1,a2,a3)
-      @type = :Grant
-    end
-    def to_s
-      return "G"
-    end
-  end
-
-  module WLAccess
-    def all?
-      self.text_value == 'ALL'
-    end
-
-    def relation?
-      self.text_value.include?('_at_') or self.text_value.include?('@')
-    end
-
-    def relname
-      unless @relname
-        @relname = self.relation_name.text_value
-      end
-      return @relname
-    end
-
-    def peername
-      unless @peername
-        @peername = self.peer_name.text_value
-      end
-      return @peername
-    end
-
-    def fullrelname
-      return "#{self.relname}_at_#{self.peername}"
-    end
-
-
-    def value
-      self.text_value
     end
   end
 end

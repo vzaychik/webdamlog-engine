@@ -32,7 +32,7 @@ class Scenario(BaseModel):
 class Execution(BaseModel):
     execID = BigIntegerField(primary_key=True)
     scenID = ForeignKeyField(Scenario)
-    TimeToRun = FloatField()
+    timeToRun = FloatField()
     mode = IntegerField()
     runTime = FloatField()
     success = BooleanField()

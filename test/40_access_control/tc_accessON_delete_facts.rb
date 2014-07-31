@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require '../header_test'
-require_relative '../../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -47,7 +47,7 @@ class TcAccessRemovePriviledgeAdv < Test::Unit::TestCase
 
 
     def teardown
-        ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+        ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
         ObjectSpace.garbage_collect
     end
 
@@ -55,8 +55,8 @@ def test_remove_priviledge_adv
         runner1 = nil
         runner2 = nil
         assert_nothing_raised do
-            runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => true })
-            runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => true })
+            runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false })
+            runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false })
     end
         
         runner2.tick
@@ -83,10 +83,10 @@ def test_remove_priviledge_adv
         runner1.tick
  
         #checking that data is materialized # { Always check if the relation is intentionsal or extensional, for extentional the peer set should be different (omega-ish)
-        assert_equal [{:priv=>"R", :atom1=>"3", :plist=>Omega.instance},{:priv=>"R", :atom1=>"5", :plist=>Omega.instance}, {:priv=>"G", :atom1=>"3", :plist=>Omega.instance},{:priv=>"G", :atom1=>"5", :plist=>Omega.instance}],runner2.tables[:rel2_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [{:priv=>"R", :atom1=>"3", :plist=>Omega.instance},{:priv=>"R", :atom1=>"5", :plist=>Omega.instance}, {:priv=>"G", :atom1=>"3", :plist=>Omega.instance},{:priv=>"G", :atom1=>"5", :plist=>Omega.instance}],runner2.tables[:rel2_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
 
 #checking that data is materialized for intentional relation rel3_i_at_p2 ( always check at extended relation)
-assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)}, {:priv=>"R", :atom1=>"5", :plist=>PList.new(["p1", "p2"].to_set)}],runner2.tables[:rel3_i_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)}, {:priv=>"R", :atom1=>"5", :plist=>PList.new(["p1", "p2"].to_set)}],runner2.tables[:rel3_i_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
 
 
         #delete the facts from relation 1
@@ -105,13 +105,13 @@ assert_equal [{:priv=>"R", :atom1=>"3", :plist=>PList.new(["p1", "p2"].to_set)},
         assert_equal [],runner1.snapshot_facts(:rel1_i_at_p1)
         
         # verify ext rel 1 contents at p1
-        assert_equal [],runner1.snapshot_facts(:rel1_i_ext_at_p1)
+        assert_equal [],runner1.snapshot_facts(:rel1_i_plus_at_p1)
         
         # after removing the facts, nothing should be available in rel3 as it is a view and should have been deleted with deletion of facts from relation 1 above
-        assert_equal [], runner2.tables[:rel3_i_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [], runner2.tables[:rel3_i_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
         
         # rel2 should be same as it is an extentional relation and there is no effect on the data inside relation 2 with deletion of facts in relation 1
-        assert_equal [{:priv=>"R", :atom1=>"3", :plist=>Omega.instance}, {:priv=>"R", :atom1=>"5", :plist=>Omega.instance}],runner2.tables[:rel2_ext_at_p2].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [{:priv=>"R", :atom1=>"3", :plist=>Omega.instance}, {:priv=>"R", :atom1=>"5", :plist=>Omega.instance}],runner2.tables[:rel2_plus_at_p2].map{ |t| Hash[t.each_pair.to_a]}
         
         
         ensure

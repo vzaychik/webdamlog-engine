@@ -1,19 +1,7 @@
-# -*- coding: utf-8 -*-
-#  File name wlpacket.rb
-#  Copyright © by INRIA
-#
-#  Contributors : Webdam Team <webdam.inria.fr>
-#       Jules Testard <jules[dot]testard[@]mail[dot]mcgill[dot]ca>
-#       Emilien Antoine <emilien[dot]antoine[@]inria[dot]fr>
-#
-#   WebdamLog - 30 juin 2011
-#
-#   Encoding - UTF-8
-#
-#   This file contains the two class of objects composing the WLPacket.
-#   WLPacket is the basic type of data used to exchange informations between peers so it contains sets of facts and rules along with all the metadata used for communications.
-#
-#
+# This file contains the two class of objects composing the WLPacket. WLPacket
+# is the basic type of data used to exchange informations between peers so it
+# contains sets of facts and rules along with all the metadata used for
+# communications.
 module WLBud
 
   # This class define the structure of the packet to send on the communication
@@ -142,10 +130,20 @@ module WLBud
         else
           return false, "try to test a hash of fact that is not a hash"
         end        
-      end
-      
+      end      
     end # end self
 
+    def empty?
+      if ( (@facts.nil? or @facts.empty?) and 
+            (@facts_to_delete.nil? or @facts_to_delete.empty?) and
+            (@declarations.nil? or @declarations.empty?) and
+            (@rules.nil? or @rules.empty?) )
+        return true
+      else
+        return false
+      end
+    end
+    
     def serialize_for_channel
       return [@peer_name.to_s,@src_time_stamp.to_s,get_data]
     end

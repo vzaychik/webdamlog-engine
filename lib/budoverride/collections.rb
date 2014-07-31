@@ -19,7 +19,7 @@ module Bud
       end
       return v
     end
-    
+
   end
 
 end

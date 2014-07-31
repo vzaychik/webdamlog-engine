@@ -208,9 +208,33 @@ public class Network {
 					p.setPolicy(policy);
 					p.setScenario(scenario);
 				}
+				//VZM due to left-to-right rule evaluator all aggregators need to be known to all followers
+				p.addKnownPeer(aggregators.get(j));
 			}
 
 			followers.add(p);
+		}
+
+		//VZM add to followers' known peer list every follower that shares an aggregator with it
+		//and add to aggregators' known peer list every other aggregator since they share one master
+		for (Peer ag : aggregators) {
+		    ag.addKnownPeers(aggregators);
+		    ArrayList<Peer> known = new ArrayList<Peer>();
+		    for (int k=0; k<=overlap-1; k++) {
+			for (Peer p : followers) {
+			    if ((p.getId() + k) % numAggregators == ag.getId() - 1) {
+				known.add(p);
+			    }
+			}
+		    }
+		    for (int ii=0; ii<known.size(); ii++) {
+			Peer p = known.get(ii);
+			for (Peer p2 : known) {
+			    if (p != p2) {
+				p.addKnownPeer(p2);
+			    }
+			}
+		    }
 		}
 
 		String knownPeers = Network.peersToString(numAggregators, numFollowers);

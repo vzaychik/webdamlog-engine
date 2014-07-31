@@ -1,6 +1,6 @@
 $:.unshift File.dirname(__FILE__)
-require '../header_test'
-require_relative '../../lib/webdamlog_runner'
+require_relative '../header_test_access'
+require_relative '../../lib/access_runner'
 
 require 'test/unit'
 
@@ -13,7 +13,7 @@ class TcAccessGrammar < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local2@test_access(atom1*);
-collection ext local1@test_access(atom1*);
+collection ext per local1@test_access(atom1*);
 collection int local3_i@test_access(atom1*);
 fact local2@test_access(1);
 fact local2@test_access(2);
@@ -29,7 +29,7 @@ end
   end
 
   def teardown    
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -38,7 +38,7 @@ end
     begin
        runner = nil
        assert_nothing_raised do
-        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true, :noprovenance => true })
+        runner = WLARunner.create(@username, @pg_file, @port, {:accessc => true, :debug => false, :noprovenance => true })
        end
 
       assert_equal(["policy local2 read ALL","policy local1 read p1","policy local3_i write p1"], runner.snapshot_policies)
@@ -61,7 +61,7 @@ class TcAccessGrammar2 < Test::Unit::TestCase
 peer p1=localhost:11111;
 peer test_access=localhost:11110;
 collection ext per local2@test_access(atom1*);
-collection ext local1@test_access(atom1*);
+collection ext per local1@test_access(atom1*);
 collection int local3_i@test_access(atom1*);
 fact local2@test_access("p1");
 fact local2@test_access("p2");
@@ -75,7 +75,7 @@ end
   end
 
   def teardown    
-    ObjectSpace.each_object(WLRunner){ |obj| obj.delete }
+    ObjectSpace.each_object(WLARunner){ |obj| obj.delete }
     ObjectSpace.garbage_collect
   end
 
@@ -84,7 +84,7 @@ end
     begin
        runner = nil
        assert_nothing_raised do
-        runner = WLRunner.create(@username, @pg_file, @port, {:accessc => true, :debug => true, :noprovenance => true })
+        runner = WLARunner.create(@username, @pg_file, @port, {:accessc => true, :debug => false, :noprovenance => true })
        end
 
       assert_equal(["policy local1 read local2@test_access"], runner.snapshot_policies)

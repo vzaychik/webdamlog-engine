@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 import org.stoyanovich.webdam.datagen.Constants.COL_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.PEER_TYPE;
@@ -90,21 +91,11 @@ public class Peer {
 	public void addSlave(Peer p) {
 		_slaves.add(p);
 		_knownPeers.add(p);
-		if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-			_collections.add(new Collection("r" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
-		} else if (_type.equals(PEER_TYPE.MASTER)) {
-			_collections.add(new Collection("s" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x"));
-		}
 	}
 	
 	public void addSlave(Peer p, String nonKeys) {
 		_slaves.add(p);
 		_knownPeers.add(p);
-		if (_type.equals(PEER_TYPE.AGGREGATOR)) {
-			_collections.add(new Collection("r" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
-		} else if (_type.equals(PEER_TYPE.MASTER)) {
-			_collections.add(new Collection("s" + p.getId(), this.getName(), COL_TYPE.INT, 1, "x", nonKeys));
-		}		
 	}
 
         public int getNumSlaves() {
@@ -113,6 +104,10 @@ public class Peer {
 
 	public void addKnownPeer(Peer p) {
 		_knownPeers.add(p);
+	}
+
+        public void addKnownPeers(List c) {
+	        _knownPeers.addAll(c);
 	}
 	
 	public HashSet<Peer> getKnownPeers() {
@@ -144,12 +139,6 @@ public class Peer {
 		for (Collection c : _collections) {
 			prog.append("collection " + c.getType().toString() + c.isPersistentToString() + c.getSchema() + ";\n");
 		}
-		//VZM add a special collection to keep track of peers being present
-		if (_type == PEER_TYPE.MASTER) {		
-		    prog.append("collection int peers_up_i@master0(x*);\n");
-		} else {
-		    prog.append("collection ext per up@" + this.getName() + "(x*);\n");
-		}
 		return prog.toString();
 	}
 
@@ -159,11 +148,6 @@ public class Peer {
 			for (String fact : c.getFacts()) {
 				prog.append("fact " +  c.getName() + c.getSuffix() +"@" + this.getName() + "(" + fact  + ");\n");				
 			}
-		}
-		//VZM special for start condition
-		if (_type != PEER_TYPE.MASTER) {
-		    prog.append("fact up@" + this.getName() + "(" + this.getId() + ");\n");
-		    prog.append("rule peers_up_i@master0($x) :- up@" + this.getName() + "($x);\n");
 		}
 		return prog.toString();
 	}
@@ -178,18 +162,12 @@ public class Peer {
 		} else if (_policy == POLICY.KNOWN) {
 			for (Collection c : _collections) {
 				for (Peer p : _knownPeers) {
+				    if (!p.equals(this)) {
 					prog.append("policy " + c.getName() + c.getSuffix() + " read " + p.getName() + ";\n");
 					prog.append("policy " + c.getName() + c.getSuffix() + " write " + p.getName() + ";\n");
-
+				    }
 				}
 			}	
-		}
-		//VZM add policy statement for special peers_up collection
-		//this has to be public no matter what scenario we are running
-		if (_type == PEER_TYPE.MASTER) {
-		    prog.append("policy peers_up_i write ALL;\n");
-		} else {
-		    prog.append("policy up read ALL;\n");
 		}
 		return prog.toString();
 	}

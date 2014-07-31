@@ -1,5 +1,5 @@
 $:.unshift File.dirname(__FILE__)
-require '../header_test'
+require_relative '../header_test'
 require_relative '../../lib/webdamlog_runner'
 
 require 'test/unit'
@@ -55,8 +55,8 @@ def test_remove_priviledge_adv
         runner1 = nil
         runner2 = nil
         assert_nothing_raised do
-            runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:accessc => false, :debug => true }) # defines the access if OFF
-            runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:accessc => false, :debug => true }) # defines the access is OFF
+            runner1 = WLRunner.create(@username1, @pg_file1, @port1, {:debug => true }) # defines the access if OFF
+            runner2 = WLRunner.create(@username2, @pg_file2, @port2, {:debug => true }) # defines the access is OFF
     end
         
         runner2.tick

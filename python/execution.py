@@ -81,9 +81,9 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
 
     # prepare parameters for ruby script
     paramString = ''
-    paramString += str(sleep) + ' '
+    paramString += str(timeToRun) + ' '
     accessBool = mode & 1
-    optim1Bool = mode & (1<<1)
+    optim1Bool = mode & 2
     if accessBool:
         paramString += 'access'+' '
     if optim1Bool:
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     #p1 = int(p)
     #for scenID in p:
       #  for r in range(runs):
-    executeScenario( rootPath, scenID, 'MAF', False, False, 10, 30, 5 )
+    executeScenario( rootPath, scenID, 'MAF', 0, 30, 5 )
            # executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
            # executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
     

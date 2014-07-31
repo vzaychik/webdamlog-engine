@@ -40,7 +40,10 @@ module Bud
 
     def unbind
       @bud.connections_status[@locspec] = false
-      @bud.connections.delete(@locspec)
+      EventMachine.run {
+        EventMachine.add_timer(1) { reconnect(@locspec[0], @locspec[1]) }
+      }
+      #@bud.connections.delete(@locspec)
     end
 
   end

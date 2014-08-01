@@ -33,7 +33,7 @@ module Bud
     def connection_completed
       until @bud.connections_buffer[@locspec].nil? or @bud.connections_buffer[@locspec].empty?
         str = @bud.connections_buffer[@locspec].shift
-        @bud.connections[@locspec].send_data(str)
+        send_data(str)
       end
       @bud.connections_status[@locspec] = true
     end

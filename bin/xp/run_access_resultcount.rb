@@ -3,7 +3,6 @@ require_relative '../../lib/wlbud/wlerror'
 require 'csv'
 
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
-SLEEP_TIME = ARGV[1].to_f if (ARGV[1] != nil)
 XPFILE = "XP_NOACCESS"
 RULEFILE = "rules.wdm"
 
@@ -29,15 +28,20 @@ def run_access_remote!
   end
 
   xpfiles = []
-  numpeers = 0
+  expected_tuples = 0
   #first row is the list of peers
   CSV.foreach(get_run_xp_file) do |row|
     if (xpfiles == [])
       xpfiles = row
       p "Start experiments with #{xpfiles}"
     else
-      numpeers = row.first.to_i
+      expected_tuples = row.first.to_i
     end
+  end
+
+  if expected_tuples < 1
+    p "This scenario will not generate any results, so not running"
+    exit 1
   end
 
   runners = []
@@ -46,14 +50,25 @@ def run_access_remote!
     p "#{runners.last.peername} created"
   end
 
+  num_running = 0
+
   runners.each do |runner|
     runner.on_shutdown do
       p "Final tick step of #{runner.peername} : #{runner.budtime}"
+      num_running -= 1
+    end
+    if !runner.peername.start_with? "master"
+      donerel = "master_done_" + (@access_mode ? "plus_" : "") + "at_#{runner.peername}"
+      runner.register_callback(donerel.to_sym) do
+        p "master is done, shutting #{runner.peername} down"
+        runner.stop
+      end
     end
   end
 
   runners.each do |runner|
     runner.run_engine
+    num_running += 1
     p "#{runner.peername} started"
     if runner.peername == "master0"
       @masterp = runner
@@ -74,15 +89,7 @@ def run_access_remote!
     end
     p "at tick #{@masterp.budtime} injecting rules: #{rules}"
     @masterp.update_add_rules rules
-  end
 
-  @sleep_time = SLEEP_TIME
-  p "running for #{@sleep_time} seconds"
-  sleep @sleep_time
-
-  p "stopping runners now that #{@sleep_time} seconds expired"
-
-  if @masterp != nil
     if @scenario == "network"
       resultrel = "t_i"
     elsif @scenario == "album"
@@ -93,14 +100,24 @@ def run_access_remote!
     else
       resultrel += "_at_#{@masterp.peername}"
     end
-    results = @masterp.snapshot_facts(resultrel.to_sym)
-    puts "final contents of master's facts: #{results}"
-    puts "total number of results: #{results.length}"
+
+    @masterp.register_callback(resultrel.to_sym) do
+      if @masterp.tables[resultrel.to_sym].length == expected_tuples
+        p "master received all tuples, shutting down"
+        results = @masterp.tables[resultrel.to_sym].map{ |t| Hash[t.each_pair.to_a] }
+        puts "final contents of master's facts: #{results}"
+        @masterp.add_facts ({"done_at_#{@masterp.peername}" => [["1"]]})
+        @masterp.dies_at_tick = @masterp.budtime #this should kill on next tick
+        @masterp.schedule_extra_tick
+      end
+    end
   end
 
-  runners.each do |runner|
-    runner.stop
+  while num_running > 0
+    p "still running: #{num_running}"
+    sleep 5
   end
+
 end
 
 # Giving a program file generated from data_generators start the peer given in

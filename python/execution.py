@@ -81,7 +81,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
 
     # prepare parameters for ruby script
     paramString = ''
-    paramString += str(timeToRun) + ' '
+    #paramString += str(timeToRun) + ' '
     accessBool = mode & 1
     optim1Bool = mode & (1<<1)
     if accessBool:
@@ -91,7 +91,8 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
 
     # run on all hosts
     try:
-        execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
+        #execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
+        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
     except:
         print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
         execution.success = False

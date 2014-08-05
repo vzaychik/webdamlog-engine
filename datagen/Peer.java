@@ -139,6 +139,12 @@ public class Peer {
 		for (Collection c : _collections) {
 			prog.append("collection " + c.getType().toString() + c.isPersistentToString() + c.getSchema() + ";\n");
 		}
+		//VZM For non-master peers create a master_done collection
+		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
+		    prog.append("collection ext per done@" + getName() + "(x*);\n");
+		} else {
+		    prog.append("collection ext master_done@" + getName() + "(x*);\n");
+		}
 		return prog.toString();
 	}
 
@@ -168,6 +174,13 @@ public class Peer {
 				    }
 				}
 			}	
+		}
+		//VZM Need public policy for special completion condition collection
+		//FIXME fix for album scenario
+		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
+		    prog.append("policy done read ALL;\n");
+		} else {
+		    prog.append("policy master_done write master0;\n");
 		}
 		return prog.toString();
 	}
@@ -253,7 +266,14 @@ public class Peer {
 							", photos@$peer($img), tags@$peer($img,\"" + alice.getName() + "\"), tags@$peer($img,\"" + bob.getName() + "\");\n");
 			}
 		}
-		
+
+		//VZM this is for special completion condition handling
+		//FIXME fix for album scenario
+		if (_type == PEER_TYPE.MASTER) {
+		    for (Peer p : _knownPeers) {
+			prog.append("rule master_done@" + p.getName() + "($x) :- done@" + getName() + "($x);\n");
+		    }
+		}		
 		
 		return prog.toString();
 	}

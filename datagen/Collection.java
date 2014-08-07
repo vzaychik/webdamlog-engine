@@ -140,9 +140,8 @@ public class Collection {
 	 */
 	public void addFacts(int numFacts, int valRange) {
 		if (_type == COL_TYPE.EXT) {
-			Random rand = new Random();
 			for (int i=0; i<numFacts; i++) {
-				_facts.add("" + rand.nextInt(valRange));
+				_facts.add("" + Network.rand.nextInt(valRange));
 			}
 		}
 	}
@@ -155,9 +154,8 @@ public class Collection {
 	 */
 	public void addFacts(int numFacts, int valRange, int numExtraCols) {
 		if (_type == COL_TYPE.EXT) {
-			Random rand = new Random();
 			for (int i=0; i<numFacts; i++) {
-				StringBuffer fact = new StringBuffer("" + rand.nextInt(valRange));
+				StringBuffer fact = new StringBuffer("" + Network.rand.nextInt(valRange));
 				for (int col=0; col<numExtraCols; col++) {
 					fact.append("," + Constants.EXTRA_COL);
 				}

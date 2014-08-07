@@ -14,6 +14,7 @@ import org.stoyanovich.webdam.datagen.Constants.COL_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.PEER_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.POLICY;
 import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
+import java.util.Random;
 
 /**
  * This class generates access control annotated Webdamlog programs
@@ -23,10 +24,12 @@ import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
  *
  */
 public class Network {
-
+    
 	public static HashMap<Integer,String> _netAddressMap = new HashMap<Integer, String>();
-
+        public static Random rand = new Random((new java.util.Date()).getTime());
+    
 	public static boolean initNetAddressMap(String inFileName, int peersPerInstance, int numAggregators, int numFollowers) {
+	  
 		try {
 			BufferedReader inFP = new BufferedReader(new FileReader(inFileName));
 			int i=0;

@@ -13,8 +13,7 @@ rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
 dbclusterPath = os.environ["HOME"]
 avidPath = dbclusterPath + "/webdamlog"
 machinePath = '/state/partition2/' + os.environ["USER"]
-
-
+miklau6Path = dbclusterPath + "/state/mounted2";
 rootPathDict = { \
     'dbcluster.cs.umass.edu':dbclusterPath, \
     'avid.cs.umass.edu':avidPath, \
@@ -22,7 +21,8 @@ rootPathDict = { \
     'miklau2':machinePath, \
     'miklau3':machinePath, \
     'miklau4':machinePath, \
-    'miklau5':machinePath, }
+    'miklau5':machinePath, \
+    'miklau6':miklau6Path, }
 
 #@task
 @parallel

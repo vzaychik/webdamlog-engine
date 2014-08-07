@@ -58,10 +58,12 @@ def parseBenchmarkFile(filename, execID):
 
 # helper function for refreshFromFileSystem
 def processBenchFiles( execID, startPath):
+    print "Inside processBenchFiles....."
     fList = glob.glob(os.path.join(startPath, '*'))
     for f in fList:
         try:
             peername = os.path.split(f)[1].split('_')[3]
+            #print peername
             models.Tick.get( (models.Tick.execID == execID) & (models.Tick.peerName == peername) ) # check for at least one tick with (execID, peername)
             print 'Found record for benchmark file %s' % f
         except DoesNotExist:
@@ -75,7 +77,8 @@ def processExecs( scenID, startPath):
     dirList = glob.glob(os.path.join(startPath, 'exec_*'))
     for dir in dirList:
         execID = os.path.split(dir)[1].split('_')[1]
-        try:
+        #print execID
+	try:
             models.Execution.get(models.Execution.execID == execID)
             print 'Execution %s found.' % scenID
         except DoesNotExist:
@@ -92,9 +95,11 @@ def processScenarios( scenType, startPath, siLowerBound):
     dirList = glob.glob(os.path.join(startPath, '*'))
     for dir in dirList:
         scenID = os.path.split(dir)[1]
+        #print scenID
         if int(scenID) >= siLowerBound:  # test condition of scenID -- skip if less than bound
             try:
-                models.Scenario.get(models.Scenario.scenID == scenID)
+                print "entered try block"
+		models.Scenario.get(models.Scenario.scenID == scenID)
                 print 'Scenario %s found.' % scenID
             except DoesNotExist:
                 print 'Scenario %s not found, adding...' % scenID
@@ -108,6 +113,7 @@ def processScenarios( scenType, startPath, siLowerBound):
 # helper function for refreshFromFileSystem
 def processScenTypes( startPath, siLowerBound ):
     dirList = glob.glob(os.path.join(startPath, '*'))
+    #print dirList
     for dir in dirList:
         scenType = os.path.split(dir)[1]
         print scenType
@@ -117,6 +123,9 @@ def processScenTypes( startPath, siLowerBound ):
 # if siLowerbound = k it ignores all scenarios with scenID < k.  
 # use siLowerbound = 0 for everything
 def refreshFromFileSystem( startPath, siLowerBound ):
+    #print startPath
+    #print siLowerBound
+    siLowerBound = int(siLowerBound)
     os.chdir(startPath)
     callString = ['svn','up']
     call(callString)

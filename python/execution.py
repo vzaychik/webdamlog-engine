@@ -120,8 +120,10 @@ if __name__ == "__main__":
     #p1 = int(p)
     #for scenID in p:
       #  for r in range(runs):
-    executeScenario( rootPath, scenID, 'MAF', 0, 180, 0 )
+    executeScenario( rootPath, scenID, 'MAF', 0, 60, 0 )
            # executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
            # executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
+    print "clearing the dB....."
     models.setupDatabase(clearDatabase=False)
+    print "Entering the loadbenchmark ......."
     loadBenchmark.refreshFromFileSystem( os.path.join(rootPath,'webdamlog-exp'), scenID ) 

@@ -64,8 +64,8 @@ def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _polic
         valRange = _valRange, \
         numExtraCols = 6, \
         ruleScenario = _ruleScenario, \
-        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
-        numHosts = 4, \
+        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5','miklau6'], \
+        numHosts = 6, \
         numPeersPerHost = _numPeers, \
    ) 
     return [scenario]

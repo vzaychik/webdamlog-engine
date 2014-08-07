@@ -57,7 +57,23 @@ def pull_both():
         run('svn up')
         
 # ruby sample execution
+# for end-condition execution:
+# ruby ~/webdamlog_engine/bin/xp/run_access_resultcount.rb ~/Experiments/scenario_blah <access> <optim1>
+# for timed-gate execution:
 # ruby ~/webdamlog-engine/bin/xp/run_access.rb ~/Experiments/scenario_blah/ 100 access
+
+def run_ruby(execPath, scenPath, paramString, outKey):
+    rootPath = rootPathDict[env.host]
+    runString = '%s %s %s %s' % ( \
+        rubyPath, \
+        os.path.join(rootPath,'webdamlog-engine/bin/xp/run_access_resultcount.rb'), \
+        os.path.join(rootPath,scenPath,'out_' + env.host + '_' + outKey), \
+        paramString )
+    # need to be in the execution directory because benchmark files will be created there
+    with cd(os.path.join(rootPath, execPath)):
+        run(runString)
+        run('svn add --force .')
+        run("""svn commit -m '' """)
 
 def run_ruby_timed(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]

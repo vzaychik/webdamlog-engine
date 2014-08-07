@@ -462,21 +462,25 @@ collection int peer_done#{@peername}(key*);"
       peer_done_rel_name = "peer_done_at_#{@peername}"
       if @dies_at_tick > 0 and @budtime-1 == @dies_at_tick
         stop        
-        if @tables[peer_done_rel_name.to_sym].first.key == :kill
+        #if @tables[peer_done_rel_name.to_sym].first.key == :kill
           # Bud.shutdown_all_instances
           # Bud.stop_em_loop
-        end
+        #end
       elsif @dies_at_tick == 0
         unless @tables[peer_done_rel_name.to_sym].nil?
           if @tables[peer_done_rel_name.to_sym].length > 0
             stop
-            if @tables[peer_done_rel_name.to_sym].first.key == :kill
+            #if @tables[peer_done_rel_name.to_sym].first.key == :kill
               # Bud.shutdown_all_instances
               # Bud.stop_em_loop
-            end
+            #end
           end
         end
       end      
+    end
+
+    def dies_at_tick= num
+      @dies_at_tick = num
     end
 
   end #class

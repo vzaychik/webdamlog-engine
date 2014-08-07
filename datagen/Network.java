@@ -111,7 +111,7 @@ public class Network {
 		if (args.length < 8) {
 			//System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
 			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange numExtraCols [instanceFile] [numPeersPerInstance]");
-			System.exit(0);
+			System.exit(1);
 		}
 
 		StringBuffer readmeComment = new StringBuffer("");
@@ -182,6 +182,7 @@ public class Network {
 		for (int i=0; i<numFollowers; i++) {
 			Peer p = new Peer(currentId++, PEER_TYPE.FOLLOWER);
 			p.addKnownPeer(master);
+			master.addKnownPeer(p);
 			if (numExtraCols == 0) {
 				p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
 			} else {
@@ -242,6 +243,60 @@ public class Network {
 		allPeers.add(master);
 		allPeers.addAll(aggregators);
 		allPeers.addAll(followers);
+
+		//VZM compute the final result - yuck - for end condition
+		ArrayList<HashSet<String>> aggr_results = new ArrayList<HashSet<String>>();
+		HashSet<String> result = new HashSet<String>();
+		if (scenario == SCENARIO.UNION_OF_JOINS) {
+		    for (Peer ag : aggregators) {
+			//compute intersection of all followers of this aggregator
+			HashSet<String> agset = new HashSet<String>();
+			boolean first = true;
+			for (Peer p : ag.getKnownPeers()) {
+			    if (p.getType() == PEER_TYPE.FOLLOWER) {
+				if (first) {
+				    agset.addAll(p.getCollections().get(0).getFacts());
+				    first = false;
+				} else {
+				    agset.retainAll(p.getCollections().get(0).getFacts());
+				}
+			    }
+			}
+			aggr_results.add(agset);
+		    }
+		    //now union of all aggregators
+		    for (HashSet<String> s : aggr_results) {
+			result.addAll(s);
+		    }
+		} else if (scenario == SCENARIO.JOIN_OF_UNIONS) {
+		    for (Peer ag : aggregators) {
+			//compute union of all followers of this aggregator
+			HashSet<String> agset = new HashSet<String>();
+			for (Peer p : ag.getKnownPeers()) {
+			    if (p.getType() == PEER_TYPE.FOLLOWER) {
+				agset.addAll(p.getCollections().get(0).getFacts());
+			    }
+			}
+			aggr_results.add(agset);
+		    }
+		    //now intersection of all aggregators
+		    for (HashSet<String> s : aggr_results) {
+			boolean first = true;
+			for (HashSet<String> st : aggr_results) {
+			    if (first) {
+				result.addAll(st);
+				first = false;
+			    } else {
+				result.retainAll(st);
+			    }
+			}
+		    }
+		}
+		int resultsize = result.size();
+		if (resultsize == 0) {
+		    System.out.println("This set of arguments generates an empty result set. No files will be generated.");
+		    System.exit(1);
+		}
 
 		if (Constants.DO_FILE_IO) {
 			try {
@@ -304,8 +359,8 @@ public class Network {
 					String dirName = "out_" + hostName + "_" + ts; 
 					BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS", true));
 					outFP.write("\n");
-					//VZM write the total number of peers in the experiment for coordinated experiment start
-					outFP.write(String.valueOf(allPeers.size()-1));
+					//VZM write the expected final result size in number of tuples
+					outFP.write(String.valueOf(resultsize));
 					outFP.write("\n");
 					outFP.close();
 				}

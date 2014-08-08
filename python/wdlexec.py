@@ -52,10 +52,10 @@ def run(configFile):
         # set-valued parameters (space delimited in config file)
         policyList = config.get('scenarioMAF', 'policy').split(' ')
         ruleScenarioList = config.get('scenarioMAF', 'ruleScenario').split(' ')
-        numFollowersList = config.getint('scenarioMAF', 'numFollowers').split(' ')
-        numAggregatorsList = config.getint('scenarioMAF', 'numAggregators').split(' ')
-        numAgPerFollowerList = config.getint('scenarioMAF', 'aggPerFollower').split(' ')
-        numFactsList = config.getint('scenarioMAF', 'numFacts').split(' ')
+        numFollowersList = config.get('scenarioMAF', 'numFollowers').split(' ')
+        numAggregatorsList = config.get('scenarioMAF', 'numAggregators').split(' ')
+        numAgPerFollowerList = config.get('scenarioMAF', 'aggPerFollower').split(' ')
+        numFactsList = config.get('scenarioMAF', 'numFacts').split(' ')
         
         # this forms the crossproduct of all set-valued parameters
         for tup in itertools.product(policyList, ruleScenarioList, numFollowersList, numAggregatorsList, numAgPerFollowerList, numFactsList):       
@@ -63,11 +63,11 @@ def run(configFile):
             scenario = models.Scenario( \
                 # scenID = _ _ _ (filled in later)
                 scenType = 'MAF', \
-                numFollowers = tup[2], \
-                numAggregators = tup[3], \
-                aggPerFollower = tup[4], \
+                numFollowers = int(tup[2]), \
+                numAggregators = int(tup[3]), \
+                aggPerFollower = int(tup[4]), \
                 policy = tup[0], \
-                numFacts = tup[5], \
+                numFacts = int(tup[5]), \
                 ruleScenario = tup[1], \
                 valRange = config.getint('scenarioMAF', 'valRange'), \
                 numExtraCols = config.getint('scenarioMAF', 'numExtraCols'), \
@@ -97,7 +97,7 @@ def run(configFile):
         for run in range( config.getint('execution', 'numRuns') ):
             print 'Running executions for scenID %i' % scenID
             for tup in accessCList:
-                mode = tup[0].fromBinaryToInt()
+                mode = int(tup[0],2)
                 execID = execution.executeScenario( rootPath, scenID, scenType, mode,  \
                                  config.getfloat('execution', 'timeToRun'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)

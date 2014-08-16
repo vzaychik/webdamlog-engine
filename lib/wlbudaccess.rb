@@ -26,14 +26,13 @@ module WLBudAccess
         }
         # #Until this implementation can have variables for a peer name, have to
         # do this manually
-        if @options[:optim1]
+        if @options[:optim1] && @options[:send_writeable]
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
               str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\",
               \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if
               rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
-              #str_res << "sbuffer <= acle_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.peer == \"#{p[0]}\"};"
             end
           }
           puts "Installing bud rule #{str_res}" if @options[:debug]

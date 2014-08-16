@@ -5,6 +5,7 @@ require 'csv'
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
 XPFILE = "XP_NOACCESS"
 RULEFILE = "rules.wdm"
+WRITEABLEFILE = "writeable.wdm"
 
 # Parameters:
 # * XP_FILE_DIR : The path to the directory with the data generator
@@ -25,6 +26,15 @@ def run_access_remote!
   if ARGV.include?("optim1")
     @optim1 = true
     p "optimization 1 is on"
+    #load writeable
+    writeable = {}
+    File.readlines("#{XP_FILE_DIR}/#{WRITEABLEFILE}").each do |fact|
+      #parse out the peer and hash by that
+      fact[/.*@([a-zA-Z0-9]+)\(/]
+      name = $1
+      writeable[name] = [] if writeable[name].nil? 
+      writeable[name] << fact
+    end
   end
 
   xpfiles = []
@@ -67,6 +77,11 @@ def run_access_remote!
   end
 
   runners.each do |runner|
+    if @optim1
+      writeable[runner.peername].each { |fct|
+        runner.add_facts fct
+      }
+    end
     runner.run_engine
     num_running += 1
     p "#{runner.peername} started"

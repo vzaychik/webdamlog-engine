@@ -366,6 +366,28 @@ public class Network {
 					outFP.write(String.valueOf(resultsize));
 					outFP.write("\n");
 					outFP.close();
+					//VZM now write out a writeable for all peers for optim1 mode
+					outFP = new BufferedWriter(new FileWriter( dirName + "/writeable.wdm", true));
+					for (Peer p : allPeers) {
+					    String[] policyStrings = p.outputPolicy().split("\n");
+					    //we only care about the write permission here so find those lines
+					    for (String policyString : policyStrings) {
+						if (policyString.contains(" write ")) {
+						    //TODO extract the name of the relation and who
+						    String relation = policyString.substring(policyString.indexOf(" ")+1, policyString.indexOf(" write")); 
+						    String who = policyString.substring(policyString.indexOf("write ")+6, policyString.indexOf(";"));
+						    if (who.equals("ALL")) {
+							for (Peer p2 : allPeers) {
+							    if (p2 != p)
+								outFP.write("fact writeable@" + p2.getName() + "(\"" + p.getName() + "\",\"" + relation + "_at_" + p.getName() + "\");\n");								
+							}
+						    } else {
+							outFP.write("fact writeable@" + who + "(\"" + p.getName() + "\",\"" + relation + "_at_" + p.getName() + "\");\n");
+						    }
+						}
+					    }
+					}
+					outFP.close();
 				}
 
 			} catch (IOException ioe) {

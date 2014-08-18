@@ -355,6 +355,20 @@ In the string: #{line}
       return capc_str
     end
 
+    # Generates the string representing the relation name If access control is
+    # on, turns into extended relation unless it's a delegated relation
+    def make_rel_name (rel)
+      rel, pname = rel.split('_at_')
+      str_res = "#{rel}"
+
+      if @options[:accessc]
+        str_res << "_plus"
+      end
+
+      str_res << "_at_#{pname}"
+      return str_res
+    end
+
     private
 
     def translate_rule_accessc(wlrule)
@@ -851,20 +865,6 @@ In the string: #{line}
       end
 
       return formula_str
-    end
-
-    # Generates the string representing the relation name If access control is
-    # on, turns into extended relation unless it's a delegated relation
-    def make_rel_name (rel)
-      rel, pname = rel.split('_at_')
-      str_res = "#{rel}"
-
-      if @options[:accessc]
-        str_res << "_plus"
-      end
-
-      str_res << "_at_#{pname}"
-      return str_res
     end
 
     # According to the variable found in the head of the rule this method define

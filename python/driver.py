@@ -45,8 +45,8 @@ def simplePA():
         networkFile = 'facebook-u19-i10.txt', \
         numFacts = 10000, \
         valRange = 1000, \
-        hosts = ['miklau1','miklau2','miklau3','miklau4'], \
-        numHosts = 4, \
+        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5','miklau6'], \
+        numHosts = 6, \
         numPeersPerHost = 3*3 )
     
     return [scenario]

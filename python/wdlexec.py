@@ -5,7 +5,7 @@ import os
 import sys
 from subprocess import call
 import models, driver, execution, scenario, loadBenchmark
-
+from time import sleep
 
 # input: scenList is a list of scenario model instances populated from config
 # for each one, check to see if it exists, if not, create it
@@ -43,7 +43,7 @@ def run(configFile):
     config = ConfigParser.ConfigParser()
     config.read(configFile)
 
-    rootPath = os.environ["HOME"] + "/" config.get('environment', 'rootPath')
+    rootPath = os.environ["HOME"] + "/"+ config.get('environment', 'rootPath')
     scenType = config.get('default', 'scenarioType')
     scenarioList = []
     
@@ -52,10 +52,10 @@ def run(configFile):
         # set-valued parameters (space delimited in config file)
         policyList = config.get('scenarioMAF', 'policy').split(' ')
         ruleScenarioList = config.get('scenarioMAF', 'ruleScenario').split(' ')
-        numFollowersList = config.getint('scenarioMAF', 'numFollowers').split(' ')
-        numAggregatorsList = config.getint('scenarioMAF', 'numAggregators').split(' ')
-        numAgPerFollowerList = config.getint('scenarioMAF', 'aggPerFollower').split(' ')
-        numFactsList = config.getint('scenarioMAF', 'numFacts').split(' ')
+        numFollowersList = config.get('scenarioMAF', 'numFollowers').split(' ')
+        numAggregatorsList = config.get('scenarioMAF', 'numAggregators').split(' ')
+        numAgPerFollowerList = config.get('scenarioMAF', 'aggPerFollower').split(' ')
+        numFactsList = config.get('scenarioMAF', 'numFacts').split(' ')
         
         # this forms the crossproduct of all set-valued parameters
         for tup in itertools.product(policyList, ruleScenarioList, numFollowersList, numAggregatorsList, numAgPerFollowerList, numFactsList):       
@@ -69,7 +69,8 @@ def run(configFile):
                 policy = tup[0], \
                 numFacts = tup[5], \
                 ruleScenario = tup[1], \
-                valRange = config.getint('scenarioMAF', 'valRange'), \
+                #valRange = config.getint('scenarioMAF', 'valRange'), \
+                valRange = tup[5], \
                 numExtraCols = config.getint('scenarioMAF', 'numExtraCols'), \
                 numHosts = config.getint('scenarioMAF', 'numHosts'), \
                 hosts = config.get('scenarioMAF', 'hosts').split(' '), \
@@ -97,11 +98,14 @@ def run(configFile):
         for run in range( config.getint('execution', 'numRuns') ):
             print 'Running executions for scenID %i' % scenID
             for tup in accessCList:
-                mode = tup[0].fromBinaryToInt()
+                #mode = tup[0].fromBinaryToInt()
+                print 'the string is:', tup[0]
+                mode = int(tup[0])
+                print 'mode is *****', mode
                 execID = execution.executeScenario( rootPath, scenID, scenType, mode,  \
                                  config.getfloat('execution', 'timeToRun'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)
-    
+                sleep(59) 
     print '***  Done with executions.'
     print '***  Refreshing database to reflect new executions and any new scenarios.'
     models.setupDatabase(clearDatabase=False)

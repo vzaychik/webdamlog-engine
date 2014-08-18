@@ -82,12 +82,17 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
     # prepare parameters for ruby script
     paramString = ''
     #paramString += str(timeToRun) + ' '
+    print "the mode which is set is",  mode
     accessBool = mode & 1
     optim1Bool = mode & 2
-    if accessBool:
+    print 'Value of accessBool is', accessBool
+    print 'Value of optimBool is', optim1Bool
+    if (accessBool):
         paramString += 'access'+' '
-    if optim1Bool:
+       # print 'current mode is', mode
+    if (optim1Bool):
         paramString += 'optim1'+' '
+        #print 'current mode is', mode
 
     # run on all hosts
     try:
@@ -116,12 +121,12 @@ if __name__ == "__main__":
     rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
     #getting the scenId of the last generated scenario
     scenID = commands.getoutput("ls  ~/webdamlog-exp/MAF | tail -1 ")
-    runs = 1
+    runs = 5
     print scenID 
     #p1 = int(p)
     #for scenID in p:
       #  for r in range(runs):
-    executeScenario( rootPath, scenID, 'MAF', 0, 60, 0 )
+    executeScenario( rootPath, scenID, 'MAF', 1, 60, 0 )
            # executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
            # executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
     print "clearing the dB....."

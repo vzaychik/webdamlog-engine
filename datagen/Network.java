@@ -14,6 +14,7 @@ import org.stoyanovich.webdam.datagen.Constants.COL_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.PEER_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.POLICY;
 import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
+import java.util.Random;
 
 /**
  * This class generates access control annotated Webdamlog programs
@@ -23,10 +24,12 @@ import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
  *
  */
 public class Network {
-
+    
 	public static HashMap<Integer,String> _netAddressMap = new HashMap<Integer, String>();
-
+        public static Random rand = new Random((new java.util.Date()).getTime());
+    
 	public static boolean initNetAddressMap(String inFileName, int peersPerInstance, int numAggregators, int numFollowers) {
+	  
 		try {
 			BufferedReader inFP = new BufferedReader(new FileReader(inFileName));
 			int i=0;
@@ -362,6 +365,28 @@ public class Network {
 					//VZM write the expected final result size in number of tuples
 					outFP.write(String.valueOf(resultsize));
 					outFP.write("\n");
+					outFP.close();
+					//VZM now write out a writeable for all peers for optim1 mode
+					outFP = new BufferedWriter(new FileWriter( dirName + "/writeable.wdm", true));
+					for (Peer p : allPeers) {
+					    String[] policyStrings = p.outputPolicy().split("\n");
+					    //we only care about the write permission here so find those lines
+					    for (String policyString : policyStrings) {
+						if (policyString.contains(" write ")) {
+						    //TODO extract the name of the relation and who
+						    String relation = policyString.substring(policyString.indexOf(" ")+1, policyString.indexOf(" write")); 
+						    String who = policyString.substring(policyString.indexOf("write ")+6, policyString.indexOf(";"));
+						    if (who.equals("ALL")) {
+							for (Peer p2 : allPeers) {
+							    if (p2 != p)
+								outFP.write("fact writeable@" + p2.getName() + "(\"" + p.getName() + "\",\"" + relation + "_at_" + p.getName() + "\");\n");								
+							}
+						    } else {
+							outFP.write("fact writeable@" + who + "(\"" + p.getName() + "\",\"" + relation + "_at_" + p.getName() + "\");\n");
+						    }
+						}
+					    }
+					}
 					outFP.close();
 				}
 

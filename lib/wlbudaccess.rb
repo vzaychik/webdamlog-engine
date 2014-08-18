@@ -26,14 +26,13 @@ module WLBudAccess
         }
         # #Until this implementation can have variables for a peer name, have to
         # do this manually
-        if @options[:optim1]
+        if @options[:optim1] && @options[:send_writeable]
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
               str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\",
               \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if
               rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
-              #str_res << "sbuffer <= acle_at_#{@peername} {|rel| [\"#{p[1]}\", \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if rel.priv == \"W\" && rel.peer == \"#{p[0]}\"};"
             end
           }
           puts "Installing bud rule #{str_res}" if @options[:debug]
@@ -83,45 +82,27 @@ module WLBudAccess
       else
         collection = @wl_program.parse(wlpg_relation, true)
       end
- 
-     name, schema = super(collection)
+      raise WLErrorProgram, "parse relation and get #{collection.class}" unless collection.is_a?(WLBud::WLCollection)
+      valid, msg = @wl_program.valid_collection? collection
+      raise WLErrorProgram, msg unless valid
+      puts "Adding a collection: \n #{collection.show_wdl_format}" if @options[:debug]
 
       #Need to update kind relation
       if @options[:accessc]
+        name = collection.atom_name
         tables["t_kind".to_sym] <+ [[name, collection.get_type.to_s, collection.arity]]	  
         tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", name],["#{peername}", "W", name],["#{peername}", "R", name]]
         #   #need to add extended collection
         extended_collection = @wl_program.parse(collection.make_extended)
         puts "Adding a collection for AC: \n #{extended_collection.show}" if @options[:debug]
-        self.schema_init(extended_collection)
+        name, schema = self.schema_init(extended_collection)
         @extended_collections_to_flush << extended_collection
-        #   #now need to install a rule #have to make a string to pass into
-        #   bloom to evaluate
-        
-        #   #need to insert Omega
-        str_res = "#{extended_collection.fullrelname} <= #{name} {|t| [\"R\", "
-        collection.fields.each {|field|
-          str_res << "t." << field << ", "
-        }
-        str_res << "Omega.instance]};"
-        str_res << "#{extended_collection.fullrelname} <= #{name} {|t| [\"G\", "
-        collection.fields.each {|field|
-          str_res << "t." << field << ", "
-        }
-        str_res << "Omega.instance]};"
-
-        puts "Installing bud rule #{str_res}" if @options[:debug]
-        #   #write to a file
-        extrulename = "webdamlog_#{@peername}_#{name}_extrule"
-        filestr = build_string_rule_to_include(extrulename, str_res)
-        fullfilename = File.join(@rule_dir, extrulename)
-        fout = File.new("#{fullfilename}", "w+")
-        fout.puts "#{filestr}"
-        fout.close
-        load fullfilename
+      else
+        name, schema = self.schema_init(collection)
       end #accessc
 
-      return name, schema
+      @collection_added = true
+      return name.to_s, schema
     end
 
     # Takes in a string representing a WLRule,
@@ -336,6 +317,56 @@ module WLBudAccess
       end
     end
 
+    # The generate_bootstrap method creates an array containing all extensional
+    # facts information that can be read by the rule_init method (private) of
+    # WLBud(see WLBud initializer).
+    #
+    # This create the block called bootstrap containing the fact for the initial
+    # state of the peer.
+    #
+    # TODO optimize @wlfacts : transform it into a hash with
+    # key=collection_name, value=array of facts in col. This will avoid a lot of
+    # overhead.
+    #
+    def generate_bootstrap(facts,collections)
+      if collections.empty? then puts "no relations yet..." if @options[:debug]; return; end
+      if facts.empty? then puts "no facts yet..." if @options[:debug]; return; end
+      str="{\n"
+      collections.each_value {|wlcollection|
+        tbl=[]
+        @wl_program.disamb_peername!(wlcollection)
+        facts.each {|wlf| 
+          if wlf.fullrelname.eql?(wlcollection.atom_name)
+            if @options[:accessc]
+              #need to add two facts for each one
+              fct = wlf.content
+              fct.unshift("R")
+              fct.push("Omega.instance")
+              tbl << fct
+              fct2 = fct.clone
+              fct2.shift
+              fct2.unshift("G");
+              tbl << fct2
+            else
+              tbl << wlf.content
+            end
+          end
+        }
+        str << "#{@wl_program.make_rel_name(wlcollection.fullrelname)} <= "
+        if @options[:accessc]
+          str << tbl.inspect.gsub("\"Omega.instance\"", "Omega.instance")
+        else
+          str << tbl.inspect
+        end
+        str << ";\n"
+      }
+      str << "}"
+      block = eval("Proc.new" + str)
+      # #this is the same as what is done in bootstrap method in monkeypatch.rb
+      meth_name = "__bootstrap__#{self.class.to_s}".to_sym
+      self.class.send(:define_method, meth_name, block)
+    end
+
     # Insert facts in collections according to messages received from channel.
     # facts should respect {WLPacketData.valid_hash_of_facts} format
     #
@@ -376,6 +407,16 @@ module WLBudAccess
                         x
                       end
                     }
+                    if !relation_name.include? "_plus_at_"
+                      #can only insert into extended relations
+                      relation_name = @wl_program.make_rel_name(relation_name)
+                      #add 2 tuples, one for G, one for R
+                      tuple.push(Omega.instance)
+                      secondtuple = tuple.clone
+                      tuple.unshift("R")
+                      secondtuple.unshift("G")
+                      tables[relation_name.to_sym] <+ [secondtuple]
+                    end
                   end
                   tables[relation_name.to_sym] <+ [tuple]
                   (valid[relation_name] ||= []) << tuple

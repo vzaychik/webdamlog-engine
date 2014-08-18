@@ -63,11 +63,11 @@ def run(configFile):
             scenario = models.Scenario( \
                 # scenID = _ _ _ (filled in later)
                 scenType = 'MAF', \
-                numFollowers = tup[2], \
-                numAggregators = tup[3], \
-                aggPerFollower = tup[4], \
+                numFollowers = int(tup[2]), \
+                numAggregators = int(tup[3]), \
+                aggPerFollower = int(tup[4]), \
                 policy = tup[0], \
-                numFacts = tup[5], \
+                numFacts = int(tup[5]), \
                 ruleScenario = tup[1], \
                 #valRange = config.getint('scenarioMAF', 'valRange'), \
                 valRange = tup[5], \
@@ -98,10 +98,14 @@ def run(configFile):
         for run in range( config.getint('execution', 'numRuns') ):
             print 'Running executions for scenID %i' % scenID
             for tup in accessCList:
+<<<<<<< HEAD
                 #mode = tup[0].fromBinaryToInt()
                 print 'the string is:', tup[0]
                 mode = int(tup[0])
                 print 'mode is *****', mode
+=======
+                mode = int(tup[0],2)
+>>>>>>> master
                 execID = execution.executeScenario( rootPath, scenID, scenType, mode,  \
                                  config.getfloat('execution', 'timeToRun'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)

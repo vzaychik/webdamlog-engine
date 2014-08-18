@@ -38,12 +38,11 @@ end
        end
        runner.run_engine
        #verify acl contents
-       assert_equal [{:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"acl_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"local1_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"G", :rel=>"local2_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"W", :rel=>"local2_at_test_access"}, {:plist=>PList.new(["test_access"].to_set), :priv=>"R", :rel=>"local2_at_test_access"}],
+       assert_equal [{:rel=>"acl_at_test_access", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"acl_at_test_access", :priv=>"W", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"acl_at_test_access", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"local1_at_test_access", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"local1_at_test_access", :priv=>"W", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"local1_at_test_access", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"local2_at_test_access", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"local2_at_test_access", :priv=>"W", :plist=>PList.new(["test_access"].to_set)}, {:rel=>"local2_at_test_access", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}],
 				  runner.snapshot_facts(:acl_at_test_access)
       #verify kind contents
       assert_equal [{:rel=>"local1_at_test_access", :kind=>"Extensional", :arity=>1}, {:rel=>"local2_at_test_access", :kind=>"Extensional", :arity=>2}], runner.snapshot_facts(:t_kind)
 
-      assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner.snapshot_facts(:local1_at_test_access)
       assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner.snapshot_facts(:local1_plus_at_test_access)
 	
     ensure
@@ -55,6 +54,7 @@ end
     end
   end  
 end
+
 
 class TcAccessLocalRules < Test::Unit::TestCase
   include MixinTcWlTest
@@ -91,7 +91,6 @@ end
 
       #what do we want to check here? that for local rules all facts get in because peer can read his own stuff
       assert_equal [{:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}], runner.snapshot_facts(:local1_i_plus_at_test_access)
-      assert_equal [], runner.snapshot_facts(:local1_i_at_test_access)
 
     ensure
       if EventMachine::reactor_running?
@@ -161,10 +160,8 @@ end
       runner2.tick
 
       #first check the collections that have direct facts inserted into them
-      assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner1.tables[:local2_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local2_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [], runner1.tables[:local3_i_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:local1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created
@@ -219,7 +216,7 @@ end
       
       #test_access does not have privs to read local1@p1 so no results
       assert_equal [],
-        runner1.tables[:local3_i_at_test_access].map{|t| Hash[t.each_pair.to_a]}
+        runner1.tables[:local3_i_plus_at_test_access].map{|t| Hash[t.each_pair.to_a]}
 
       #now let's set that and see results finally materialize at p1
       runner2.update_acl("local1_at_p1","test_access","R")
@@ -301,10 +298,8 @@ end
       runner2.tick
 
       #first check the collections that have direct facts inserted into them
-      assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner1.tables[:local2_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local2_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [], runner1.tables[:local3_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:local1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created. because of extensional head they should materialize right away
@@ -368,4 +363,5 @@ end
   end
 
 end
+
 

@@ -65,7 +65,8 @@ collection ext per local1@test_access(atom1*);
 collection int local3_i@test_access(atom1*);
 fact local2@test_access("p1");
 fact local2@test_access("p2");
-policy local1 read local2@test_access;
+policy local1 read p1;
+policy local1 read p2;
 end
     EOF
     @username = "test_access"
@@ -87,12 +88,12 @@ end
         runner = WLARunner.create(@username, @pg_file, @port, {:accessc => true, :debug => false, :noprovenance => true })
        end
 
-      assert_equal(["policy local1 read local2@test_access"], runner.snapshot_policies)
+      assert_equal(["policy local1 read p1","policy local1 read p2"], runner.snapshot_policies)
 
       assert_equal([{:rel=>"acl_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"G"}, {:rel=>"acl_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"W"}, {:rel=>"acl_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"R"}, {:rel=>"local2_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"G"}, {:rel=>"local2_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"W"}, {:rel=>"local2_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"R"}, {:rel=>"local1_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"G"}, {:rel=>"local1_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"W"}, {:rel=>"local1_at_test_access",:plist=>PList.new(["test_access","p1","p2"].to_set), :priv=>"R"}, {:rel=>"local3_i_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"G"}, {:rel=>"local3_i_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"W"}, {:rel=>"local3_i_at_test_access",:plist=>PList.new(["test_access"].to_set), :priv=>"R"}], runner.tables[:acl_at_test_access].map{ |t| Hash[t.each_pair.to_a]})
 	
     ensure
-       #runner.stop
+       runner.stop
        File.delete(@pg_file) if File.exists?(@pg_file)
     end
   end  

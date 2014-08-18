@@ -5,6 +5,7 @@ require 'csv'
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
 XPFILE = "XP_NOACCESS"
 RULEFILE = "rules.wdm"
+WRITEABLEFILE = "writeable.wdm"
 
 # Parameters:
 # * XP_FILE_DIR : The path to the directory with the data generator
@@ -25,6 +26,15 @@ def run_access_remote!
   if ARGV.include?("optim1")
     @optim1 = true
     p "optimization 1 is on"
+    #load writeable
+    writeable = {}
+    File.readlines("#{XP_FILE_DIR}/#{WRITEABLEFILE}").each do |fact|
+      #parse out the peer and hash by that
+      fact[/.*@([a-zA-Z0-9]+)\(/]
+      name = $1
+      writeable[name] = [] if writeable[name].nil? 
+      writeable[name] << fact
+    end
   end
 
   xpfiles = []
@@ -67,6 +77,11 @@ def run_access_remote!
   end
 
   runners.each do |runner|
+    if @optim1
+      writeable[runner.peername].each { |fct|
+        runner.add_facts fct
+      }
+    end
     runner.run_engine
     num_running += 1
     p "#{runner.peername} started"
@@ -82,9 +97,14 @@ def run_access_remote!
   if @masterp != nil
     #inject rules now
     rules = []
+    donerules = []
     File.readlines("#{XP_FILE_DIR}/#{RULEFILE}").each do |rule|
       if rule.start_with?("//") == false
-        rules << rule
+        if rule.include?("master_done")
+          donerules << rule
+        else
+          rules << rule
+        end
       end
     end
     p "at tick #{@masterp.budtime} injecting rules: #{rules}"
@@ -101,11 +121,16 @@ def run_access_remote!
       resultrel += "_at_#{@masterp.peername}"
     end
 
+    first_time_done = true
     @masterp.register_callback(resultrel.to_sym) do
-      if @masterp.tables[resultrel.to_sym].length == expected_tuples
+      if @masterp.tables[resultrel.to_sym].length == expected_tuples && first_time_done
+        first_time_done = false
         p "master received all tuples, shutting down"
         results = @masterp.tables[resultrel.to_sym].map{ |t| Hash[t.each_pair.to_a] }
         puts "final contents of master's facts: #{results}"
+        donerules.each do |rule|
+          @masterp.add_rule rule
+        end
         @masterp.add_facts ({"done_at_#{@masterp.peername}" => [["1"]]})
         @masterp.dies_at_tick = @masterp.budtime #this should kill on next tick
         @masterp.schedule_extra_tick

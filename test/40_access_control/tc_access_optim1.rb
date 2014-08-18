@@ -46,8 +46,8 @@ end
       runner1 = nil
       runner2 = nil
       assert_nothing_raised do
-        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false, :optim1 => true })
-        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false, :optim1 => true })
+        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false, :optim1 => true, :send_writeable => true })
+        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false, :optim1 => true, :send_writeable => true })
       end
 
       runner1.tick
@@ -149,8 +149,8 @@ end
       runner1 = nil
       runner2 = nil
       assert_nothing_raised do
-        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false, :optim1 => true })
-        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false, :optim1 => true })
+        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false, :optim1 => true, :send_writeable => true })
+        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false, :optim1 => true, :send_writeable => true })
       end
 
       runner2.tick
@@ -161,10 +161,8 @@ end
       runner2.tick
 
       #first check the collections that have direct facts inserted into them
-      assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner1.tables[:local2_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local2_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [], runner1.tables[:local3_i_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:local1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created
@@ -222,7 +220,7 @@ end
       
       #test_access does not have privs to read local1@p1 so no results
       assert_equal [],
-        runner1.tables[:local3_i_at_test_access].map{|t| Hash[t.each_pair.to_a]}
+        runner1.tables[:local3_i_plus_at_test_access].map{|t| Hash[t.each_pair.to_a]}
 
       #now let's set that and see results finally materialize at p1
       runner2.update_acl("local1_at_p1","test_access","R")
@@ -294,8 +292,8 @@ end
       runner1 = nil
       runner2 = nil
       assert_nothing_raised do
-        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false, :optim1 => true })
-        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false, :optim1 => true })
+        runner1 = WLARunner.create(@username1, @pg_file1, @port1, {:accessc => true, :debug => false, :optim1 => true, :send_writeable => true })
+        runner2 = WLARunner.create(@username2, @pg_file2, @port2, {:accessc => true, :debug => false, :optim1 => true, :send_writeable => true })
       end
 
       runner2.tick
@@ -306,10 +304,8 @@ end
       runner2.tick
 
       #first check the collections that have direct facts inserted into them
-      assert_equal [{:atom1=>"1"}, {:atom1=>"2"}], runner1.tables[:local2_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local2_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [], runner1.tables[:local3_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"3"}], runner2.tables[:local1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
       assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:local1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created

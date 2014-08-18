@@ -53,11 +53,6 @@ def test_remove_priviledge
         runner2.tick
         runner1.tick
         
-        assert_equal [{:atom1=>"3"}, {:atom1=>"5"}], runner1.tables[:rel1_i_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-        assert_equal [], runner2.tables[:rel2_i_at_p2].map{ |t| Hash[t.each_pair.to_a]}
-        
-        
-        
         # updating the priviledge at peer p2 for collection defined on peer p1
         
         runner1.update_acl("rel1_i_at_p1","p2","R")

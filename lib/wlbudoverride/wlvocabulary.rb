@@ -85,6 +85,14 @@ module WLBud
       str << "( priv*, #{col_fields.text_value}, plist ) ;"
     end
 
+    def is_extended?
+      if relname.contains? "_plus@" or relname.contains? "_plus_at_"
+        return true
+      else
+        return false
+      end
+    end
+
     def make_rext(id)
       str = "collection #{get_type.to_s.downcase} "
       str << "persistent" + " " if self.persistent?

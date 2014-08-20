@@ -1,3 +1,5 @@
+require 'objspace'
+
 # Bud methods overriden specifically access control
 module WLBud
   attr_accessor :connections_buffer
@@ -444,15 +446,18 @@ collection int peer_done#{@peername}(key*);"
         utables = @tables.keys - @builtin_tables.keys
         utables.each do |tbl|
           tuplecount += tables[tbl].length
-          tables[tbl].each { |fct|
-            fct.each { |elem|
-              if elem.is_a? PList
-                wordcount += elem.to_a.length
-              else
-                wordcount += 1
-              end
-            }
-          }
+          #VZM: The commented out block below measured size of all user tables in "words",
+          #where a word was one simple object. Switched to measuring bytes instead.
+          #tables[tbl].each { |fct|
+          #  fct.each { |elem|
+          #    if elem.is_a? PList
+          #      wordcount += elem.to_a.length
+          #    else
+          #      wordcount += 1
+          #    end
+          #  }
+          #}
+          wordcount += ObjectSpace.memsize_of(tables[tbl])
         end
         @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
         @measure_obj.dump_measures      

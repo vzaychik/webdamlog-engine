@@ -18,9 +18,11 @@ module WLBud
   require 'yaml'
   require 'prettyprint'
   require 'deep_clone'
+
   # stdlib
   require 'set'
   require 'benchmark'
+  require 'objspace'
 
   # file project
   require "#{PATH_WLBUD}/wlprogram"
@@ -611,16 +613,17 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
             unless data[2][:rules].nil?
               rulect += data[2][:rules].length
             end
-            unless data[2][:facts].nil?
-              data[2][:facts].values.each {|vals|
-                fctct += vals.length
-              }
-            end
+            #unless data[2][:facts].nil?
+            #  data[2][:facts].values.each {|vals|
+            #    fctct += vals.length
+            #  }
+            #end
             unless data[2][:declarations].nil?
               declct += data[2][:declarations].length
             end
           end
         end
+        fctct = wlpacketsdata.empty? ? 0 : wlpacketsdata.to_s.bytesize
         @packet_metrics << declct << rulect << fctct
       end
     end

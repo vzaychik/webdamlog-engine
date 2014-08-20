@@ -98,14 +98,9 @@ def run(configFile):
         for run in range( config.getint('execution', 'numRuns') ):
             print 'Running executions for scenID %i' % scenID
             for tup in accessCList:
-<<<<<<< HEAD
-                #mode = tup[0].fromBinaryToInt()
-                print 'the string is:', tup[0]
-                mode = int(tup[0])
+                print 'the string is:', tup
+                mode = int(tup,2)
                 print 'mode is *****', mode
-=======
-                mode = int(tup[0],2)
->>>>>>> master
                 execID = execution.executeScenario( rootPath, scenID, scenType, mode,  \
                                  config.getfloat('execution', 'timeToRun'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)

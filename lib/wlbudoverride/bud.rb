@@ -468,9 +468,21 @@ collection int peer_done#{@peername}(key*);"
       if @dies_at_tick > 0 and @budtime-1 == @dies_at_tick
         #want to stop but want to give the done message a chance to reach the other peers
         #FIXME - this is a hack, need a better way
-        EventMachine.run {
-          EventMachine.add_timer(10) { stop }
+        #EventMachine.run {
+          #EventMachine.add_timer(20) { stop }
+        #}
+
+        #This should be the correct non-hacky way.
+        EventMachine.add_periodic_timer(5) {
+          done = true
+          connections_buffer.each_value do |buf|
+            if !buf.empty?  #haven't sent all the messages yet
+              done = false
+            end
+          end
+          stop if done
         }
+
         #if @tables[peer_done_rel_name.to_sym].first.key == :kill
           # Bud.shutdown_all_instances
           # Bud.stop_em_loop

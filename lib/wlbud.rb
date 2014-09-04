@@ -22,7 +22,6 @@ module WLBud
   # stdlib
   require 'set'
   require 'benchmark'
-  require 'objspace'
 
   # file project
   require "#{PATH_WLBUD}/wlprogram"

@@ -1,5 +1,3 @@
-require 'objspace'
-
 # Bud methods overriden specifically access control
 module WLBud
   attr_accessor :connections_buffer
@@ -457,7 +455,10 @@ collection int peer_done#{@peername}(key*);"
           #    end
           #  }
           #}
-          wordcount += ObjectSpace.memsize_of(tables[tbl])
+          
+          tables[tbl].each { |fct|
+            wordcount += fct.to_s.bytesize
+          }
         end
         @measure_obj.append_counts(@budtime-1, tuplecount, wordcount, @packet_metrics)
         @measure_obj.dump_measures      

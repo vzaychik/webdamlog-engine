@@ -14,6 +14,10 @@ class PList < Bud::SetLattice
     self.reveal.to_a
   end
 
+  def to_s
+    self.reveal.to_a.to_s
+  end
+
   def merge(other)
     if (other.kind_of? Omega)
       return other
@@ -29,13 +33,25 @@ class PList < Bud::SetLattice
       base_intersect(other)
     end
   end
+
+  def empty?
+    return @v.empty?
+  end
 end
 
 class Omega < PList
   include Singleton
 
+  wrapper_name :omega
+
   def intersect(other)
-    return other
+    if other.kind_of?(PList) || other.kind_of?(FormulaList)
+      return other
+    elsif other.kind_of?(String)
+      return FormulaList.new(other)
+    else
+      reject_input(other)
+    end
   end
 
   def merge(other)
@@ -44,6 +60,10 @@ class Omega < PList
 
   def include?(element)
     return true
+  end
+
+  def empty?
+    false
   end
 
   def contains?(element)
@@ -67,7 +87,7 @@ end
 class FormulaList < Bud::Lattice
   wrapper_name :formset
 
-  #cannot directly look up include
+  #using postfix notation for simplicity
 
   def initialize(i="")
     reject_input(i) unless i.kind_of? String
@@ -75,7 +95,11 @@ class FormulaList < Bud::Lattice
   end
 
   def to_a
-    self.reveal
+    return @v
+  end
+
+  def to_s
+    return @v
   end
 
   def merge(other)
@@ -84,16 +108,46 @@ class FormulaList < Bud::Lattice
     if (other.kind_of? Omega)
       other
     else
-      wrap_unsafe(@v + "+" + i.reveal)
+      if other.kind_of? FormulaList
+        otherv = other.to_s
+      elsif other.kind_of? String
+        otherv = other
+      else
+        reject_input(other)
+      end
+
+      #FIXME - this check for include might lead to incorrect results in complex expressions
+      if @v.include? otherv
+        self
+      elsif otherv.include? @v
+        wrap_unsafe(otherv)
+      else
+        wrap_unsafe(@v + " " + otherv + " +")
+      end
     end
   end
 
   def intersect(other)
-    #TODO - do something smarter such as sorting
+    #TODO - do something smarter such as sorting and eliminating duplicates
     if (other.kind_of? Omega)
       self
     else
-      wrap_unsafe(@v + "*" + i.reveal)
+      if other.kind_of? FormulaList
+        otherv = other.to_s
+      elsif other.kind_of? String
+        otherv = other
+      else
+        reject_input(other)
+      end
+
+      #FIXME - this check for include might lead to incorrect results in complex expressions
+      if @v.include? otherv
+        self
+      elsif otherv.include? @v
+        wrap_unsafe(otherv)
+      else
+        wrap_unsafe(@v + " " + otherv + " *")
+      end
     end
   end
 end

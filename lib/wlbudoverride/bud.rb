@@ -131,7 +131,10 @@ module WLBud
       @connections_status = {}
 
       # VZM access control
-      @options[:accessc] ||= false
+      @options[:accessc] = true if @options[:optim1]
+      @options[:accessc] = true if @options[:optim2]
+      @formulas = *('A'..'Z')
+      @next_formula = 0
       self.add_aclkind
       self.add_access_optim
       @extended_collections_to_flush = []

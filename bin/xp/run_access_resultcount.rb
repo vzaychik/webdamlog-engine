@@ -19,12 +19,10 @@ def run_access_remote!
   if ARGV.include?("access")
     @access_mode = true
     p "starting experiment with access control on"
-  else
-    @access_mode = false
-    p "starting experiment with access control off"
   end
   if ARGV.include?("optim1")
     @optim1 = true
+    @access_mode = true
     p "optimization 1 is on"
     #load writeable
     writeable = {}
@@ -35,6 +33,11 @@ def run_access_remote!
       writeable[name] = [] if writeable[name].nil? 
       writeable[name] << fact
     end
+  end
+  if ARGV.include?("optim2")
+    @optim2 = true
+    @access_mode = true
+    p "optimization 2 - formulas - is on"
   end
 
   xpfiles = []
@@ -165,7 +168,7 @@ def create_wl_runner pg_file
   raise WLError, "impossible to find the peername given in the end of the program \
 filename: #{peername} in the list of peer specified in the program" if ip_addr.nil? or port.nil?
   puts "creating peer #{peername} on #{ip_addr}:#{port}"
-  return WLARunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :noprovenance => true, :debug => false, :tcp => true, :reliable => true })
+  return WLARunner.create(peername, pg_file, port, {:ip => ip_addr, :measure => true, :accessc => @access_mode, :optim1 => @optim1, :optim2 => @optim2, :noprovenance => true, :debug => false, :tcp => true, :reliable => true })
 end # def start_peer
 
 def get_run_xp_file

@@ -85,14 +85,16 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
     print "the mode which is set is",  mode
     accessBool = mode & 1
     optim1Bool = mode & 2
+    optim2Bool = mode & 3
     print 'Value of accessBool is', accessBool
-    print 'Value of optimBool is', optim1Bool
+    print 'Value of optim1Bool is', optim1Bool
+    print 'Value of optim2Bool is', optim2Bool
     if (accessBool):
         paramString += 'access'+' '
-       # print 'current mode is', mode
     if (optim1Bool):
         paramString += 'optim1'+' '
-        #print 'current mode is', mode
+    if (optim2Bool):
+        paramString += 'optim2'+' '
 
     # run on all hosts
     try:

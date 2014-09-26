@@ -398,18 +398,18 @@ In the string: #{line}
           end
           formula_str.slice!(-1..-1)
           formula_str << "|"
-          formula_str << "ftemp=\"\"; runres=PList.new; fullf = FormulaList.new("
+          formula_str << "numst = []; fullf = FormulaList.new("
           intersects.each_with_index do |atom,i|
             formula_str << "f#{i}.formula).intersect("
           end
           formula_str.slice!(-10..-1)
-          formula_str << "to_s; fullf.split(' ').each { |fp| if fp == \"*\" then runres = runres.intersect(formulas_at_#{peername}[[ftemp]].plist) elsif fp == \"+\" then runres = runres.merge(formulas_at_#{peername}[[ftemp]].plist) elsif runres.empty? then runres = formulas_at_#{peername}[[fp]].plist; else ftemp=fp; end; }; "
+          formula_str << "to_s; fullf.split(' ').each { |fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist); end; }; "
           formula_str << "[FormulaList.new("
           intersects.each_with_index do |atom,i|
             formula_str << "f#{i}.formula).intersect("
           end
           formula_str.slice!(-10..-1)
-          formula_str << "to_s,runres] };"
+          formula_str << "to_s,numst.pop] };"
         end
       end
 
@@ -764,10 +764,10 @@ In the string: #{line}
                 str_res << "Omega.instance.intersect"
               end
               str_res << "("
+              str_res << "(" unless intermediary?(atom)
               str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-              str_res << ")"
-              str_res << ".intersect"
-              str_res << "(#{atom.relname}aclR).intersect" unless intermediary?(atom)
+              str_res << ".intersect(#{atom.relname}aclR))" unless intermediary?(atom)
+              str_res << ").intersect"
               first_intersection = false
             end
           end
@@ -788,10 +788,10 @@ In the string: #{line}
                 str_res << "Omega.instance.intersect"
               end
               str_res << "("
+              str_res << "(" unless intermediary?(atom)
               str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-              str_res << ")"
-              str_res << ".intersect"
-              str_res << "(#{atom.relname}aclG).intersect" unless intermediary?(atom)
+              str_res << ".intersect(#{atom.relname}aclG))" unless intermediary?(atom)
+              str_res << ").intersect"
               first_intersection = false
             end
           end

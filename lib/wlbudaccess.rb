@@ -129,7 +129,7 @@ module WLBudAccess
             formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| ff = t.plist.intersect(aclf_at_#{peername}[[\"#{collection.atom_name}\",t.priv]].formula); [ff.to_s,t.priv] unless ff.kind_of? Omega};\n"
           end
 
-          formula_str << "extended_formulas_at_#{peername} <= formulas_#{collection.atom_name} {|ff| f1=\"\"; runres=PList.new; ff.formula.split(' ').each { |fp| if fp == \"*\" then runres = runres.intersect(formulas_at_#{peername}[[f1]].plist) elsif fp == \"+\" then runres = runres.merge(formulas_at_#{peername}[[f1]].plist) elsif runres.empty? then runres = formulas_at_#{peername}[[fp]].plist else f1=fp; end; }; [ff.formula,runres]};"
+          formula_str << "extended_formulas_at_#{peername} <= formulas_#{collection.atom_name} {|ff| numst = []; ff.formula.split(' ').each { |fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; [ff.formula,numst.pop]};"
 
           puts "Installing rule #{formula_str}" if @options[:debug]
           filestr = build_string_rule_to_include("webdamlog_#{peername}_formulas_#{collection.relname}", formula_str)

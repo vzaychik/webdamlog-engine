@@ -873,6 +873,7 @@ In the string: #{line}
         end
 
         # check for read or grant for target peer on preserved relations only
+        # FIXME - selection of grant tuples
         first_intersection = true
         wlrule.body.each do |atom|
           if bound_n_local?(atom)
@@ -882,10 +883,10 @@ In the string: #{line}
                 str_res << "Omega.instance.intersect"
               end
               str_res << "("
+              str_res << "(" unless intermediary?(atom)
               str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-              str_res << ")"
-              str_res << ".intersect"
-              str_res << "(#{atom.relname}aclR).intersect" unless intermediary?(atom)
+              str_res << ".intersect(#{atom.relname}aclR))" unless intermediary?(atom)
+              str_res << ").intersect"
               first_intersection = false
             end
           end
@@ -906,10 +907,10 @@ In the string: #{line}
                 str_res << "Omega.instance.intersect"
               end
               str_res << "("
+              str_res << "(" unless intermediary?(atom)
               str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-              str_res << ")"
-              str_res << ".intersect"
-              str_res << "(#{atom.relname}aclG).intersect" unless intermediary?(atom)
+              str_res << ".intersect(#{atom.relname}aclG))" unless intermediary?(atom)
+              str_res << ").intersect"
               first_intersection = false
             end
           end

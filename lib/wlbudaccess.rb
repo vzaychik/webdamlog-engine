@@ -78,7 +78,7 @@ module WLBudAccess
 
       # this is a bit hacky - with access control we generate 2 rules instead of
       # one for grant priv and one for read
-      if @options[:accessc] && !@options[:optim1]
+      if @options[:accessc] && (!@options[:optim1] || @options[:optim2])
         rule2 = "#{rule}"
         rule2.gsub! "\"R\"", "\"G\""
         rule << rule2

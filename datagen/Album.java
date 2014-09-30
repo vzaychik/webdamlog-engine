@@ -29,9 +29,9 @@ public class Album {
 	// a mapping from [0, numPeers) to network ids of peers
 	public static HashMap<Integer,Integer> _peerIdHM = new HashMap<Integer,Integer>();
 	public static ArrayList<Peer> _peersList = new ArrayList<Peer>();
-
+        public static Random rand = new Random((new java.util.Date()).getTime());
 	
-	public static void initNetAddressMap(String inFileName, int peersPerInstance, int numPeers) {
+	public static boolean initNetAddressMap(String inFileName, int peersPerInstance, int numPeers) {
 		try {
 			BufferedReader inFP = new BufferedReader(new FileReader(inFileName));
 			int i=0;
@@ -56,8 +56,14 @@ public class Album {
 			
 			inFP.close();
 		} catch (IOException ioe) {
-			System.out.println(ioe.toString());
+		        System.out.println("WARNING: Please check your IP address file. It does not have enough hosts for the requested setup. Using localhost.");
+			return false;
+			//System.out.println(ioe.toString());
+		} catch (NullPointerException noe) {
+		        System.out.println("WARNING: Please check your IP address file. It does not have enough hosts for the requested setup. Using localhost.");
+			return false;
 		}
+		return true;
 	}
 	
 	public static void initNetAddressMap(int numPeers) {
@@ -102,7 +108,6 @@ public class Album {
 		}
 
 		try {
-
 			StringBuffer readmeComment = new StringBuffer("");
 			
 			String networkFileName = args[0].trim();
@@ -149,7 +154,9 @@ public class Album {
 			if (args.length > 4) {
 				String instanceFile = args[4].trim();
 				int peersPerInstance = Integer.parseInt(args[5]);
-				initNetAddressMap(instanceFile, peersPerInstance, numPeers);
+				if (!initNetAddressMap(instanceFile, peersPerInstance, numPeers)) {
+				    initNetAddressMap(numPeers);
+				}
 			} else {
 				initNetAddressMap(numPeers);
 			}
@@ -163,8 +170,9 @@ public class Album {
 			Peer sue = _peersList.get(2);
 			sue.setType(PEER_TYPE.SUE);
 
-			Random rand = new Random();
-			
+			//VZM compute the size of the final result for end condition
+			int resultsize = 0;
+
 			for (int i=0; i<numPeers; i++) {
 				
 				Peer p = _peersList.get(i);
@@ -177,7 +185,7 @@ public class Album {
 					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
 
 					for (String img : photos.getFacts()) {
-						
+					        int imgTag = 0;
 						for (int j=0; j<numPeers; j++) {
 				
 							Peer taggedPeer = _peersList.get(j);
@@ -194,8 +202,12 @@ public class Album {
 								
 							} else if ( (taggedPeer.getType().equals(PEER_TYPE.ALICE) || taggedPeer.getType().equals(PEER_TYPE.BOB)) && 
 										(rnd < Constants.PROB_ALICE_OR_BOB_IN_PHOTO)) {
-									tags.addFact(img+",\""+taggedPeer.getName() + "\"");									
+									tags.addFact(img+",\""+taggedPeer.getName() + "\"");
+									imgTag++;
 							}
+						}
+						if (imgTag > 1) { //both bob and alice tagged
+						    resultsize++;
 						}
 					}						
 					p.addCollection(photos);
@@ -232,7 +244,7 @@ public class Album {
 						
 			// output to program files
 			String knownPeers = Album.peersToString(numPeers);
-				
+
 			if (Constants.DO_FILE_IO) {
 					
 					long ts = System.currentTimeMillis();
@@ -285,7 +297,32 @@ public class Album {
 						String dirName = "out_" + hostName + "_" + ts; 
 						BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS", true));
 						outFP.write("\n");
-						outFP.close();						
+						//VZM write the expected final result size in number of tuples
+						outFP.write(String.valueOf(resultsize));
+						outFP.write("\n");
+						outFP.close();
+						//VZM now write out a writeable for all peers for optim1 mode
+						outFP = new BufferedWriter(new FileWriter( dirName + "/writeable.wdm", true));
+						for (Peer p : _peersList) {
+						    String[] policyStrings = p.outputPolicy().split("\n");
+						    //we only care about the write permission here so find those lines
+						    for (String policyString : policyStrings) {
+							if (policyString.contains(" write ")) {
+							    //TODO extract the name of the relation and who
+							    String relation = policyString.substring(policyString.indexOf(" ")+1, policyString.indexOf(" write")); 
+							    String who = policyString.substring(policyString.indexOf("write ")+6, policyString.indexOf(";"));
+							    if (who.equals("ALL")) {
+								for (Peer p2 : _peersList) {
+								    if (p2 != p)
+									outFP.write("fact writeable@" + p2.getName() + "(\"" + p.getName() + "\",\"" + relation + "_at_" + p.getName() + "\");\n");								
+								}
+							    } else {
+								outFP.write("fact writeable@" + who + "(\"" + p.getName() + "\",\"" + relation + "_at_" + p.getName() + "\");\n");
+							    }
+							}
+						    }
+						}
+						outFP.close(); 	
 					}
 			}
 	

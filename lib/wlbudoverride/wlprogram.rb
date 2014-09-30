@@ -454,8 +454,12 @@ In the string: #{line}
         #  such cases with access controL?
         puts "translation of rule with zero body length while in access control mode not implemented!!!"
       else
-        s = make_combos(wlrule)
-        str_res << s
+        if body.length==1 && intermediary?(body.first) && !bound_n_local?(wlrule.head)
+          str_res << make_rel_name(body.first.fullrelname)
+        else
+          s = make_combos(wlrule)
+          str_res << s
+        end
 
         str_res << " {|";
         wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
@@ -1051,6 +1055,53 @@ In the string: #{line}
       end
 
       str << ']'
+      return str
+    end
+
+    # Define the if condition for each constant it assign its value.
+    #
+    # @return [String] the string to append to make the wdl rule
+    def condition_bud_string wlrule
+      str = ""
+      first_condition = true
+
+      # add the condition for each constant
+      wlrule.dic_wlconst.each do |key,value|
+        value.each do |v|
+          relation_position , attribute_position = v.split('.')
+          if first_condition
+            str << " if "
+            first_condition = false
+          else
+            str << " and "
+          end
+          if @options[:accessc] #increment attribute position because of priv
+            attribute_position = attribute_position.to_i + 1
+          end
+          str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position)}[#{attribute_position}]==#{WLTools::quote_string(key)}"
+        end
+      end
+
+      # add the condition for each self join to unfold
+      wlrule.dic_wlvar.each_pair do |key,values|
+        (0..values.size-2).each_with_index do |iter1,index|
+          pos1 = values[iter1]
+          relation_position1 , attribute_position1 = pos1.split('.')
+          (index+1..values.size-1).each do |iter2|
+            pos2 = values[iter2]
+            relation_position2 , attribute_position2 = pos2.split('.')
+            if wlrule.dic_invert_relation_name[Integer(relation_position1)] == wlrule.dic_invert_relation_name[Integer(relation_position2)]
+              if first_condition
+                str << " if "
+                first_condition = false
+              else
+                str << " and "
+              end
+              str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position1)}[#{attribute_position1}]==#{WLBud::WLProgram.atom_iterator_by_pos(relation_position2)}[#{attribute_position2}]"
+            end
+          end
+        end
+      end
       return str
     end
 

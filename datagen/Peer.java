@@ -176,11 +176,14 @@ public class Peer {
 			}	
 		}
 		//VZM Need public policy for special completion condition collection
-		//FIXME fix for album scenario
 		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
 		    prog.append("policy done read ALL;\n");
 		} else {
-		    prog.append("policy master_done write master0;\n");
+		    if (_scenario == SCENARIO.UNION_OF_JOINS || _scenario == SCENARIO.JOIN_OF_UNIONS) {
+			prog.append("policy master_done write master0;\n");
+		    } else if (_scenario == SCENARIO.ALBUM) {
+			prog.append("policy master_done write " + Album._peersList.get(0).getName() + ";\n");
+		    }
 		}
 		return prog.toString();
 	}
@@ -268,8 +271,7 @@ public class Peer {
 		}
 
 		//VZM this is for special completion condition handling
-		//FIXME fix for album scenario
-		if (_type == PEER_TYPE.MASTER) {
+		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
 		    for (Peer p : _knownPeers) {
 			prog.append("rule master_done@" + p.getName() + "($x) :- done@" + getName() + "($x);\n");
 		    }

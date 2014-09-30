@@ -327,19 +327,11 @@ public class Network {
 
 					if (XPFile.exists()) {
 						BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS", true));
-						//if (Constants.FULL_PATHS) {
-						//	outFP.write("," + dirPath + "/run_" + p.getName());
-						//} else {
 						outFP.write(",run_" + p.getName());
-						//}
 						outFP.close();
 					} else {
 						BufferedWriter outFP = new BufferedWriter(new FileWriter( dirName + "/XP_NOACCESS"));
-						//if (Constants.FULL_PATHS) {
-						//	outFP.write(dirPath + "/run_" + p.getName());
-						//} else {
 						outFP.write("run_" + p.getName());
-						//}
 						outFP.close();
 					}
 

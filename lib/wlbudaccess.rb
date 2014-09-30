@@ -518,6 +518,44 @@ module WLBudAccess
       return valid, err
     end # insert_updates
 
+    # Create the static rule from a seed previously evaluated.  Bind all
+    # possible variables of a seed template with value found in intermediary
+    # relation.
+    def make_seed_sprout
+      new_rules = {}
+      # for each seeds entry
+      @seed_to_sprout.each do |sts|
+        bud_coll_name = sts[4]
+        coll = @tables[bud_coll_name.to_sym]
+        template = @wl_program.parse sts[2]
+        new_rule = nil
+        var_to_bound = template.body.first.variables[2]
+        # FIXME instead of each tuple iterate over the delta of new tuples would
+        # be better for each tuple in intermediary relation
+        coll.pro do |tuple|
+          new_rule = String.new template.show_wdl_format
+          var_to_bound.each_index do |ind_var|
+            #for access control need to increment index by 1 because of priv being always first
+            tuple_var = ind_var
+            if @options[:accessc]
+              tuple_var+=1
+            end
+            # FIXME hard coded @ to add quotes around field value but not around
+            # relation name and peer name
+            new_rule = new_rule.gsub "#{var_to_bound[ind_var]}@", "#{tuple[tuple_var]}@"
+            new_rule = new_rule.gsub "@#{var_to_bound[ind_var]}", "@#{tuple[tuple_var]}"
+            new_rule = new_rule.gsub "#{var_to_bound[ind_var]}", "#{tuple[tuple_var]}"
+            puts "after third gsub the rule is #{new_rule}"
+          end
+          # add new rules only if it has not already been derived
+          unless @sprout_rules.has_key?(new_rule)
+            new_rules[new_rule] = new_rule
+          end
+        end
+      end
+      return new_rules
+    end
+
     # This method group facts by relations and by peers.
     #
     # @return [Hash] {@dest, {@peer_name, [[atom1,...], [atom2,...],... ] }}

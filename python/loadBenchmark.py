@@ -8,7 +8,7 @@ import commands
 from subprocess import call
 
 pathToRepository = commands.getoutput("echo $HOME")
-sys.path.append(os.path.join(pathToRepository,'webdamlog-engine/python'))
+sys.path.append(os.path.join(pathToRepository,'webdam/webdamlog-engine/python'))
 
 
 #  Returns a list of Tick objects
@@ -23,6 +23,9 @@ def parseBenchmarkFile(filename, execID):
     f = open(filename, "r")
     lines = f.readlines()
     f.close()
+
+    if len(lines)%2 != 0:
+        print "check file %sfor" % filename
 
     assert len(lines)%2==0 
     count = len(lines)/2
@@ -135,4 +138,4 @@ if __name__ == "__main__":
 
     # for dbcluster running
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'), 1400000000000)
+    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdam/webdamlog-exp'), sys.argv[1])

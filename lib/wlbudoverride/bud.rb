@@ -380,6 +380,7 @@ collection int peer_done#{@peername}(key*);"
             t.flush_deltas
           end
         end
+
         @viz.do_cards(true) if @options[:trace]
 
         # part 3: transition
@@ -508,6 +509,16 @@ collection int peer_done#{@peername}(key*);"
       @dies_at_tick = num
     end
 
+    def update_aclrel (rel, peer, priv)
+      tables["acl_at_#{self.peername}".to_sym] << [rel,priv,PList.new([peer].to_set)]
+      #grab the symbol for this relation
+      if @options[:optim2]
+        form = tables["aclf_at_#{self.peername}".to_sym][[rel,priv]].formula
+        tables["formulas_at_#{self.peername}".to_sym] << [form, PList.new([peer].to_set)]
+      end
+      #FIXME - this is a hack
+      @need_rewrite_strata = true
+    end
   end #class
 
 end #module

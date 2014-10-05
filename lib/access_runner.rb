@@ -38,7 +38,7 @@ module WLARunner
   def update_acl (rel, peer, priv)
     sync_do do
       begin
-        self.tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
+        self.update_aclrel(rel,peer,priv)
       rescue WLError => e
         puts e
       end

@@ -81,12 +81,6 @@ end
 
       assert_equal [{:rel=>"delegated1_i_at_p1",:peer=>"p1"}], runner1.tables[:writeable_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
-      assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}],
-      runner1.tables[:rext_1_local2_at_test_access].map{|t| Hash[t.each_pair.to_a]}
-
-      assert_equal [{:priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}],
-      runner1.tables[:capc_1__at_test_access].map{|t| Hash[t.each_pair.to_a]}
-
       assert_equal [{:atom1=>"1", :priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2",:priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}],
         runner2.tables[:delegated1_i_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
 
@@ -190,8 +184,6 @@ end
       #test_access doesn't have write privs, so the relation should still be empty including intermediary ones because of writeable
       assert_equal [],
         runner2.tables[:deleg_from_test_access_2_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [],
-        runner2.tables[:deleg_from_test_access_3_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       assert_equal [],
         runner2.tables[:delegated1_i_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
@@ -212,7 +204,6 @@ end
 
       assert_equal [{:deleg_from_test_access_3_1_x_0=>"1", :priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}],
         runner2.tables[:deleg_from_test_access_3_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:rext_2_local1_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       assert_equal [{:atom1=>"1", :priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2",:priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}],
         runner2.tables[:delegated1_i_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
@@ -227,8 +218,6 @@ end
       runner2.tick
       runner1.tick
       runner1.tick
-
-      assert_equal [{:priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}], runner2.tables[:capc_2__at_p1].map{ |t| Hash[t.each_pair.to_a] }
 
       assert_equal [{:atom1=>"1",:atom2=>"3", :priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}], runner1.tables[:local3_i_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
       #incidentally, this also means delegated_join has an updated list
@@ -311,8 +300,6 @@ end
       #now check delegated collections that should be created
       assert_equal [],
         runner2.tables[:deleg_from_test_access_2_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [],
-        runner2.tables[:deleg_from_test_access_3_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check materialized collections from rules
       assert_equal [],
@@ -333,8 +320,6 @@ end
       #test_access doesn't have write privs, so the relation should still be empty due to writeable
       assert_equal [],
         runner2.tables[:deleg_from_test_access_2_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [],
-        runner2.tables[:deleg_from_test_access_3_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       assert_equal [],
         runner2.tables[:delegated1_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
@@ -354,9 +339,7 @@ end
       runner1.tick
       runner2.tick
 
-      assert_equal [{:atom1=>"1", :priv=>"G",:plist=>Omega.instance}, {:atom1=>"1", :priv=>"R",:plist=>Omega.instance}, {:atom1=>"2",:priv=>"G",:plist=>Omega.instance},{:atom1=>"2",:priv=>"R",:plist=>Omega.instance}],
-        runner1.tables[:rext_1_local2_at_test_access].map{|t| Hash[t.each_pair.to_a]}
-      assert_equal [{:atom1=>"1", :priv=>"G",:plist=>Omega.instance}, {:atom1=>"1",:priv=>"R",:plist=>Omega.instance},{:atom1=>"2", :priv=>"G",:plist=>Omega.instance}, {:atom1=>"2",:priv=>"R",:plist=>Omega.instance}],
+      assert_equal [{:atom1=>"1", :priv=>"R",:plist=>Omega.instance}, {:atom1=>"1",:priv=>"G",:plist=>Omega.instance},{:atom1=>"2", :priv=>"R",:plist=>Omega.instance}, {:atom1=>"2",:priv=>"G",:plist=>Omega.instance}],
         runner2.tables[:delegated1_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
       #because this is an extensional-head relation, without grant privs on p1's local1 the result should still be empty
       assert_equal [], runner2.tables[:delegated_join_plus_at_p1].map{ |t| Hash[t.each_pair.to_a] }
@@ -378,9 +361,9 @@ end
       runner2.tick
       runner1.tick
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"1",:atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>Omega.instance}], runner2.tables[:delegated_join_plus_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"1", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:delegated_join_plus_at_p1].map{ |t| Hash[t.each_pair.to_a] }
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"1",:atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>Omega.instance}], runner1.tables[:local3_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"1",:atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2", :atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local3_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)

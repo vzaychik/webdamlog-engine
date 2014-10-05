@@ -89,6 +89,14 @@ class FormulaList < Bud::Lattice
 
   #using postfix notation for simplicity
 
+  def self.make_new(i="")
+    if (i.kind_of? Omega) || (i.kind_of?(String) && i=="All peers")
+      Omega.instance
+    else
+      FormulaList.new(i)
+    end
+  end
+
   def initialize(i="")
     reject_input(i) unless i.kind_of? String
     @v = i
@@ -129,7 +137,7 @@ class FormulaList < Bud::Lattice
 
   def intersect(other)
     #TODO - do something smarter such as sorting and eliminating duplicates
-    if (other.kind_of? Omega)
+    if other.kind_of? Omega 
       self
     else
       if other.kind_of? FormulaList

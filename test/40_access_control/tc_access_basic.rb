@@ -55,7 +55,6 @@ end
   end  
 end
 
-
 class TcAccessLocalRules < Test::Unit::TestCase
   include MixinTcWlTest
   
@@ -90,7 +89,7 @@ end
        runner.run_engine
 
       #what do we want to check here? that for local rules all facts get in because peer can read his own stuff
-      assert_equal [{:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}], runner.snapshot_facts(:local1_i_plus_at_test_access)
+      assert_equal [{:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}], runner.snapshot_facts(:local1_i_plus_at_test_access)
 
     ensure
       if EventMachine::reactor_running?
@@ -207,8 +206,8 @@ end
       #now give write privs to test_access at p1
       runner2.update_acl("delegated1_i_at_p1","test_access","W")
       runner2.update_acl("delegated_join_i_at_p1","test_access","W")
-      runner2.tick
-      runner2.tick
+#      runner2.tick
+#      runner2.tick
 
       assert_equal [{:atom1=>"1", :priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2",:priv=>"R",:plist=>PList.new(["test_access","p1"].to_set)}],
         runner2.tables[:delegated1_i_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
@@ -303,11 +302,11 @@ end
       assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:local1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #now check delegated collections that should be created. because of extensional head they should materialize right away
-      assert_equal [{:deleg_from_test_access_1_1_x_0=>"1",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"R",:plist=>Omega.instance},{:deleg_from_test_access_1_1_x_0=>"1",:priv=>"G",:plist=>Omega.instance}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"G",:plist=>Omega.instance}],
+      assert_equal [{:deleg_from_test_access_1_1_x_0=>"1",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_1_1_x_0=>"1",:priv=>"G",:plist=>Omega.instance}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_1_1_x_0=>"2",:priv=>"G",:plist=>Omega.instance}],
         runner2.tables[:deleg_from_test_access_1_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:deleg_from_test_access_2_1_x_0=>"1",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"R",:plist=>Omega.instance},{:deleg_from_test_access_2_1_x_0=>"1",:priv=>"G",:plist=>Omega.instance}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"G",:plist=>Omega.instance}],
+      assert_equal [{:deleg_from_test_access_2_1_x_0=>"1",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_2_1_x_0=>"1",:priv=>"G",:plist=>Omega.instance}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_2_1_x_0=>"2",:priv=>"G",:plist=>Omega.instance}],
         runner2.tables[:deleg_from_test_access_2_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
-      assert_equal [{:deleg_from_test_access_3_1_x_0=>"1",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"R",:plist=>Omega.instance},{:deleg_from_test_access_3_1_x_0=>"1",:priv=>"G",:plist=>Omega.instance}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"G",:plist=>Omega.instance}],
+      assert_equal [{:deleg_from_test_access_3_1_x_0=>"1",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_3_1_x_0=>"1",:priv=>"G",:plist=>Omega.instance}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"R",:plist=>Omega.instance}, {:deleg_from_test_access_3_1_x_0=>"2",:priv=>"G",:plist=>Omega.instance}],
         runner2.tables[:deleg_from_test_access_3_1_plus_at_p1].map{ |t| Hash[t.each_pair.to_a]}
 
       #test_access doesn't have write privs, so the relation should still be empty
@@ -324,7 +323,7 @@ end
       runner2.tick
       runner2.tick
 
-      assert_equal [{:atom1=>"1", :priv=>"R",:plist=>Omega.instance}, {:atom1=>"2",:priv=>"R",:plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}],
+      assert_equal [{:atom1=>"1", :priv=>"R",:plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2",:priv=>"R",:plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}],
         runner2.tables[:delegated1_plus_at_p1].map{|t| Hash[t.each_pair.to_a]}
       #because this is an extensional-head relation, without grant privs on p1's local1 the result should still be empty
       assert_equal [], runner2.tables[:delegated_join_plus_at_p1].map{ |t| Hash[t.each_pair.to_a] }
@@ -349,7 +348,7 @@ end
 
       assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"1", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"G", :plist=>Omega.instance}], runner2.tables[:delegated_join_plus_at_p1].map{ |t| Hash[t.each_pair.to_a] }
 
-      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"1", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local3_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal [{:atom1=>"1", :atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"1", :atom2=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"2",:atom2=>"3", :priv=>"G", :plist=>Omega.instance}], runner1.tables[:local3_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)

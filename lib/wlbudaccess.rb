@@ -44,23 +44,6 @@ module WLBudAccess
           fout.close
           load fullfilename
         end
-        if @options[:optim2]
-          str_res = ""
-          @wl_program.wlpeers.each {|p|
-            if p[0] != @peername
-              str_res << "sbuffer <= formulas_at_#{@peername} {|rel| [\"#{p[1]}\",
-              \"formulas_at_#{p[0]}\", [rel.id, rel.plist]] };"
-            end
-          }
-          puts "Installing bud rule #{str_res}" if @options[:debug]
-          optim2name = "webdamlog_#{@peername}_formulas_deleg"
-          filestr = build_string_rule_to_include(optim2name, str_res)
-          fullfilename = File.join(@rule_dir, optim2name)
-          fout = File.new("#{fullfilename}", "w+")
-          fout.puts "#{filestr}"
-          fout.close
-          load fullfilename
-        end          
       end
     end
 
@@ -68,24 +51,24 @@ module WLBudAccess
       raise "Impossible to add in bud a rule that is either unbound or non-local" unless @wl_program.bound_n_local?(wlrule)
       puts "Adding a rule: #{wlrule}" if @options[:debug]
       @wl_program.disamb_peername!(wlrule)
-      if @options[:optim1] && !@options[:optim2]
-        add_capcs wlrule
-        add_rexts wlrule
-      end
-
       rule = "#{@wl_program.translate_rule_str(wlrule)}"
       name = "webdamlog_#{@peername}_#{wlrule.rule_id}"
 
       # this is a bit hacky - with access control we generate 2 rules instead of
       # one for grant priv and one for read
-      if @options[:accessc] && (!@options[:optim1] || @options[:optim2])
+      if @options[:accessc]
         rule2 = "#{rule}"
         rule2.gsub! "\"R\"", "\"G\""
         rule << rule2
       end
 
-      rule << @wl_program.translate_capc_str(wlrule) if @options[:optim1] && !@options[:optim2]
-      rule << @wl_program.translate_formula_str(wlrule) if @options[:optim2]
+      #rule << @wl_program.translate_formula_str(wlrule) if @options[:optim2]
+      rule3,fname = @wl_program.translate_formula_str(wlrule) if @options[:optim2]
+      unless rule3.nil? or rule3 == ""
+        self.table(fname.to_sym, [:formula] => [:symbol,:plist])
+        tables[fname.to_sym] <+ [[Omega.instance.to_s, Omega.instance, Omega.instance]]
+        rule << rule3
+      end
 
       install_bud_rule rule, name
       @rule_installed << wlrule
@@ -108,9 +91,14 @@ module WLBudAccess
       if @options[:accessc] && collection.peername == @peername
         name = collection.atom_name
         tables["t_kind".to_sym] <+ [[name, collection.get_type.to_s, collection.arity]]	  
-        tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", name],["#{peername}", "W", name],["#{peername}", "R", name]]
+        tables["acl_at_#{peername}".to_sym] << [name,"G", PList.new(["#{peername}"].to_set)]
+        tables["acl_at_#{peername}".to_sym] << [name,"W", PList.new(["#{peername}"].to_set)]
+        tables["acl_at_#{peername}".to_sym] << [name,"R", PList.new(["#{peername}"].to_set)]
         if @options[:optim2] && !collection.rel_type.intermediary?
-          tables["aclf_at_#{peername}".to_sym] <+ [[name, "R", "#{peername}_#{@formulas[@next_formula]}"],[name, "G", "#{peername}_#{@formulas[@next_formula+1]}"]]
+          tables["aclf_at_#{peername}".to_sym] << [name, "R", "#{peername}_#{@formulas[@next_formula]}"]
+          tables["aclf_at_#{peername}".to_sym] << [name, "G", "#{peername}_#{@formulas[@next_formula+1]}"]
+          tables["formulas_at_#{peername}".to_sym] << ["#{peername}_#{@formulas[@next_formula]}", PList.new(["#{peername}"].to_set)]
+          tables["formulas_at_#{peername}".to_sym] << ["#{peername}_#{@formulas[@next_formula+1]}", PList.new(["#{peername}"].to_set)]
           @next_formula+=2
         end
         #   #need to add extended collection
@@ -124,12 +112,12 @@ module WLBudAccess
 
           #select formulas used by the relation into another relation
           if collection.rel_type.intermediary?
-            formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| [t.plist.to_s,t.priv] unless t.plist.kind_of? Omega};\n"
+            formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| [t.plist.to_s,t.priv]};\n"
           else
-            formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| ff = t.plist.intersect(aclf_at_#{peername}[[\"#{collection.atom_name}\",t.priv]].formula); [ff.to_s,t.priv] unless ff.kind_of? Omega};\n"
+            formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| ff = t.plist.intersect(aclf_at_#{peername}[[\"#{collection.atom_name}\",t.priv]].formula); [ff.to_s,t.priv]};\n"
           end
 
-          formula_str << "extended_formulas_at_#{peername} <= formulas_#{collection.atom_name} {|ff| numst = []; ff.formula.split(' ').each { |fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; [ff.formula,numst.pop]};"
+          formula_str << "extended_formulas_#{collection.atom_name} <= formulas_#{collection.atom_name}.each_with_index {|ff,i| numst = []; if ff.formula != \"All peers\" then symbs=ff.formula.split(' '); if symbs.length>1 then symbs.each { |fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; newval=numst.pop; if newval.kind_of?(Omega) then newsym=Omega.instance else newsym=\"#{peername}_\"+newval.to_a.sort.join(\"\").to_i(36).to_s; formulas_at_#{peername} << [newsym,newval] end; [ff.formula,newsym,newval] else [ff.formula,ff.formula,formulas_at_#{peername}[[ff.formula]].plist];end; end;};"
 
           puts "Installing rule #{formula_str}" if @options[:debug]
           filestr = build_string_rule_to_include("webdamlog_#{peername}_formulas_#{collection.relname}", formula_str)
@@ -175,17 +163,7 @@ module WLBudAccess
         keys << :"priv"
         values << :"plist"
         aclschema = {keys => values}
-        #acl is intensional, so declared as scratch
-        #it is recomputed from acle relation which has individual statements
-        self.scratch("acl_at_#{peername}".to_sym, aclschema)
-        #   #need some basic default facts so need a separate extentional table
-        #   acle
-        keys = []
-        keys << :"peer"
-        keys << :"priv"
-        keys << :"rel"
-        acleschema = {keys => values}
-        self.table("acle_at_#{peername}".to_sym, acleschema)
+        self.table("acl_at_#{peername}".to_sym, aclschema)
         keys = []
         keys << :"rel"
         values = []
@@ -194,32 +172,10 @@ module WLBudAccess
         kindschema = {keys => values}
         self.table(:t_kind, kindschema)
 
-        #   #install default rules into acl #have to make a string to pass into
-        #   bloom to evaluate
-        str_res = "acl_at_#{peername} <= acle_at_#{peername}.group([:rel,:priv],accum(:peer)) {|t| [t.peer, t.priv, PList.new(t.rel)]};"
-        #   #any time kind is updated because a new relation is added, need to
-        #   install into acl
-
-        #   #str_res << "acle_at_#{peername} <= t_kind {|k| [\"#{peername}\",
-        #   'G', k.rel]};" #str_res << "acle_at_#{peername} <= t_kind {|k|
-        #   [\"#{peername}\", 'W', k.rel]};" #str_res << "acle_at_#{peername} <=
-        #   t_kind {|k| [\"#{peername}\", 'R', k.rel]};" #peer has full privs to
-        #   his own acl #str_res << "acle_at_#{peername} <= [[\"#{peername}\",
-        #   \"G\", \"acl_at_#{peername}\"]];" #str_res << "acle_at_#{peername}
-        #   <= [[\"#{peername}\", \"W\", \"acl_at_#{peername}\"]];" #str_res <<
-        #   "acle_at_#{peername} <= [[\"#{peername}\", \"R\",
-        #   \"acl_at_#{peername}\"]];"
-        tables["acle_at_#{peername}".to_sym] <+ [["#{peername}", "G", "acl_at_#{peername}"],["#{peername}", "W", "acl_at_#{peername}"],["#{peername}", "R", "acl_at_#{peername}"]]
-        puts "Installing bud rule #{str_res}" if @options[:debug]
-        #   #write to a file
-        aclrulename = "webdamlog_#{@peername}_aclkind"
-        filestr = build_string_rule_to_include(aclrulename, str_res)
-        fullfilename = File.join(@rule_dir, aclrulename)
-        fout = File.new("#{fullfilename}", "w+")
-        fout.puts "#{filestr}"
-        fout.close
-        load fullfilename
-        @need_rewrite_strata = true
+        tables["acl_at_#{peername}".to_sym] << ["acl_at_#{peername}", "G", PList.new(["#{peername}"].to_set)]
+        tables["acl_at_#{peername}".to_sym] << ["acl_at_#{peername}", "W", PList.new(["#{peername}"].to_set)]
+        tables["acl_at_#{peername}".to_sym] << ["acl_at_#{peername}", "R", PList.new(["#{peername}"].to_set)]
+        #@need_rewrite_strata = true
       end
     end
 
@@ -231,84 +187,21 @@ module WLBudAccess
         keys << :"rel"
         writeableschema = {keys => values}
         self.table("writeable_at_#{peername}".to_sym, writeableschema)
-        #   #now need to put in the rule #FIXME! - no way to write a bud rule
-        #   with variable in the rule name #so at least for now just delegate to
-        #   all my peers knowledge of what they can write to
+        #   #now need to put in the rule to distribute #FIXME!
       end
 
       if @options[:accessc] and @options[:optim2]
-        keys=[]
-        values=[]
-        keys << :id
-        values << :plist
-        formschema = {keys => values}
-        self.table("formulas_at_#{peername}".to_sym, formschema)
-        self.scratch("extended_formulas_at_#{peername}".to_sym, {[:id] => [:plist]})
-
-        keys=[]
-        keys << :rel
-        keys << :priv
-        values=[]
-        values << :formula
-        aclschema = {keys => values}
-        self.table("aclf_at_#{peername}".to_sym, aclschema)
+        self.table("formulas_at_#{peername}".to_sym, {[:id] => [:plist]})
+        self.table("aclf_at_#{peername}".to_sym, [:rel,:priv] => [:formula])
 
         tables["formulas_at_#{peername}".to_sym] <+ [[Omega.instance.to_s, Omega.instance]]
-        str_res = "formulas_at_#{peername} <= (acl_at_#{peername} * aclf_at_#{peername}).combos(acl_at_#{peername}.rel => aclf_at_#{peername}.rel, acl_at_#{peername}.priv => aclf_at_#{peername}.priv) {|a,b| [b.formula, a.plist]}; extended_formulas_at_#{peername} <= formulas_at_#{peername} {|t| [t.id,t.plist]};\n"
-
-        puts "Installing bud rule #{str_res}" if @options[:debug]
-        #   #write out
-        formularulename = "webdamlog_#{peername}_formulas"
-        filestr = build_string_rule_to_include(formularulename, str_res)
-        fullfilename = File.join(@rule_dir, formularulename)
-        fout = File.new("#{fullfilename}", "w+")
-        fout.puts "#{filestr}"
-        fout.close
-        load fullfilename
       end
-    end
-
-    #   #make capc for each relation in the body of the rule
-    def add_capcs(wlrule)
-      if wlrule.body.length > 1
-        wlrule.body.each do |atom|
-          add_capc(wlrule.rule_id, atom.relname)
-        end
-      end
-
-      add_capc(wlrule.rule_id)
-    end
-    
-    def add_capc(id,atomn="")
-      keys=[]
-      values=[]
-      keys << :"priv"
-      values << :"plist"
-      capcschema = {keys => values}
-      self.scratch("capc_#{id}_#{atomn}_at_#{peername}".to_sym,capcschema)
-    end
-
-    def add_rexts(wlrule)
-      wlrule.body.each do |atom|
-        add_rext(wlrule.rule_id, atom)
-      end
-    end
-
-    def add_rext(id, atom)
-      keys=[]
-      values=[]
-      col = @wl_program.wlcollections[atom.fullrelname]
-      rext = @wl_program.parse(col.make_rext(id))
-      self.schema_init(rext)
     end
 
     def add_form(atomn)
-      keys=[]
-      values=[]
-      keys << :"formula"
-      values << :"val"
-      formschema = {keys => values}
-      self.table("formulas_#{atomn}_at_#{@peername}".to_sym, formschema)
+      self.table("formulas_#{atomn}_at_#{@peername}".to_sym, [:formula,:val] => [])
+      self.table("extended_formulas_#{atomn}_at_#{@peername}".to_sym, [:formula] => [:symbol,:plist])
+      tables["extended_formulas_#{atomn}_at_#{@peername}".to_sym] <+ [[Omega.instance.to_s, Omega.instance,Omega.instance]]
     end
 
     #   Takes in an access policy and updates acl
@@ -323,7 +216,7 @@ module WLBudAccess
       #   #support special case of peer list from a relation
       if policy.access.relation?
         #   #have to make a string to pass into bloom to evaluate
-        str_res = "acle_at_#{self.peername} <= #{policy.access.fullrelname} {|t| [t[0],'#{priv}',\"#{rel}\"]};"
+        str_res = "acl_at_#{self.peername} <= #{policy.access.fullrelname} {|t| [\"#{rel}\",'#{priv}',t[0]]};"
         #   #write to a file
         policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{policy.access.relname}"
         filestr = build_string_rule_to_include(policyname, str_res)
@@ -333,18 +226,17 @@ module WLBudAccess
         fout.close
         load fullfilename
       elsif policy.access.all?
-        puts "adding to acl Omega for #{rel} for priv #{priv}" if @options[:debug]
-        str_res = "acl_at_#{self.peername} <= [[\"#{rel}\",\"#{priv}\",Omega.instance]]"
-        #   #write to a file
-        policyname = "webdamlog_#{@peername}_policy_#{priv}_#{rel}_#{peer}"
-        filestr = build_string_rule_to_include(policyname, str_res)
-        fullfilename = File.join(@rule_dir, policyname)
-        fout = File.new("#{fullfilename}", "w+")
-        fout.puts "#{filestr}"
-        fout.close
-        load fullfilename
+        tables["acl_at_#{self.peername}".to_sym] << [rel,priv,Omega.instance]
+        if @options[:optim2] && priv != "W"
+          form = tables["aclf_at_#{self.peername}".to_sym][[rel,priv]].formula
+          tables["formulas_at_#{self.peername}".to_sym] << [form,Omega.instance]
+        end
       else
-        tables["acle_at_#{self.peername}".to_sym] <+ [["#{peer}","#{priv}","#{rel}"]]
+        tables["acl_at_#{self.peername}".to_sym] << [rel,priv,PList.new([peer].to_set)]
+        if @options[:optim2] && priv != "W"
+          form = tables["aclf_at_#{self.peername}".to_sym][[rel,priv]].formula
+          tables["formulas_at_#{self.peername}".to_sym] << [form, PList.new([peer].to_set)]
+        end
       end
     end
 
@@ -434,7 +326,7 @@ module WLBudAccess
             if tuple.is_a? Array or tuple.is_a? Struct
               if tuple.size == @wl_program.wlcollections[relation_name].arity 
                 begin
-                  # #VZM access control need to change plist arrays back to sets
+                  # access control need to change plist arrays back to sets
                   if @options[:accessc]
                     tuple.collect! {|x|
                       if x.is_a?(Array)
@@ -444,7 +336,7 @@ module WLBudAccess
                           PList.new(x.to_set)
                         end
                       elsif (x.is_a?(String) && x.start_with?(":form:"))
-                        FormulaList.new(x[6..-1])
+                        FormulaList.make_new(x[6..-1])
                       else
                         x
                       end
@@ -486,6 +378,8 @@ module WLBudAccess
               err[[k,tuple]] = "fact in relation #{k} with value \"#{tuple}\" should be an Array or struct instead found a #{tuple.class}"
             end
           end # tuples.each do |tuple|
+          #FIXME - this is a hack because bud doesn't realize writeable feeds rules
+          @need_rewrite_strata = true
         elsif @options[:accessc] && @options[:optim2] && relation_name.start_with?("formulas")
           tuples.each do |tuple|
             if tuple.is_a? Array or tuple.is_a? Struct
@@ -502,7 +396,7 @@ module WLBudAccess
                   end
                 }
                 puts "updating #{relation_name} with #{tuple}" if @options[:debug]
-                tables[relation_name.to_sym] <+ [tuple]
+                tables[relation_name.to_sym] << tuple
                 (valid[relation_name] ||= []) << tuple
               rescue StandardError => error
                 err[[k,tuple]]=error.inspect
@@ -545,7 +439,6 @@ module WLBudAccess
             new_rule = new_rule.gsub "#{var_to_bound[ind_var]}@", "#{tuple[tuple_var]}@"
             new_rule = new_rule.gsub "@#{var_to_bound[ind_var]}", "@#{tuple[tuple_var]}"
             new_rule = new_rule.gsub "#{var_to_bound[ind_var]}", "#{tuple[tuple_var]}"
-            puts "after third gsub the rule is #{new_rule}"
           end
           # add new rules only if it has not already been derived
           unless @sprout_rules.has_key?(new_rule)
@@ -567,45 +460,42 @@ module WLBudAccess
     def aggregate_facts(fact_buffer)
       sbuffer_facts = DeepClone.clone(super(fact_buffer))
       if @options[:accessc]
-        #if formulas are the only relation sent, take it out unless sent previously
         sbuffer_facts.values.each {|fctsinr| #this is the list of collections to update for a peer
-          if fctsinr.keys.length == 1 && fctsinr.keys.first.start_with?("formulas_at_")
-            fctsinr.delete(fctsinr.keys.first)
-            #FIXME - if the formulas were sent previously, any updates should be resent even by themselves
-          else
-            #accumulate a set of used formulas
-            formulas_used = [].to_set
-            fctsinr.values.each { |fcts|
-              fcts.each {|tuple| #tuple is an array
-                if tuple.is_a? Array
-                  tuple.collect! {|x| 
-                    if (x.is_a? PList)
-                      x.to_a
-                    elsif (x.is_a? FormulaList)
-                      formulas_used.add(x)
-                      ":form:" + x.to_a
-                    else
-                      x
-                    end
-                  }
-                end
-              }
+          #accumulate a set of used formulas
+          formulas_used = [].to_set
+          fctsinr.values.each { |fcts|
+            fcts.each {|tuple| #tuple is an array
+              if tuple.is_a? Array
+                tuple.collect! {|x| 
+                  if (x.is_a? PList)
+                    x.to_a
+                  elsif (x.is_a? FormulaList)
+                    formulas_used.add(x)
+                    ":form:" + x.to_a
+                  else
+                    x
+                  end
+                }
+              end
             }
-            if @options[:optim2]
-              #reduce the formulas to set of symbols used
-              symbols_used = [].to_set
-              formulas_used.each { |formula|
-                symbols_used.merge(formula.to_s.split(' '))
-              }
-              #reduce the symbols sent only to those used
-              fctsinr.keys.each {|rel|
-                if rel.start_with?("formulas_at_")
-                  formulrel = fctsinr[rel]
-                  formulrel.delete_if { |tuple|
-                    !symbols_used.include? tuple[0]
-                  }
-                end
-              }
+          }
+          if @options[:optim2]
+            #reduce the formulas to set of symbols used
+            symbols_used = [].to_set
+            formulas_used.each { |formula|
+              symbols_used.merge(formula.to_s.split(' '))
+            }
+            #look up the symbols used and send them
+            tmp,pr = fctsinr.keys.first.split('_at_')
+            symboltups = []
+            symbols_used.each { |symbol|
+              if !symbol.kind_of?(Omega) #don't need to send Omega
+                val = tables["formulas_at_#{peername}".to_sym][[symbol]].to_a
+                symboltups << val
+              end
+            }
+            if symboltups.length > 0
+              fctsinr["formulas_at_#{pr}"] = symboltups
             end
           end
         }      

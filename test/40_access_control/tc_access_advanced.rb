@@ -48,8 +48,8 @@ def test_access_grammar
         assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner.tables[:local2_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
         
         
-        assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}], runner.tables[:local1_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
-        assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner.tables[:local3_i_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}], runner.tables[:local1_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [{:atom1=>"1", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"1", :priv=>"G", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"R", :plist=>Omega.instance}, {:atom1=>"2", :priv=>"G", :plist=>Omega.instance}], runner.tables[:local3_i_plus_at_test_access].map{ |t| Hash[t.each_pair.to_a]}
         
         assert_equal(["policy local2 read ALL","policy local1 read p1","policy local3_i write p1"], runner.snapshot_policies)
         
@@ -247,7 +247,7 @@ def test_deleg_proven
         runner2.tick
         runner1.tick
         
-        assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"4",:priv=>"R",:plist=>Omega.instance}, {:atom1=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"4",:priv=>"G",:plist=>Omega.instance}], runner1.tables[:r_i_plus_at_p].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [{:atom1=>"3", :priv=>"R", :plist=>Omega.instance},{:atom1=>"3", :priv=>"G", :plist=>Omega.instance},{:atom1=>"4",:priv=>"R",:plist=>Omega.instance}, {:atom1=>"4",:priv=>"G",:plist=>Omega.instance}], runner1.tables[:r_i_plus_at_p].map{ |t| Hash[t.each_pair.to_a]}
         
         assert_equal [{:atom1=>"3", :priv=>"R", :plist=>PList.new(["p","p1"].to_set)}], runner1.tables[:r3_i_plus_at_p].map{ |t| Hash[t.each_pair.to_a]}
         
@@ -305,7 +305,7 @@ def test_duplicates
         runner.tick
         runner.tick
         
-        assert_equal [{:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access","p1","p2"].to_set)}, {:atom1=>"3", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"3", :priv=>"R", :plist=>PList.new(["test_access","p2"].to_set)}], runner.snapshot_facts(:local1_i_plus_at_test_access)
+        assert_equal [{:atom1=>"1", :priv=>"R", :plist=>PList.new(["test_access","p1"].to_set)}, {:atom1=>"1", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"2", :priv=>"R", :plist=>PList.new(["test_access","p1","p2"].to_set)}, {:atom1=>"2", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}, {:atom1=>"3", :priv=>"R", :plist=>PList.new(["test_access","p2"].to_set)}, {:atom1=>"3", :priv=>"G", :plist=>PList.new(["test_access"].to_set)}], runner.snapshot_facts(:local1_i_plus_at_test_access)
         
         ensure
         runner.stop

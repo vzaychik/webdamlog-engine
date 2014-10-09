@@ -179,6 +179,7 @@ In the string: #{line}
       
       relation_name = generate_intermediary_relation_name(wlrule.rule_id)
       local_vars=[]
+      #FIXME - need to make work for non-vars
       wlrule.head.variables.flatten.each { |var|
         local_vars << var unless var.nil? or local_vars.include?(var)
       }
@@ -239,70 +240,6 @@ In the string: #{line}
       else
         orig_translate_rule_str(wlrule)
       end
-    end
-
-    def translate_formula_str(wlrule)
-      unless wlrule.is_a?(WLBud::WLRule)
-        raise WLErrorTyping,
-        "wlrule should be of type WLBud::WLRule, not #{wlrule.class}"
-      end
-      unless (head_atom_peername = wlrule.head.peername)
-        raise WLErrorGrammarParsing,
-        "In this rule: #{wlrule.show}\n Problem: the name of the peer in the relation in the head cannot be extracted. Relation in the head #{wlrule.head.text_value}"
-      end
-      if @wlpeers[head_atom_peername].nil?
-        raise WLErrorPeerId,
-        "In #{wlrule.text_value} the peer name: #{head_atom_peername} cannot be found in the list of known peer: #{@wlpeers.inspect}"
-      end
-
-      formula_str = ""
-      fname = ""
-      wlrule.make_dictionaries unless wlrule.dic_made
-
-      if !wlrule.body.empty?
-        # go through the intersections that are required and add them to the
-        # formulas relation
-        intersects = []
-        wlrule.body.each do |atom|
-          if bound_n_local?(atom)
-            if (extensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Preserve) ||
-                (intensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Preserve))
-              intersects << atom.fullrelname
-            end
-          end
-        end
-        if intersects.length > 1
-          #need to add a collection
-          fname << "extended_formulas_"
-          wlrule.body.each {|atom| fname << "#{atom.fullrelname}_"}
-          fname << "at_#{peername}"
-          formula_str << fname
-          formula_str << "<= ("
-          intersects.each do |atom|
-            formula_str << "formulas_#{atom}*"
-          end
-          formula_str.slice!(-1..-1)
-          formula_str << ").combos {|"
-          intersects.each_with_index do |atom,i|
-            formula_str << "f#{i},"
-          end
-          formula_str.slice!(-1..-1)
-          formula_str << "|"
-          formula_str << "numst = []; fullf = FormulaList.make_new("
-          intersects.each_with_index do |atom,i|
-            formula_str << "f#{i}.formula).intersect("
-          end
-          formula_str.slice!(-11..-1)
-          formula_str << "; if !fullf.kind_of?(Omega) then "
-          formula_str << "fullf.to_s.split(' ').each { |fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist); end; }; "
-          formula_str << "newval=numst.pop;"
-          formula_str << "if newval.kind_of?(Omega) then newsym=Omega.instance else "
-          formula_str << "newsym=\"#{peername}_\"+newval.to_a.sort.join(\"\").to_i(36).to_s;"
-          formula_str << "formulas_at_#{peername} << [newsym,newval] end;"
-          formula_str << "[fullf.to_s,newsym,newval] end;};"
-        end
-      end
-      return formula_str,fname
     end
 
     # Generates the string representing the relation name If access control is
@@ -619,15 +556,7 @@ In the string: #{line}
 
         # check for read or grant for target peer on preserved relations only
         extr_def = false
-        if body.length==1 
-          str = "extR = extended_formulas_#{body.first.fullrelname}[["
-        else
-          str = "extR = extended_formulas_"
-          wlrule.body.each {|atom| str << "#{atom.fullrelname}_"}
-          str << "at_#{peername}[["
-        end
-
-        form_str = "Omega.instance.intersect"
+        form_str = "extF = Omega.instance.intersect"
 
         wlrule.body.each do |atom|
           if bound_n_local?(atom)
@@ -645,46 +574,48 @@ In the string: #{line}
 
         if extr_def
           form_str.slice!(-10..-1)
-          str_res << str
           str_res << form_str
-          str_res << ".to_s]];"
+          str_res << ".to_s;"
+          str_res << "extRt = extended_formulas_at_#{peername}[[extF]];"
+          str_res << "if extRt then extR=extRt.plist; else "
+          #compute extended formulas on demand
+          str_res << "numst=[]; extF.split(' ').each {|fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; newval=numst.pop; if newval.kind_of?(Omega) then newsym=Omega.instance else newsym=symbols_at_#{peername}[[newval.to_a.sort.join(\"\")]]; if newsym then newsym=newsym.symbol else newsym=\"#{peername}_\"+Time.now.to_i.to_s; symbols_at_#{peername} << [newval.to_a.sort.join(\"\"),newsym]; formulas_at_#{peername} << [newsym,newval]; end; end; extended_formulas_at_#{peername} << [extF,newsym,newval]; extR=newval; end;"
         end
 
         # check for grant for author peer on hide relations only
         extg_def = false
-        if body.length==1 
-          str = "extG = extended_formulas_#{body.first.fullrelname}[[Omega.instance.intersect"
-        else
-          str = "extG = extended_formulas_"
-          wlrule.body.each {|atom| str << "#{atom.fullrelname}_"}
-          str << "at_#{peername}[[Omega.instance.intersect"
-        end
+        form_str = "extF = Omega.instance.intersect"
 
         wlrule.body.each do |atom|
           if bound_n_local?(atom)
             if (extensional_head?(wlrule) && (atom.provenance.empty? || atom.provenance.type == :Hide)) ||
                 (intensional_head?(wlrule) && !atom.provenance.empty? && atom.provenance.type == :Hide)
-              str << "("
-              str << "(" unless intermediary?(atom)
-              str << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
-              str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}aclG))" unless intermediary?(atom)
-              str << ").intersect"
+              form_str << "("
+              form_str << "(" unless intermediary?(atom)
+              form_str << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.plist"
+              form_str << ".intersect(#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}aclG))" unless intermediary?(atom)
+              form_str << ").intersect"
             end
           end
         end
 
         if extg_def
-          str.slice!(-10..-1)
-          str_res << str
-          str_res << "]];"
+          form_str.slice!(-10..-1)
+          str_res << form_str
+          str_res << ".to_s;"
+          str_res << "extGt = extended_formulas_at_#{peername}[[extF]];"
+          str_res << "if extGt then extG=extGt.plist else "
+          #compute extended formulas on demand
+          str_res << "numst=[]; extF.split(' ').each {|fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; newval=numst.pop; if newval.kind_of?(Omega) then newsym=Omega.instance else newsym=symbols_at_#{peername}[[newval.to_a.sort.join(\"\")]]; if newsym.nil? then newsym=\"#{peername}_\"+Time.now.to_s; symbols_at_#{peername} << [newval.to_a.sort.join(\"\"),newsym]; formulas_at_#{peername} << [newsym,newval]; end; end; extended_formulas_at_#{peername} << [extF,newsym,newval]; extG=newval; end;"
         end
 
         str_res << projection_bud_string(wlrule)
-        str_res << condition_bud_string(wlrule)
+        cond_str = condition_bud_string(wlrule)
+        str_res << cond_str
 
         # add the check for the right plist in acls #add the check that we can
         # write to the head relation
-        if str_res.include?(" if ")
+        if cond_str.include?(" if ")
           str_res << " && "
         else
           str_res << " if "
@@ -694,8 +625,8 @@ In the string: #{line}
           str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
         end
 
-        str_res << "extR.plist.include?(\"#{wlrule.head.peername}\") && " if extr_def
-        str_res << "extG.plist.include(\"\"#{wlrule.author}\") && " if extg_def 
+        str_res << "extR.include?(\"#{wlrule.head.peername}\") && " if extr_def
+        str_res << "extG.include(\"\"#{wlrule.author}\") && " if extg_def 
           
         str_res.slice!(-3..-1)
 
@@ -786,13 +717,7 @@ In the string: #{line}
       if @options[:accessc]        
         #add plist computation        
         if @options[:optim2]
-          if wlrule.body.length==1 
-            str << "FormulaList.make_new(extended_formulas_#{wlrule.body.first.fullrelname}[["
-          else
-            str << "FormulaList.make_new(extended_formulas_"
-            wlrule.body.each {|atom| str << "#{atom.fullrelname}_"}
-            str << "at_#{peername}[["
-          end
+          str << "FormulaList.make_new(extended_formulas_at_#{peername}[["
         end
         str << "Omega.instance"        
 
@@ -866,9 +791,11 @@ In the string: #{line}
         (0..values.size-2).each_with_index do |iter1,index|
           pos1 = values[iter1]
           relation_position1 , attribute_position1 = pos1.split('.')
+          attribute_position1 = attribute_position1.to_i + 1 if @options[:accessc]
           (index+1..values.size-1).each do |iter2|
             pos2 = values[iter2]
             relation_position2 , attribute_position2 = pos2.split('.')
+            attribute_position2 = attribute_position2.to_i + 1 if @options[:accessc]
             if wlrule.dic_invert_relation_name[Integer(relation_position1)] == wlrule.dic_invert_relation_name[Integer(relation_position2)]
               if first_condition
                 str << " if "

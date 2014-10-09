@@ -145,6 +145,7 @@ module WLBud
         @measure_obj = WlMeasure.new @budtime, @peername, @options[:measure_file]
       end
       @need_rewrite_strata=false
+      @acl_updated=false
       @done_rewrite={}
       @collection_added=false
       # Loads .wl file containing the setup(facts and rules) for the Webdamlog
@@ -318,6 +319,13 @@ collection int peer_done#{@peername}(key*);"
             # Call tick on tables here itself. The rest below
             elem.invalidate_cache unless elem.class <= PushElement
           }
+
+          if @options[:accessc] && @acl_updated
+            each_scanner do |scanner, stratum|
+              scanner.force_rescan = true
+            end
+            @acl_updated = false
+          end
 
           # The following loop invalidates additional (non-default) elements and
           # tables that depend on the run-time invalidation state of a table.

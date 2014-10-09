@@ -271,11 +271,18 @@ public class Peer {
 		}
 
 		//VZM this is for special completion condition handling
-		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
+		if (_type == PEER_TYPE.MASTER) {
 		    for (Peer p : _knownPeers) {
 			prog.append("rule master_done@" + p.getName() + "($x) :- done@" + getName() + "($x);\n");
 		    }
-		}		
+		} else if (_type == PEER_TYPE.SUE) {
+		    //special case for the Album scenario because master might not actually know every peer
+		    for (Peer p : Album._peersList) {
+			if (p.getType() != PEER_TYPE.SUE) {
+			    prog.append("rule master_done@" + p.getName() + "($x) :- done@" + getName() + "($x);\n");
+			}
+		    }
+		}
 		
 		return prog.toString();
 	}

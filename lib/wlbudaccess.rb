@@ -62,14 +62,6 @@ module WLBudAccess
         rule << rule2
       end
 
-      #rule << @wl_program.translate_formula_str(wlrule) if @options[:optim2]
-      rule3,fname = @wl_program.translate_formula_str(wlrule) if @options[:optim2]
-      unless rule3.nil? or rule3 == ""
-        self.table(fname.to_sym, [:formula] => [:symbol,:plist])
-        tables[fname.to_sym] <+ [[Omega.instance.to_s, Omega.instance, Omega.instance]]
-        rule << rule3
-      end
-
       install_bud_rule rule, name
       @rule_installed << wlrule
       # the last element is the bud name for the block created
@@ -106,28 +98,6 @@ module WLBudAccess
         puts "Adding a collection for AC: \n #{extended_collection.show_wdl_format}" if @options[:debug]
         name, schema = self.schema_init(extended_collection)
         @extended_collections_to_flush << extended_collection
-
-        if @options[:optim2] #add special formulas collection
-          add_form(collection.relname)
-
-          #select formulas used by the relation into another relation
-          if collection.rel_type.intermediary?
-            formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| [t.plist.to_s,t.priv]};\n"
-          else
-            formula_str = "formulas_#{collection.atom_name} <= #{wl_program.make_rel_name(collection.atom_name)} {|t| ff = t.plist.intersect(aclf_at_#{peername}[[\"#{collection.atom_name}\",t.priv]].formula); [ff.to_s,t.priv]};\n"
-          end
-
-          formula_str << "extended_formulas_#{collection.atom_name} <= formulas_#{collection.atom_name}.each_with_index {|ff,i| numst = []; if ff.formula != \"All peers\" then symbs=ff.formula.split(' '); if symbs.length>1 then symbs.each { |fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; newval=numst.pop; if newval.kind_of?(Omega) then newsym=Omega.instance else newsym=\"#{peername}_\"+newval.to_a.sort.join(\"\").to_i(36).to_s; formulas_at_#{peername} << [newsym,newval] end; [ff.formula,newsym,newval] else [ff.formula,ff.formula,formulas_at_#{peername}[[ff.formula]].plist];end; end;};"
-
-          puts "Installing rule #{formula_str}" if @options[:debug]
-          filestr = build_string_rule_to_include("webdamlog_#{peername}_formulas_#{collection.relname}", formula_str)
-          fullfilename = File.join(@rule_dir, "webdamlog_#{peername}_formulas_#{collection.relname}")
-          fout = File.new("#{fullfilename}", "w+")
-          fout.puts "#{filestr}"
-          fout.close
-          load fullfilename
-          @need_rewrite_strata = true
-        end
 
       else
         name, schema = self.schema_init(collection)
@@ -175,7 +145,6 @@ module WLBudAccess
         tables["acl_at_#{peername}".to_sym] << ["acl_at_#{peername}", "G", PList.new(["#{peername}"].to_set)]
         tables["acl_at_#{peername}".to_sym] << ["acl_at_#{peername}", "W", PList.new(["#{peername}"].to_set)]
         tables["acl_at_#{peername}".to_sym] << ["acl_at_#{peername}", "R", PList.new(["#{peername}"].to_set)]
-        #@need_rewrite_strata = true
       end
     end
 
@@ -193,15 +162,12 @@ module WLBudAccess
       if @options[:accessc] and @options[:optim2]
         self.table("formulas_at_#{peername}".to_sym, {[:id] => [:plist]})
         self.table("aclf_at_#{peername}".to_sym, [:rel,:priv] => [:formula])
+        self.table("extended_formulas_at_#{peername}".to_sym, [:formula] => [:symbol,:plist])
+        self.table("symbols_at_#{peername}".to_sym, [:plist] => [:symbol])
 
         tables["formulas_at_#{peername}".to_sym] <+ [[Omega.instance.to_s, Omega.instance]]
+        tables["extended_formulas_at_#{@peername}".to_sym] <+ [[Omega.instance.to_s, Omega.instance,Omega.instance]]
       end
-    end
-
-    def add_form(atomn)
-      self.table("formulas_#{atomn}_at_#{@peername}".to_sym, [:formula,:val] => [])
-      self.table("extended_formulas_#{atomn}_at_#{@peername}".to_sym, [:formula] => [:symbol,:plist])
-      tables["extended_formulas_#{atomn}_at_#{@peername}".to_sym] <+ [[Omega.instance.to_s, Omega.instance,Omega.instance]]
     end
 
     #   Takes in an access policy and updates acl
@@ -378,8 +344,7 @@ module WLBudAccess
               err[[k,tuple]] = "fact in relation #{k} with value \"#{tuple}\" should be an Array or struct instead found a #{tuple.class}"
             end
           end # tuples.each do |tuple|
-          #FIXME - this is a hack because bud doesn't realize writeable feeds rules
-          @need_rewrite_strata = true
+          @acl_updated = true
         elsif @options[:accessc] && @options[:optim2] && relation_name.start_with?("formulas")
           tuples.each do |tuple|
             if tuple.is_a? Array or tuple.is_a? Struct

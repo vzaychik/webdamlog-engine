@@ -156,7 +156,7 @@ module WLBudAccess
         keys << :"rel"
         writeableschema = {keys => values}
         self.table("writeable_at_#{peername}".to_sym, writeableschema)
-        #   #now need to put in the rule to distribute #FIXME!
+        #FIXME! writeable distributed manually but there should be a better way to distribute 
       end
 
       if @options[:accessc] and @options[:optim2]

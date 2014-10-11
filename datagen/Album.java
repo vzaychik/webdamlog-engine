@@ -37,9 +37,9 @@ public class Album {
 			int i=0;
 			String host="";
 			
-			// alice, bob and sue have their own instances
+			// alice, bob and sue share an instance
+			host = inFP.readLine().trim();
 			while (i<3) {
-				host = inFP.readLine().trim();
 				_netAddressMap.put(i++, host);
 			}
 
@@ -169,6 +169,13 @@ public class Album {
 
 			Peer sue = _peersList.get(2);
 			sue.setType(PEER_TYPE.SUE);
+
+			//Sue has to have all peers as known peers
+			for (Peer p : _peersList) {
+			    if (p != sue) {
+				sue.addKnownPeer(p);
+			    }
+			}
 
 			//VZM compute the size of the final result for end condition
 			int resultsize = 0;

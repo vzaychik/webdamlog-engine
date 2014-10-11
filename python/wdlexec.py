@@ -14,8 +14,6 @@ def matchOrCreateScenario(scenList, rootPath):
     scenIDList = []
     for scen in scenList:
         try:
-            # this works for MAF
-            # TODO fix for PA
             scenID = models.Scenario.get( \
                 models.Scenario.scenType == scen.scenType, \
                 models.Scenario.numFollowers == scen.numFollowers, \
@@ -29,6 +27,7 @@ def matchOrCreateScenario(scenList, rootPath):
                 models.Scenario.numHosts == scen.numHosts, \
                 models.Scenario.hosts == str(scen.hosts), \
                 models.Scenario.numPeersPerHost == scen.numPeersPerHost \
+                models.Scenario.networkFile == scen.networkFile \
                 ).scenID
             print '***  Found matching scenario with scenID %i.' % scenID
         except DoesNotExist:    # scenario was not found, create it
@@ -79,9 +78,29 @@ def run(configFile):
 
 
     if scenType == 'PA':
-        # TODO
-        pass
-
+        
+        policyList = config.get('scenarioPA', 'policy').split(' ')
+        networkFileList = config.get('scenarioPA', 'networkFile').split(' ')
+        numFactsList = config.get('scenarioPA', 'numFacts').split(' ')
+        
+        for tup in itertools.product(policyList, networkFileList, numFactsList):
+            print tup
+            scenario = models.Scenario( \
+                scenType = 'PA', \
+                numFollowers = (int(tup[1])-3), \         #parse the number from the network file
+                numAggregators = 0, \
+                aggPerFollower = 0, \
+                policy = tup[0], \
+                numFacts = int(tup[2]), \
+                ruleScenario = 'PA', \
+                valRange = int(tup[2]), \
+                numExtraCols = 0, \
+                numHosts = config.getint('scenarioPA', 'numHosts'), \
+                hosts = config.get('scenarioPA', 'hosts').split(' '), \
+                numPeersPerHost = numFollowers/(numHosts-1)+1, \
+                networkFile = tup(1) )
+            scenarioList.append(scenario)
+            pring 'Next scenario: %s.' % scenario
 
 
     print '***  Checking / creating %i scenarios...' % len(scenarioList)

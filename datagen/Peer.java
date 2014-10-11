@@ -182,7 +182,7 @@ public class Peer {
 		    if (_scenario == SCENARIO.UNION_OF_JOINS || _scenario == SCENARIO.JOIN_OF_UNIONS) {
 			prog.append("policy master_done write master0;\n");
 		    } else if (_scenario == SCENARIO.ALBUM) {
-			prog.append("policy master_done write " + Album._peersList.get(0).getName() + ";\n");
+			prog.append("policy master_done write " + Album._peersList.get(2).getName() + ";\n");
 		    }
 		}
 		return prog.toString();

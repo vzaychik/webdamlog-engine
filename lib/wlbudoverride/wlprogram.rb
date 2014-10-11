@@ -179,9 +179,9 @@ In the string: #{line}
       
       relation_name = generate_intermediary_relation_name(wlrule.rule_id)
       local_vars=[]
-      #FIXME - need to make work for non-vars
-      wlrule.head.variables.flatten.each { |var|
-        local_vars << var unless var.nil? or local_vars.include?(var)
+
+      wlrule.head.fields.flatten.each { |var|
+        local_vars << var.token_text_value
       }
       dec_fields=''
       var_fields=''
@@ -579,7 +579,7 @@ In the string: #{line}
           str_res << "extRt = extended_formulas_at_#{peername}[[extF]];"
           str_res << "if extRt then extR=extRt.plist; else "
           #compute extended formulas on demand
-          str_res << "numst=[]; extF.split(' ').each {|fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; newval=numst.pop; if newval.kind_of?(Omega) then newsym=Omega.instance else newsym=symbols_at_#{peername}[[newval.to_a.sort.join(\"\")]]; if newsym then newsym=newsym.symbol else newsym=\"#{peername}_\"+Time.now.to_i.to_s; symbols_at_#{peername} << [newval.to_a.sort.join(\"\"),newsym]; formulas_at_#{peername} << [newsym,newval]; end; end; extended_formulas_at_#{peername} << [extF,newsym,newval]; extR=newval; end;"
+          str_res << "numst=[]; extF.split(' ').each {|fp| if fp == \"*\" then numst.push(numst.pop.intersect(numst.pop)) elsif fp == \"+\" then numst.push(numst.pop.merge(numst.pop)) else numst.push(formulas_at_#{peername}[[fp]].plist) end; }; newval=numst.pop; if newval.kind_of?(Omega) then newsym=Omega.instance else newsym=symbols_at_#{peername}[[newval.to_a.sort.join(\"\")]]; if newsym then newsym=newsym.symbol else newsym=\"#{peername}_\"+Time.now.nsec.to_s; symbols_at_#{peername} << [newval.to_a.sort.join(\"\"),newsym]; formulas_at_#{peername} << [newsym,newval]; end; end; extended_formulas_at_#{peername} << [extF,newsym,newval]; extR=newval; end;"
         end
 
         # check for grant for author peer on hide relations only

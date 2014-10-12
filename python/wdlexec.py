@@ -26,7 +26,7 @@ def matchOrCreateScenario(scenList, rootPath):
                 models.Scenario.numExtraCols == scen.numExtraCols, \
                 models.Scenario.numHosts == scen.numHosts, \
                 models.Scenario.hosts == str(scen.hosts), \
-                models.Scenario.numPeersPerHost == scen.numPeersPerHost \
+                models.Scenario.numPeersPerHost == scen.numPeersPerHost, \
                 models.Scenario.networkFile == scen.networkFile \
                 ).scenID
             print '***  Found matching scenario with scenID %i.' % scenID
@@ -85,9 +85,11 @@ def run(configFile):
         
         for tup in itertools.product(policyList, networkFileList, numFactsList):
             print tup
+            numf = int(tup[1].split('-')[1][1:])-3
+            numh = config.getint('scenarioPA', 'numHosts')
             scenario = models.Scenario( \
                 scenType = 'PA', \
-                numFollowers = (int(tup[1])-3), \         #parse the number from the network file
+                numFollowers = numf, \
                 numAggregators = 0, \
                 aggPerFollower = 0, \
                 policy = tup[0], \
@@ -95,12 +97,11 @@ def run(configFile):
                 ruleScenario = 'PA', \
                 valRange = int(tup[2]), \
                 numExtraCols = 0, \
-                numHosts = config.getint('scenarioPA', 'numHosts'), \
+                numHosts = numh, \
                 hosts = config.get('scenarioPA', 'hosts').split(' '), \
-                numPeersPerHost = numFollowers/(numHosts-1)+1, \
-                networkFile = tup(1) )
+                numPeersPerHost = numf/(numh-1)+1, \
+                networkFile = tup[1] )
             scenarioList.append(scenario)
-            pring 'Next scenario: %s.' % scenario
 
 
     print '***  Checking / creating %i scenarios...' % len(scenarioList)
@@ -125,9 +126,9 @@ def run(configFile):
                 print '***  Finished run %i of execution %i.' % (run, execID)
                 sleep(59) 
     print '***  Done with executions.'
-    print '***  Refreshing database to reflect new executions and any new scenarios.'
-    models.setupDatabase(clearDatabase=False)
-    loadBenchmark.refreshFromFileSystem( os.path.join(rootPath,'webdamlog-exp'), min(scenIDList) )
+    #print '***  Refreshing database to reflect new executions and any new scenarios.'
+    #models.setupDatabase(clearDatabase=False)
+    #loadBenchmark.refreshFromFileSystem( os.path.join(rootPath,'webdamlog-exp'), min(scenIDList) )
     
 
 if __name__ == "__main__":

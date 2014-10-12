@@ -85,7 +85,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
     print "the mode which is set is",  mode
     accessBool = mode & 1
     optim1Bool = mode & 2
-    optim2Bool = mode & 3
+    optim2Bool = mode & 4
     print 'Value of accessBool is', accessBool
     print 'Value of optim1Bool is', optim1Bool
     print 'Value of optim2Bool is', optim2Bool

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require_relative 'wlbud'
 
 module WLBudAccess
@@ -305,7 +306,7 @@ module WLBudAccess
                   if @options[:accessc]
                     tuple.collect! {|x|
                       if x.is_a?(Array)
-                        if (x.include?("All peers"))
+                        if (x.include?("Ω"))
                           Omega.instance
                         else
                           PList.new(x.to_set)
@@ -358,7 +359,7 @@ module WLBudAccess
               begin
                 tuple.collect! {|x|
                   if x.is_a? Array
-                    if x.include?("All peers")
+                    if x.include?("Ω")
                       Omega.instance
                     else
                       PList.new(x.to_set)

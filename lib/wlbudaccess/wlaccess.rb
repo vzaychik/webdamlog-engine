@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'bud/lattice-lib'
 require 'singleton'
 
@@ -75,11 +76,11 @@ class Omega < PList
   end
 
   def to_s
-    return "All peers"
+    return "Ω"
   end
 
   def to_a
-    return ["All peers"]
+    return ["Ω"]
   end
 
 end
@@ -90,7 +91,7 @@ class FormulaList < Bud::Lattice
   #using postfix notation for simplicity
 
   def self.make_new(i="")
-    if (i.kind_of? Omega) || (i.kind_of?(String) && i=="All peers")
+    if (i.kind_of? Omega) || (i.kind_of?(String) && i=="Ω")
       Omega.instance
     else
       FormulaList.new(i)

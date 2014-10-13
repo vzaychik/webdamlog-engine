@@ -266,7 +266,8 @@ public class Peer {
 				// compute the contents of album@sue($img,$peer)
 				Collection album = this.getCollectionByName("album");
 				prog.append("rule " + album.getSchemaWithVars() + " :- " + allFriends.getSchemaWithVars() + 
-							", photos@$peer($img), tags@$peer($img,\"" + alice.getName() + "\"), tags@$peer($img,\"" + bob.getName() + "\");\n");
+					    //", photos@$peer($img), tags@$peer($img,\"" + alice.getName() + "\"), tags@$peer($img,\"" + bob.getName() + "\");\n");
+							", photos@$peer($img), tags@$peer($img,$tag1), tags2@$peer($img,$tag2), relevant_tags@$peer($tag1,$tag2);\n");
 			}
 		}
 

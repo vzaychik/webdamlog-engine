@@ -189,7 +189,10 @@ public class Album {
 
 					// on peers other than alice, bob and sue, photos and tags contain data
 					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img", numFacts, valRange); 
-					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
+					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
+					Collection tags2 = new Collection("tags2", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
+					Collection relevanttags = new Collection("relevant_tags", p.getName(), COL_TYPE.EXT, 1, "rtag1,rtag2");
+					relevanttags.addFact("\""+bob.getName()+"\",\""+alice.getName()+"\"");
 
 					for (String img : photos.getFacts()) {
 					        int imgTag = 0;
@@ -216,18 +219,29 @@ public class Album {
 						if (imgTag > 1) { //both bob and alice tagged
 						    resultsize++;
 						}
-					}						
+					}		
+					for (String ff : tags.getFacts()) {
+					    tags2.addFact(ff);
+					}
 					p.addCollection(photos);
 					p.addCollection(tags);
+					p.addCollection(tags2);
+					p.addCollection(relevanttags);
 
 					p.addKnownPeer(sue);
 					p.addMaster(sue);
 				} else {
 					// on alice, bob and sue these collections are empty
 					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img"); 
-					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "img,tag");
+					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
+					Collection tags2 = new Collection("tags2", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
+					Collection relevanttags = new Collection("relevant_tags", p.getName(), COL_TYPE.EXT, 1, "rtag1,rtag2");
+
 					p.addCollection(photos);
 					p.addCollection(tags);
+					p.addCollection(tags2);
+					p.addCollection(relevanttags);
+
 					if (p != sue) {
 					    p.addMaster(sue);
 					}

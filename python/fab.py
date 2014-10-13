@@ -13,7 +13,7 @@ rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
 dbclusterPath = os.environ["HOME"]
 avidPath = dbclusterPath + "/webdamlog"
 machinePath = '/state/partition2/' + os.environ["USER"]
-miklau6Path = dbclusterPath + "/state/mounted2";
+miklau6Path = '/state/partition1/' + os.environ["USER"]
 rootPathDict = { \
     'dbcluster.cs.umass.edu':dbclusterPath, \
     'avid.cs.umass.edu':avidPath, \
@@ -51,8 +51,8 @@ def refreshDB():
 
 def pull_both():
     rootPath = rootPathDict[env.host]
-    with cd(os.path.join(rootPath, 'webdamlog-engine')):
-        run('git pull')
+    #with cd(os.path.join(rootPath, 'webdamlog-engine')):
+    #    run('git pull')
     with cd(os.path.join(rootPath, 'webdamlog-exp')):
         run('svn up')
         

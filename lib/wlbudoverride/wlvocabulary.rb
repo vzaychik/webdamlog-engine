@@ -76,29 +76,23 @@ module WLBud
 
     public
 
-    def make_extended
+    def make_extended(priv)
       str = "collection #{get_type.to_s.downcase} "
       str << "persistent" + " " if self.persistent?
       str << relname
-      str << "_plus@"
+      str << "_plus#{priv}@"
       str << peername
-      str << "( priv*, #{col_fields.text_value}, plist ) ;"
+      str << "(#{col_fields.text_value}, plist ) ;"
     end
 
     def is_extended?
-      if relname.contains? "_plus@" or relname.contains? "_plus_at_"
+      if relname.contains? "_plusR@" or relname.contains? "_plusR_at_" or relname.contains? "_plusG@" or relname.contains? "_plusG_at_"
         return true
       else
         return false
       end
     end
 
-    def make_rext(id)
-      str = "collection #{get_type.to_s.downcase} "
-      str << "persistent" + " " if self.persistent?
-      str << "rext_#{id}_#{relname}@#{self.peername}"
-      str << "(priv*, #{col_fields.text_value}, plist) ;"
-    end
   end
 
   # WebdamLog Atom, element of a WLRule: rrelation@rpeer(rfields)

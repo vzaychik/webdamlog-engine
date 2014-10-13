@@ -58,7 +58,9 @@ module WLBudAccess
       # one for grant priv and one for read
       if @options[:accessc]
         rule2 = "#{rule}"
-        rule2.gsub! "\"R\"", "\"G\""
+        #rule2.gsub! "\"R\"", "\"G\""
+        rule2.gsub! "_plusR", "_plusG"
+        rule2.gsub! "aclR", "aclG"
         rule << rule2
       end
 
@@ -94,10 +96,14 @@ module WLBudAccess
           @next_formula+=2
         end
         #   #need to add extended collection
-        extended_collection = @wl_program.parse(collection.make_extended)
+        extended_collection = @wl_program.parse(collection.make_extended("R"))
         puts "Adding a collection for AC: \n #{extended_collection.show_wdl_format}" if @options[:debug]
         name, schema = self.schema_init(extended_collection)
         @extended_collections_to_flush << extended_collection
+        extended_collection2 = @wl_program.parse(collection.make_extended("G"))
+        puts "Adding a collection for AC: \n #{extended_collection2.show_wdl_format}" if @options[:debug]
+        name, schema = self.schema_init(extended_collection2)
+        @extended_collections_to_flush << extended_collection2
 
       else
         name, schema = self.schema_init(collection)
@@ -238,25 +244,28 @@ module WLBudAccess
             if @options[:accessc]
               #need to add two facts for each one
               fct = wlf.content
-              fct.unshift("R")
               fct.push("Omega.instance")
               tbl << fct
-              fct2 = fct.clone
-              fct2.shift
-              fct2.unshift("G");
-              tbl << fct2
             else
               tbl << wlf.content
             end
           end
         }
-        str << "#{@wl_program.make_rel_name(wlcollection.fullrelname)} <= "
+        str << @wl_program.make_rel_name(wlcollection.fullrelname, "R")
+        str << " <= "
         if @options[:accessc]
           str << tbl.inspect.gsub("\"Omega.instance\"", "Omega.instance")
         else
           str << tbl.inspect
         end
         str << ";\n"
+        if @options[:accessc]
+          #now into the grant collection
+          str << @wl_program.make_rel_name(wlcollection.fullrelname, "G")
+          str << " <= "
+          str << tbl.inspect.gsub("\"Omega.instance\"", "Omega.instance")
+          str << ";\n"
+        end
       }
       str << "}"
       block = eval("Proc.new" + str)
@@ -290,7 +299,7 @@ module WLBudAccess
           arity = @wl_program.wlcollections[relation_name].arity
           tuples.each do |tuple|
             if tuple.is_a? Array or tuple.is_a? Struct
-              if tuple.size == @wl_program.wlcollections[relation_name].arity 
+              if tuple.size == arity
                 begin
                   # access control need to change plist arrays back to sets
                   if @options[:accessc]
@@ -307,15 +316,13 @@ module WLBudAccess
                         x
                       end
                     }
-                    if !relation_name.include? "_plus_at_"
+                    if !(relation_name.include? "_plusR_at_" or relation_name.include? "_plusG_at_")
                       #can only insert into extended relations
-                      relation_name = @wl_program.make_rel_name(relation_name)
+                      relation_name = @wl_program.make_rel_name(relation_name, "R")
                       #add 2 tuples, one for G, one for R
                       tuple.push(Omega.instance)
-                      secondtuple = tuple.clone
-                      tuple.unshift("R")
-                      secondtuple.unshift("G")
-                      tables[relation_name.to_sym] <+ [secondtuple]
+                      tables[relation_name.to_sym] <+ [tuple]
+                      relation_name = @wl_program.make_rel_name(relation_name, "G")
                     end
                   end
                   tables[relation_name.to_sym] <+ [tuple]
@@ -394,11 +401,7 @@ module WLBudAccess
         coll.pro do |tuple|
           new_rule = String.new template.show_wdl_format
           var_to_bound.each_index do |ind_var|
-            #for access control need to increment index by 1 because of priv being always first
             tuple_var = ind_var
-            if @options[:accessc]
-              tuple_var+=1
-            end
             # FIXME hard coded @ to add quotes around field value but not around
             # relation name and peer name
             new_rule = new_rule.gsub "#{var_to_bound[ind_var]}@", "#{tuple[tuple_var]}@"

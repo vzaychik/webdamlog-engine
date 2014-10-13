@@ -71,7 +71,7 @@ def run_access_remote!
       num_running -= 1
     end
     if !runner.peername.start_with?("master") && !runner.peername.start_with?("sue")
-      donerel = "master_done_" + (@access_mode ? "plus_" : "") + "at_#{runner.peername}"
+      donerel = "master_done_" + (@access_mode ? "plusR_" : "") + "at_#{runner.peername}"
       runner.register_callback(donerel.to_sym) do
         p "master is done, shutting #{runner.peername} down"
         runner.stop
@@ -119,7 +119,7 @@ def run_access_remote!
       resultrel = "album_i"
     end
     if @access_mode == true
-      resultrel += "_plus_at_#{@masterp.peername}"
+      resultrel += "_plusR_at_#{@masterp.peername}"
     else
       resultrel += "_at_#{@masterp.peername}"
     end

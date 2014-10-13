@@ -244,12 +244,12 @@ In the string: #{line}
 
     # Generates the string representing the relation name If access control is
     # on, turns into extended relation unless it's a delegated relation
-    def make_rel_name (rel)
+    def make_rel_name (rel,priv="R")
       rel, pname = rel.split('_at_')
       str_res = "#{rel}"
 
       if @options[:accessc]
-        str_res << "_plus"
+        str_res << "_plus#{priv}"
       end
 
       str_res << "_at_#{pname}"
@@ -261,27 +261,28 @@ In the string: #{line}
     def translate_rule_accessc(wlrule)
       str_res = ""
       body = wlrule.body
-
+      
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
-          str_res << "temp :#{wlrule.head.fullrelname} <= "
-        else
-          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
-        end
+             str_res << "temp :#{wlrule.head.fullrelname} <= "
+           else
+             str_res << make_rel_name(wlrule.head.fullrelname, "R")
+             str_res << " <= "
+           end
       end
-
+      
       # Make the locations dictionaries for this rule
       wlrule.make_dictionaries unless wlrule.dic_made
-
+      
       if body.length==0
         # VZM:TODO! - when is rule body length ever 0??? and what do we do in
         #  such cases with access controL?
         puts "translation of rule with zero body length while in access control mode not implemented!!!"
       else
         if body.length==1
-          str_res << make_rel_name(body.first.fullrelname)
+          str_res << make_rel_name(body.first.fullrelname, "R")
         else
           s = make_combos(wlrule)
           str_res << s
@@ -313,11 +314,6 @@ In the string: #{line}
           str_res << " && "
         else
           str_res << " if "
-        end
-
-        # select just the Read tuples
-        wlrule.body.each do |atom|
-          str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
         end
 
         # check for read or grant for target peer on preserved relations only
@@ -388,10 +384,11 @@ In the string: #{line}
       unless bound_n_local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
-          str_res << "temp :#{wlrule.head.fullrelname} <= "
-        else
-          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
-        end
+             str_res << "temp :#{wlrule.head.fullrelname} <= "
+           else
+             str_res << make_rel_name(wlrule.head.fullrelname, "R")
+             str_res << " <= "
+           end
       end
       
       # Make the locations dictionaries for this rule
@@ -403,7 +400,7 @@ In the string: #{line}
         puts "translation of rule with zero body length while in access control mode not implemented!!!"
       else
         if body.length==1
-          str_res << make_rel_name(body.first.fullrelname)
+          str_res << make_rel_name(body.first.fullrelname, "R")
         else
           str_res << make_combos(wlrule)
         end
@@ -431,11 +428,6 @@ In the string: #{line}
           str_res << " && "
         else
           str_res << " if "
-        end
-
-        # select just the Read tuples
-        wlrule.body.each do |atom|
-          str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
         end
 
         # check for read or grant for target peer on preserved relations only
@@ -521,9 +513,10 @@ In the string: #{line}
       unless bound_n_local?(wlrule.head)
         str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
-          str_res << "temp :#{wlrule.head.fullrelname} <= "
-        else
-          str_res << "#{make_rel_name(wlrule.head.fullrelname)} <= "
+             str_res << "temp :#{wlrule.head.fullrelname} <= "
+           else
+             str_res << make_rel_name(wlrule.head.fullrelname, "R")
+             str_res << " <= "
         end
       end
 
@@ -536,7 +529,7 @@ In the string: #{line}
         puts "translation of rule with zero body length while in access control mode not implemented!!!"
       else
         if body.length==1
-          str_res << make_rel_name(body.first.fullrelname)
+          str_res << make_rel_name(body.first.fullrelname, "R")
         else
           str_res << make_combos(wlrule)
         end
@@ -620,10 +613,6 @@ In the string: #{line}
         else
           str_res << " if "
         end
-        # select just the Read tuples
-        wlrule.body.each do |atom|
-          str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}.priv == \"R\" && "
-        end
 
         str_res << "extR.include?(\"#{wlrule.head.peername}\") && " if extr_def
         str_res << "extG.include(\"\"#{wlrule.author}\") && " if extg_def 
@@ -676,15 +665,10 @@ In the string: #{line}
         # add location specifier
         raise WLErrorPeerId, "impossible to define the peer that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{destination}\", "
-        relation = "#{make_rel_name(wlrule.head.fullrelname)}"
+        relation = make_rel_name(wlrule.head.fullrelname, "R")
         raise WLErrorProgram, "impossible to define the relation that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{relation}\", "
         str << "["
-      end
-
-      if @options[:accessc]
-        #add privilege
-        str << "\"R\", "        
       end
 
       # add the list of variable and constant that should be projected
@@ -694,11 +678,6 @@ In the string: #{line}
         if field.variable?
           if wlrule.dic_wlvar.has_key?(textfield)
             relation , attribute = wlrule.dic_wlvar.fetch(textfield).first.split('.')
-            if @options[:accessc]
-              #priv is the first element in all extended collections with access control
-              #thus have to adjust all by 1
-              attribute = attribute.to_i + 1
-            end
             str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation)}[#{attribute}], "
           else
             if field.anonymous?
@@ -779,9 +758,6 @@ In the string: #{line}
           else
             str << " and "
           end
-          if @options[:accessc] #increment attribute position because of priv
-            attribute_position = attribute_position.to_i + 1
-          end
           str << "#{WLBud::WLProgram.atom_iterator_by_pos(relation_position)}[#{attribute_position}]==#{WLTools::quote_string(key)}"
         end
       end
@@ -791,11 +767,9 @@ In the string: #{line}
         (0..values.size-2).each_with_index do |iter1,index|
           pos1 = values[iter1]
           relation_position1 , attribute_position1 = pos1.split('.')
-          attribute_position1 = attribute_position1.to_i + 1 if @options[:accessc]
           (index+1..values.size-1).each do |iter2|
             pos2 = values[iter2]
             relation_position2 , attribute_position2 = pos2.split('.')
-            attribute_position2 = attribute_position2.to_i + 1 if @options[:accessc]
             if wlrule.dic_invert_relation_name[Integer(relation_position1)] == wlrule.dic_invert_relation_name[Integer(relation_position2)]
               if first_condition
                 str << " if "

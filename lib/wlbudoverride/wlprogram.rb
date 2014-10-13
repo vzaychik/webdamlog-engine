@@ -617,8 +617,6 @@ In the string: #{line}
         str_res << "extR.include?(\"#{wlrule.head.peername}\") && " if extr_def
         str_res << "extG.include(\"\"#{wlrule.author}\") && " if extg_def 
           
-        str_res.slice!(-3..-1)
-
         puts "rule head is not local " if !bound_n_local?(wlrule.head) if @options[:debug]
         puts "rule author is #{wlrule.author}, peername is #{@peername}" if @options[:debug]
         if @options[:optim1]
@@ -631,17 +629,19 @@ In the string: #{line}
                 break if headrule.include?(wlrule.rule_id)
               }
               if !bound_n_local?(headrule.first.head)
-                str_res << "&& writeable_at_#{peername}[[\"#{wlrule.head.peername}\",\"#{headrule.first.head.fullrelname}\"]]"
+                str_res << "writeable_at_#{peername}[[\"#{wlrule.head.peername}\",\"#{headrule.first.head.fullrelname}\"]] && "
               end
             else
-              str_res << "&& writeable_at_#{peername}[[\"#{wlrule.head.peername}\",\"#{wlrule.head.fullrelname}\"]]"
+              str_res << "writeable_at_#{peername}[[\"#{wlrule.head.peername}\",\"#{wlrule.head.fullrelname}\"]] && "
             end
           end
         else
           if wlrule.author != @peername && bound_n_local?(wlrule.head)
-            str_res << " && acl_at_#{wlrule.head.peername}[[\"#{wlrule.head.fullrelname}\",\"W\"]].plist.include?(\"#{wlrule.author}\")"
+            str_res << "acl_at_#{wlrule.head.peername}[[\"#{wlrule.head.fullrelname}\",\"W\"]].plist.include?(\"#{wlrule.author}\") && "
           end
         end
+
+        str_res.slice!(-3..-1)
 
         str_res << "};"
       end

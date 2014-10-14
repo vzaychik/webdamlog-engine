@@ -103,7 +103,7 @@ module WLBudAccess
         @extended_collections_to_flush << extended_collection
         extended_collection2 = @wl_program.parse(collection.make_extended("G"))
         puts "Adding a collection for AC: \n #{extended_collection2.show_wdl_format}" if @options[:debug]
-        name, schema = self.schema_init(extended_collection2)
+        self.schema_init(extended_collection2)
         @extended_collections_to_flush << extended_collection2
 
       else

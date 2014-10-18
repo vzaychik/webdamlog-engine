@@ -158,10 +158,13 @@ def create_wl_runner pg_file
   loop = true
   while loop and line = file.gets
     if(/^peer/.match line and line.include? peername) # find line which contains peer current peer address
-      peerline = line.split("=").last.strip
-      peerline.slice!(-1) # remove last ;
-      ip_addr, port = peerline.split ":"
-      loop = false
+      pname = line.split("=").first.strip
+      if (/#{peername}$/.match pname)
+        peerline = line.split("=").last.strip
+        peerline.slice!(-1) # remove last ;
+        ip_addr, port = peerline.split ":"
+        loop = false
+      end
     end
   end
   file.close

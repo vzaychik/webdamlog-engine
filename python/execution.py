@@ -11,7 +11,7 @@ import fab
 import fabric
 fabric.state.output['debug']=True
 
-build = 10
+build = 11
 
 # Now executed at dbcluster.cs
 #
@@ -74,7 +74,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
     env.hosts = hosts
     env.parallel = True     # execute on each host in parallel
     try:
-        execute(fab.pull_both)         # each host should pull latest code and latest exp
+        execute(fab.pull_both, scenPath=scenPath)         # each host should pull latest code and latest exp
     except:
         print >> sys.stderr, 'Pull failed: ', sys.exc_info()[0]
         execution.success = False

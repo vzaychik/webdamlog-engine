@@ -540,6 +540,13 @@ In the string: #{line}
 
         str_res << "| "
 
+        #to short-circuit processing put general conditional at the beginning
+        cond_str = condition_bud_string(wlrule)
+        if cond_str.include?(" if ")
+          str_res << cond_str
+          str_res << " then "
+        end
+
         wlrule.body.each do |atom|
           if !intermediary?(atom)
             str_res << "#{WLProgram.atom_iterator_by_pos(wlrule.dic_invert_relation_name.key(atom.fullrelname))}aclR = aclf_at_#{@peername}[[\"#{atom.fullrelname}\",\"R\"]].formula;"
@@ -603,16 +610,7 @@ In the string: #{line}
         end
 
         str_res << projection_bud_string(wlrule)
-        cond_str = condition_bud_string(wlrule)
-        str_res << cond_str
-
-        # add the check for the right plist in acls #add the check that we can
-        # write to the head relation
-        if cond_str.include?(" if ")
-          str_res << " && "
-        else
-          str_res << " if "
-        end
+        str_res << " if "
 
         str_res << "extR.include?(\"#{wlrule.head.peername}\") && " if extr_def
         str_res << "extG.include(\"\"#{wlrule.author}\") && " if extg_def 
@@ -643,6 +641,9 @@ In the string: #{line}
 
         str_res.slice!(-3..-1)
 
+        if cond_str.include?(" if ")
+          str_res << "; end;" #end of conditional
+        end
         str_res << "};"
       end
     end

@@ -34,6 +34,10 @@ module WLARunner
     self.stop
     WLAEnginePool.delete self.class
   end
+
+  def run_engine_periodic
+    run_bg_periodic
+  end
   
   def update_acl (rel, peer, priv)
     sync_do do

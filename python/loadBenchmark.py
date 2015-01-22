@@ -10,7 +10,6 @@ from subprocess import call
 pathToRepository = commands.getoutput("echo $HOME")
 sys.path.append(os.path.join(pathToRepository,'webdam/webdamlog-engine/python'))
 
-
 #  Returns a list of Tick objects
 #  filename is absolute path to benchmark file (e.g. ...benchark_time_log_aggregator1_2013-11-26 21/20/03 -0500)
 #  execID is the ID of the associated execution 
@@ -130,12 +129,12 @@ def refreshFromFileSystem( startPath, siLowerBound ):
     #print siLowerBound
     siLowerBound = int(siLowerBound)
     os.chdir(startPath)
-    callString = ['svn','up']
-    call(callString)
+    #callString = ['svn','up']
+    #call(callString)
     processScenTypes( startPath, siLowerBound )
     
 if __name__ == "__main__":
 
     # for dbcluster running
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdam/webdamlog-exp'), sys.argv[1])
+    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'), sys.argv[1])

@@ -392,6 +392,8 @@ module WLBudAccess
       new_rules = {}
       # for each seeds entry
       @seed_to_sprout.each do |sts|
+        #source_coll_name = sts[0].body.first
+        #source_coll = @tables[@wl_program.make_rel_name(source_coll_name.fullrelname, "R").to_sym]
         bud_coll_name = sts[4]
         coll = @tables[bud_coll_name.to_sym]
         template = @wl_program.parse sts[2]
@@ -470,6 +472,29 @@ module WLBudAccess
         }      
       end
       return sbuffer_facts
+    end
+
+    #like run_bg but ticks are not initiated by messages
+    def run_bg_periodic
+      start
+
+      schedule_and_wait do
+        if @running_async
+          raise Bud::Error, "run_bg called on already-running Bud instance"
+        end
+        @running_async = true
+        
+        EventMachine.add_periodic_timer(0.2) {
+          if !@inbound[:chan].nil? && @bud_started
+            tick_internal
+          end
+        }
+
+        # Consume any events received while we weren't running async
+        tick_internal
+      end
+      
+      @rtracer.sleep if options[:rtrace]
     end
 
   end #class WLBudA

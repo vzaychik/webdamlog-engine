@@ -85,7 +85,8 @@ def run_access_remote!
         runner.add_facts fct
       }
     end
-    runner.run_engine
+    runner.run_engine_periodic
+    #runner.run_engine
     num_running += 1
     p "#{runner.peername} started"
     if runner.peername == "master0"

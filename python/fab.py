@@ -10,7 +10,8 @@ import commands
 
 rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
 
-dbclusterPath = os.environ["HOME"]
+#dbclusterPath = os.environ["HOME"]
+dbclusterPath = '/state/partition1/vzaychik'
 avidPath = dbclusterPath + "/webdamlog"
 machinePath = '/state/partition2/' + os.environ["USER"]
 miklau6Path = '/state/partition1/' + os.environ["USER"]
@@ -22,7 +23,11 @@ rootPathDict = { \
     'miklau3':machinePath, \
     'miklau4':machinePath, \
     'miklau5':machinePath, \
-    'miklau6':miklau6Path, }
+    'miklau6':miklau6Path, \
+    'compute-1-0':machinePath, \
+    'compute-1-1':miklau6Path, \
+    'compute-1-2':miklau6Path, \
+    'compute-1-3':machinePath, }
 
 #@task
 @parallel

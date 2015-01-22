@@ -416,6 +416,12 @@ collection int peer_done#{@peername}(key*);"
         if @options[:measure]
           @measure_obj.append_measure @budtime
         end
+
+        sprout_rules_new = make_seed_sprout
+        if !sprout_rules_new.empty?
+          puts "need an extra tick"
+          self.schedule_extra_tick
+        end
         # WLBud:End adding to Bud
 
         do_flush

@@ -29,7 +29,8 @@ class Bud::BudServer < EM::Connection
 
     if !@bud.inbound[:chan].nil?
       begin
-        @bud.tick_internal if @bud.running_async
+        #@bud.tick_internal if @bud.running_async
+        #puts "there is a message, we'll see when it's picked up"
       rescue Exception => e
         # If we raise an exception here, EM dies, which causes problems (e.g.,
         # other Bud instances in the same process will crash). Ignoring the

@@ -54,11 +54,12 @@ def refreshDB():
     with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
         run('python loadBenchmark.py')
 
-def pull_both():
+def pull_both(scenPath):
     rootPath = rootPathDict[env.host]
     #with cd(os.path.join(rootPath, 'webdamlog-engine')):
     #    run('git pull')
-    with cd(os.path.join(rootPath, 'webdamlog-exp')):
+    #with cd(os.path.join(rootPath, 'webdamlog-exp')):
+    with cd(os.path.join(rooPath,scenPath)):
         run('svn up')
         
 # ruby sample execution

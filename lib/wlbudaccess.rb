@@ -484,7 +484,7 @@ module WLBudAccess
         end
         @running_async = true
         
-        EventMachine.add_periodic_timer(0.2) {
+        EventMachine.add_periodic_timer(1) {
           if !@inbound[:chan].nil? && @bud_started
             tick_internal
           end

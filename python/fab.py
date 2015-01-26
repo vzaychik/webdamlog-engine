@@ -59,8 +59,9 @@ def pull_both(scenPath):
     #with cd(os.path.join(rootPath, 'webdamlog-engine')):
     #    run('git pull')
     #with cd(os.path.join(rootPath, 'webdamlog-exp')):
-    with cd(os.path.join(rooPath,scenPath)):
-        run('svn up')
+    runString = 'svn up %s' % ( os.path.join(rootPath,scenPath) )
+    with cd(rootPath):
+        run(runString)
         
 # ruby sample execution
 # for end-condition execution:

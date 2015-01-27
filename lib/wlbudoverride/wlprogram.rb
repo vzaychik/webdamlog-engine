@@ -100,6 +100,32 @@ In the string: #{line}
 
     private
 
+    # This methods extract the local part without variables and generate the
+    # seed to evaluate the rest of the rule.  This method should be called by
+    # rewrite_rule only.
+    def rewrite_unbound_rules wlrule
+      split_rule wlrule
+      raise WLErrorProgram, "trying to rewrite a seed that is not one" unless wlrule.seed
+      
+      interm_seed_name = generate_intermediary_seed_name(wlrule.rule_id)
+      interm_rel_decla, local_seed_rule, interm_rel_in_rule = wlrule.create_intermediary_relation_from_bound_atoms(interm_seed_name, @peername)
+      interm_rel_declaration_for_local_peer = "collection inter persistent #{interm_rel_decla};"
+      
+      # Declare the new intermediary seed for the local peer and add it to the
+      # program
+      @new_local_declaration << parse(interm_rel_declaration_for_local_peer,true)
+      # Add local rule to the program and register into the set of seed
+      # generator
+      seeder = parse(local_seed_rule, true)
+      seedtemplate = wlrule.build_seed_template(interm_rel_in_rule)
+      @new_seed_rule_to_install << [seeder,interm_rel_in_rule,seedtemplate,wlrule]
+      @rule_mapping[wlrule.rule_id] << seeder.rule_id
+      @rule_mapping[seeder.rule_id] << seeder
+      # TODO install the content of new_seed_rule_to_install and create the
+      # offshoot when new facts are inserted in in seed_rule in tick_internal
+    end # rewrite_unbound_rules
+    
+
     # This method creates a body-local rule with destination peer p and a fully
     # non-local rule that should be delegated to p.
     #

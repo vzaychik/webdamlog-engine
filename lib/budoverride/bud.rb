@@ -500,7 +500,7 @@ collection int peer_done#{@peername}(key*);"
       # schema is very simple [:@dst, :rel_name, :facts] where :@dst should be
       # the destination where to send the facts in the same format as :@dst in
       # standard bud channel "ip:port"
-      table :sbuffer, [:dst, :rel_name, :fact] => []
+      scratch :sbuffer, [:dst, :rel_name, :fact] => []
     end
 
 

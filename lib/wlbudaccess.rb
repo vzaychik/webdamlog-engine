@@ -106,7 +106,7 @@ module WLBudAccess
         self.schema_init(extended_collection2)
         @extended_collections_to_flush << extended_collection2
 
-      else
+      elsif collection.peername == @peername
         name, schema = self.schema_init(collection)
       end #accessc
 

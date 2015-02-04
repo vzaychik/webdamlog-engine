@@ -420,6 +420,116 @@ module WLBudAccess
       return new_rules
     end
 
+    # This method aggregates all the fact, rules and declarations of each peer
+    # in a single packet for this peer. This method allow to be sure that facts
+    # and rules deduce at the same timestep will be received in the remote peer
+    # at the same timestep.
+    # 
+    # FIXME optimization this fact aggregation can done more efficiently
+    # if I create as many sbuffer collection as non-local relation in head of
+    # rules.
+    def write_packet_on_channel
+      packets_to_send = []
+      sbuffer_facts = aggregate_facts(sbuffer)
+      peer_to_contact = Set.new(sbuffer_facts.keys)
+      peer_to_contact.merge(@rules_to_delegate.keys)
+      peer_to_contact.merge(@relation_to_declare.keys)
+      if @options[:wl_test]
+        @wl_callback.each_value do |callback|
+          if callback[0] == :callback_step_write_on_chan
+            block = callback[1]
+            unless block.respond_to?(:call)
+              raise WLErrorCallback,
+                "Trying to call a callback method that is not responding to call #{block}"
+            end
+            block.call(self, sbuffer_facts, peer_to_contact)
+          end
+        end
+      end
+
+      #TODO - verify that this works for deletions, once deletions are working
+      #TODO - make this more efficient
+      if sbuffer.tick_delta.length > 0
+        diff_fact_to_del, diff_fact_to_add = WL::deep_diff_split_lookup @cached_facts, sbuffer_facts
+      else
+        diff_fact_to_del = {}
+        diff_fact_to_add = {}
+      end
+      peer_to_contact.each do |dest|
+        packet = WLPacket.new(dest, @peername, @budtime)
+        packet.data.facts_to_delete = ( diff_fact_to_del[dest] or {} )
+        packet.data.facts = ( diff_fact_to_add[dest] or {} )
+        packet.data.rules = @rules_to_delegate[dest]
+        packet.data.declarations = @relation_to_declare[dest]
+        packets_to_send << packet.serialize_for_channel unless packet.data.empty?
+      end
+
+      if @options[:wl_test]
+        @test_send_on_chan = DeepClone.clone(packets_to_send)
+        @wl_callback.each_value do |callback|
+          if callback[0] == :callback_step_write_on_chan_2
+            block = callback[1]
+            raise WLErrorCallback, 
+              "Trying to call a callback method that is not responding to call #{block}" unless block.respond_to?(:call)
+            block.call(self, packets_to_send)
+          end
+        end
+      end
+      packets_to_send.each do |packet|
+        chan <~ [packet]
+      end
+      # TODO: improvement relation_to_declare and rules_to_delegate could be
+      # emptied only when a ack message is received from remote peers to be sure
+      # that rules and relations have been correctly installed.
+      # 
+      # relation and rules enqueued for sending, now clean the list of pending
+      # delegations and relations to send ; and  
+      @relation_to_declare.clear
+      @rules_to_delegate.clear
+
+      if sbuffer.tick_delta.length > 0
+        @cached_facts = DeepClone.clone(WLTools::transform_first_inner_array_into_set(sbuffer_facts))
+      end
+
+      if @options[:debug]
+        puts "BEGIN display what I wrote in chan to be send"
+        wlpacketsdata = chan.pending
+        puts "number of packets: #{wlpacketsdata.size}"
+        wlpacketsdata.keys.each do |packet|
+          puts "Received from #{packet.first}"
+          if packet[1].nil?
+            puts "empty packet from #{packet.first}"
+          else
+            data = packet[1]
+            wlpacketdata = WLPacketData.new data[0], data[1], data[2]
+            wlpacketdata.pretty_print
+          end
+        end
+        puts "END"
+      end
+      if @options[:measure]
+        rulect = 0
+        fctct = 0
+        declct = 0
+        @packet_metrics = []
+        wlpacketsdata = chan.pending
+        wlpacketsdata.keys.each do |packet|
+          unless packet[1].nil?
+            data = packet[1]
+            unless data[2][:rules].nil?
+              rulect += data[2][:rules].length
+            end
+            unless data[2][:declarations].nil?
+              declct += data[2][:declarations].length
+            end
+          end
+        end
+        fctct = wlpacketsdata.empty? ? 0 : wlpacketsdata.to_s.bytesize
+        @packet_metrics << declct << rulect << fctct
+
+      end
+    end
+
     # This method group facts by relations and by peers.
     #
     # @return [Hash] {@dest, {@peer_name, [[atom1,...], [atom2,...],... ] }}

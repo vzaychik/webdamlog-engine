@@ -13,8 +13,6 @@ fabric.state.output['debug']=True
 
 build = 15
 
-# Now executed at dbcluster.cs
-#
 # Executes the scenario given by scenID
 #
 def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, masterDelay ):
@@ -111,7 +109,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
         pickle.dump(execution, f)
 
 # refresh database for this execution
-#    execute(fab.pull_both)      # make sure files generated at all hosts are at dbcluster
+#    execute(fab.pull_both)      # make sure files generated at all hosts are in
 #    loadBenchmark.processExecs( scenID, localExecPath)
 
     driver.localSVNCommit(localScenPath)
@@ -120,7 +118,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
 
 if __name__ == "__main__":
 
-    rootPath = fab.rootPathDict['dbcluster.cs.umass.edu']
+    rootPath = fab.rootPathDict['waltz.cs.drexel.edu']
     #getting the scenId of the last generated scenario
     scenID = commands.getoutput("ls  ~/webdamlog-exp/MAF | tail -1 ")
     runs = 5

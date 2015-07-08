@@ -148,7 +148,7 @@ def test_remote_rules
         runner3.tick
         runner1.tick
         
-        assert_equal [{:atom1=>"5", :plist=>PList.new(["p", "p2"].to_set)},{:atom1=>"6", :plist=>PList.new(["p", "p2"].to_set)},{:atom1=>"3", :plist=>PList.new(["p", "p1"].to_set)},{:atom1=>"4", :plist=>PList.new(["p", "p1"].to_set)}], runner1.tables[:r2_i_plusR_at_p].map{ |t| Hash[t.each_pair.to_a]}
+        assert_equal [{:atom1=>"5", :plist=>PList.new(["p", "p2"].to_set)},{:atom1=>"6", :plist=>PList.new(["p", "p2"].to_set)},{:atom1=>"3", :plist=>PList.new(["p", "p1"].to_set)},{:atom1=>"4", :plist=>PList.new(["p", "p1"].to_set)}].to_set, runner1.tables[:r2_i_plusR_at_p].map{ |t| Hash[t.each_pair.to_a]}.to_set
         assert_equal [], runner1.tables[:r_i_plusR_at_p].map{ |t| Hash[t.each_pair.to_a]}
         
         ensure

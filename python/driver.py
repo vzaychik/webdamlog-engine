@@ -45,7 +45,7 @@ def simplePA():
         networkFile = 'facebook-u19-i10.txt', \
         numFacts = 10000, \
         valRange = 1000, \
-        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5','miklau6'], \
+        hosts = ['slave01','slave02','slave03','slave04','slave05','slave06'], \
         numHosts = 6, \
         numPeersPerHost = 3*3 )
     
@@ -64,7 +64,7 @@ def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _polic
         valRange = _valRange, \
         numExtraCols = 6, \
         ruleScenario = _ruleScenario, \
-        hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5','miklau6'], \
+        hosts = ['slave01','slave02','slave03','slave04','slave05','slave06'], \
         numHosts = 6, \
         numPeersPerHost = _numPeers, \
    ) 
@@ -97,7 +97,7 @@ def case1():
             numFacts = tup[1], \
             ruleScenario = tup[2], \
             valRange = 1000, \
-            hosts = ['miklau1','miklau2','miklau3','miklau4','miklau5'], \
+            hosts = ['slave01','slave02','slave03','slave04','slave05'], \
             numHosts = 5, \
             numPeersPerHost = 3*3 )
         scenarioList.append(scenario)

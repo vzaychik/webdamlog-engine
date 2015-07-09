@@ -135,6 +135,6 @@ def refreshFromFileSystem( startPath, siLowerBound ):
     
 if __name__ == "__main__":
 
-    # for dbcluster running
+    # for waltz running
     models.setupDatabase(clearDatabase=False)
-    refreshFromFileSystem(os.path.join(fab.rootPathDict['dbcluster.cs.umass.edu'],'webdamlog-exp'), sys.argv[1])
+    refreshFromFileSystem(os.path.join(fab.rootPathDict['waltz.cs.drexel.edu'],'webdamlog-exp'), sys.argv[1])

@@ -6,52 +6,52 @@ from fabric.tasks import execute
 import os
 import commands
 
-#env.parallel = False
+rubyPath = '/usr/local/rvm/rubies/ruby-2.2.1/bin/ruby'
 
-rubyPath = '/share/apps/ruby-2.1.0/bin/ruby'
+waltzPath = os.environ["HOME"]
+machinePath = '/opt/webdam/'
 
-#dbclusterPath = os.environ["HOME"]
-dbclusterPath = '/state/partition1/vzaychik'
-avidPath = dbclusterPath + "/webdamlog"
-machinePath = '/state/partition2/' + os.environ["USER"]
-miklau6Path = '/state/partition1/' + os.environ["USER"]
 rootPathDict = { \
-    'dbcluster.cs.umass.edu':dbclusterPath, \
-    'avid.cs.umass.edu':avidPath, \
-    'miklau1':machinePath, \
-    'miklau2':machinePath, \
-    'miklau3':machinePath, \
-    'miklau4':machinePath, \
-    'miklau5':machinePath, \
-    'miklau6':miklau6Path, \
-    'compute-1-0':machinePath, \
-    'compute-1-1':miklau6Path, \
-    'compute-1-2':miklau6Path, \
-    'compute-1-3':machinePath, }
+    'waltz.cs.drexel.edu':waltzPath, \
+    'master':machinePath, \
+    'slave01':machinePath, \
+    'slave02':machinePath, \
+    'slave03':machinePath, \
+    'slave04':machinePath, \
+    'slave05':machinePath, \
+    'slave06':machinePath, \
+    'slave07':machinePath, \
+    'slave08':machinePath, \
+    'slave09':machinePath, \
+    'slave10':machinePath, \
+    'slave11':machinePath, \
+    'slave12':machinePath, \
+    'slave13':machinePath, \
+    'slave14':machinePath, \
+    'slave15':machinePath, \
+    'slave16':machinePath, }
 
 #@task
 @parallel
-@hosts(['dbcluster.cs.umass.edu','avid.cs.umass.edu'])
+@hosts(['waltz.cs.drexel.edu'])
 def test():
-    if (env.host == 'avid.cs.umass.edu'):
-        run('sleep 10.0')
     run('hostname -f')
     run('pwd')
 
-@hosts(['dbcluster.cs.umass.edu'])
+@hosts(['waltz.cs.drexel.edu'])
 def remote_run(filename):
-    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+    with cd(os.path.join(rootPathDict['waltz.cs.drexel.edu'], 'webdamlog-engine/python')):
         run('git pull')
         run('python %s' % filename)
 
 
-@hosts(['dbcluster.cs.umass.edu'])
+@hosts(['waltz.cs.drexel.edu'])
 def refreshDB():
-    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine')):
+    with cd(os.path.join(rootPathDict['waltz.cs.drexel.edu'], 'webdamlog-engine')):
         run('git pull')
-    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-exp')):
+    with cd(os.path.join(rootPathDict['waltz.cs.drexel.edu'], 'webdamlog-exp')):
         run('svn up')
-    with cd(os.path.join(rootPathDict['dbcluster.cs.umass.edu'], 'webdamlog-engine/python')):
+    with cd(os.path.join(rootPathDict['waltz.cs.drexel.edu'], 'webdamlog-engine/python')):
         run('python loadBenchmark.py')
 
 def pull_both(scenPath):

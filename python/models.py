@@ -4,10 +4,7 @@ from datetime import date
 import os
 import commands
 
-#database = SqliteDatabase(None)  # Create a database instance.
-database = MySQLDatabase("webdamlog", host="avid.cs.umass.edu", port=3306, user="miklau", passwd="ilovedb")
-
-#database = MySQLDatabase(None)
+database = MySQLDatabase("webdamlog", host="localhost", port=3306, user="webdam", passwd="ilovedb")
 
 class BaseModel(Model):
     class Meta:
@@ -58,7 +55,6 @@ class Tick(BaseModel):
 def setupDatabaseTest():
     pathToRepository = commands.getoutput("echo $HOME")
     database.init( os.path.join(pathToRepository,'webdamlog-engine/python/test/test.sqlite'))
-#    database.init(':memory:')
     
     if not Scenario.table_exists():
         Scenario.create_table()

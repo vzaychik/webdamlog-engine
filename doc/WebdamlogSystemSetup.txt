@@ -1,0 +1,85 @@
+To set up webdamlog experiments:
+
+1) Install svn (if not already installed)
+  On each machine of the experiment, install the subversion program. On ubuntu: 
+    sudo apt-get -y install subversion
+  On the main experiment machine/driver, set up a location for svn repositories, such as /var/svn
+  Create a group for svn users/access. If the group name is svngrp, then: 
+    sudo addgroup svngrp
+  Add anybody who will be running the experiments to the svn group (sudo adduser <username> <groupname>).
+
+2) Set up svn repository webdamlog-exp.
+  Assuming svn is installed on the main experiment server and the directory for all repositories is /var/svn:  
+    sudo svnadmin create /var/svn/webdamlog-exp
+  Fix the permissions (assuming the special svn group is called svngrp): 
+    sudo chown -R svngrp /var/svn/webdamlog-exp
+    sudo chmod -R g+w /var/svn/webdamlog-exp
+  Check that sshd on svn server can accept the number of connectsion that is higher than the number of total slave machines in the experiment. This value is the first number of MaxStartups line in the /etc/ssh/sshd_config file. If it is too small, increase it and restart the sshd server.
+
+On each machine:
+3. Install python if not installed. Also install pip and python-dev, i.e.
+    apt-get install python-pip
+    apt-get install python-dev
+
+On each machine:
+4. Install required python modules
+    pip install fabric
+    pip install peewee
+
+On each machine for the user who will run experiments:
+5. Install ruby if not installed. Using rvm, can do it with these commands:
+    gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+    \curl -sSL https://get.rvm.io | bash -s stable --ruby
+
+On each slave machine (not required on the server) the user who will run webdam:
+6. Install required ruby packages
+    gem install --user-install bud
+    gem install --user-install polyglot	
+    gem install --user-install treetop
+    gem install --user-install ruby_deep_clone	
+   Add these lines to the .bashrc file:
+    export RUBY_GC_HEAP_INIT_SLOTS=1000000
+    export RUBY_HEAP_SLOTS_INCREMENT=1000000
+    export RUBY_HEAP_SLOTS_GROWTH_FACTOR=1
+    export RUBY_GC_MALLOC_LIMIT=1000000000
+    export RUBY_HEAP_FREE_MIN=500000
+    export RUBY_HEAP_MIN_SLOTS=800000
+
+On each machine:
+7. Install git
+    apt-get install git
+
+On each machine:
+8. Set up the directory where the svn and git repos will reside.
+  Each experimental machine gets its own local copy of the webdamlog-exp repository (to avoid conflicts). On each slave machine (not the main experimental server), on a local drive, make a webdam directory. It's easier if its path is the same on all machines, but not necessary. Check out the webdamlog repository from the correct location, such as here: 
+    svn co svn+ssh://<hostname>/var/svn/webdamlog-exp
+
+   Get a copy of the repo wherever the experiment directory is
+    git clone https://github.com/vzaychik/webdamlog-engine.git
+    
+On each machine, for the user running experiments:
+9. patch bud
+    cd <gem location of bud>/bud-0.9.7/lib/
+    patch -p4 < <path to webdam experiment folder>/webdamlog-engine/message-loss.patch
+
+10. On the main machine, set up the database.
+   Log in to the mysql database as the administrator.
+   create user 'webdam'@'localhost' IDENTIFIED BY 'ilovedb';
+   create table webdamlog;
+   grant all on webdamlog.* to user 'webdam'@'localhost';
+   To create the db tables for the first time, run 
+    python models.py
+
+11. Set up ssh for the user
+   In order to enable svn updates from the python experimental framework, need to disable strict host key checking. On each machine, for the experimental user, put a .ssh/config file with these lines (replace host with the host ip range or names):
+Host 192.168.0.*
+   StrictHostKeyChecking no
+   UserKnownHostsFile=/dev/null
+
+12. Make sure that security permissions allow incoming/outgoing tcp connections on ports 10000-11000. 
+
+13. For plot generation, on the main machine, install configparser and matplotlib python modules:
+    pip install configparser
+    pip install matplotlib
+
+DONE! (Theoretically)

@@ -6,7 +6,8 @@ from fabric.tasks import execute
 import os
 import commands
 
-rubyPath = '/usr/local/rvm/rubies/ruby-2.2.1/bin/ruby'
+#rubyPath = '/usr/local/rvm/rubies/ruby-2.2.1/bin/ruby'
+rubyPath = 'ruby'
 
 waltzPath = os.environ["HOME"]
 machinePath = '/opt/webdam/'

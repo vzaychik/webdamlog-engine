@@ -7,7 +7,7 @@ module Bud
       toplevel = @bud_instance.toplevel
       toplevel.connections[l] = EventMachine::connect l[0], l[1], ConnectionClient, @bud_instance, l
       #this almost never happens. If a connection is not established, unbind is called
-      toplevel.connections.delete(l) if toplevel.connections[l].error?
+      #toplevel.connections.delete(l) if toplevel.connections[l].error?
     end
 
     def send_tcp_data(the_locspec)

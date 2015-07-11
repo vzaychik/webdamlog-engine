@@ -124,7 +124,7 @@ def run(configFile):
                 execID = execution.executeScenario( rootPath, scenID, scenType, mode,  \
                                  config.getfloat('execution', 'timeToRun'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)
-                sleep(59) 
+                sleep(20) 
     print '***  Done with executions.'
     #print '***  Refreshing database to reflect new executions and any new scenarios.'
     #models.setupDatabase(clearDatabase=False)

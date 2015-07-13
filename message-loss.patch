@@ -1,6 +1,6 @@
-diff -rupN gems/gems/bud-0.9.7/lib/bud/collections.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb
---- gems/gems/bud-0.9.7/lib/bud/collections.rb	2014-07-03 13:49:01.138955198 -0400
-+++ /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb	2014-07-25 19:11:20.755909300 -0400
+diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb ./bud/collections.rb
+--- /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb	2014-09-16 14:13:34.000000000 -0400
++++ ./bud/collections.rb	2015-01-21 15:18:16.000000000 -0500
 @@ -520,6 +520,21 @@ module Bud
        end
      end
@@ -38,9 +38,9 @@ diff -rupN gems/gems/bud-0.9.7/lib/bud/collections.rb /home/vzaychik/.rvm/gems/r
          # Reset output buffer
          @wire_buf.rewind
          @wire_buf.truncate(0)
-diff -rupN gems/gems/bud-0.9.7/lib/bud/server.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb
---- gems/gems/bud-0.9.7/lib/bud/server.rb	2014-06-26 14:10:27.786990033 -0400
-+++ /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb	2014-07-25 13:59:40.960221631 -0400
+diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb ./bud/server.rb
+--- /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb	2014-09-16 14:13:34.000000000 -0400
++++ ./bud/server.rb	2014-09-16 23:14:53.000000000 -0400
 @@ -1,7 +1,7 @@
  require 'socket'
  
@@ -59,9 +59,9 @@ diff -rupN gems/gems/bud-0.9.7/lib/bud/server.rb /home/vzaychik/.rvm/gems/ruby-2
        puts e.backtrace
        puts "Inbound messages:"
        @bud.inbound.each do |chn_name, t|
-diff -rupN gems/gems/bud-0.9.7/lib/bud.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb
---- gems/gems/bud-0.9.7/lib/bud.rb	2014-06-26 14:10:27.794989209 -0400
-+++ /home/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb	2014-07-21 23:56:54.071825681 -0400
+diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb ./bud.rb
+--- /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb	2014-09-16 14:13:34.000000000 -0400
++++ ./bud.rb	2015-01-29 14:33:49.000000000 -0500
 @@ -75,6 +75,7 @@ module Bud
    attr_accessor :stratified_rules
    attr_accessor :metrics, :periodics
@@ -86,7 +86,17 @@ diff -rupN gems/gems/bud-0.9.7/lib/bud.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/ge
      # NB: If using an ephemeral port (specified by port = 0), the actual port
      # number won't be known until we start EM
  
-@@ -989,7 +992,11 @@ module Bud
+@@ -523,7 +526,8 @@ module Bud
+       next if dflt_rescan.member? scanner
+       next if scanner.class <= LatticeScanner
+ 
+-      rescan = dflt_rescan.clone
++      #VZM rescan = dflt_rescan.clone
++      rescan = dflt_rescan + [scanner]
+       invalidate = dflt_invalidate + [scanner.collection]
+       rescan_invalidate_tc(stratum, rescan, invalidate)
+       prune_rescan_invalidate(rescan, invalidate)
+@@ -989,7 +993,11 @@ module Bud
      @timers.each {|t| t.cancel}
      @tables.each_value {|t| t.close}
      if EventMachine::reactor_running? and @bud_started
@@ -99,7 +109,7 @@ diff -rupN gems/gems/bud-0.9.7/lib/bud.rb /home/vzaychik/.rvm/gems/ruby-2.1.2/ge
      end
      @bud_started = false
      @running_async = false
-@@ -999,10 +1006,33 @@ module Bud
+@@ -999,10 +1007,33 @@ module Bud
    end
  
    def do_start_server

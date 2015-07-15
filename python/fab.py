@@ -55,15 +55,17 @@ def refreshDB():
     with cd(os.path.join(rootPathDict['waltz.cs.drexel.edu'], 'webdamlog-engine/python')):
         run('python loadBenchmark.py')
 
-def pull_both(scenPath):
+def pull_svn(scenPath):
     rootPath = rootPathDict[env.host]
-    #with cd(os.path.join(rootPath, 'webdamlog-engine')):
-    #    run('git pull')
-    #with cd(os.path.join(rootPath, 'webdamlog-exp')):
     runString = 'svn up %s' % ( os.path.join(rootPath,scenPath) )
     with cd(rootPath):
         run(runString)
         
+def pull_code():
+    rootPath = rootPathDict[env.host]
+    with cd(os.path.join(rootPath, 'webdamlog-engine')):
+        run('git pull')
+    
 # ruby sample execution
 # for end-condition execution:
 # ruby ~/webdamlog_engine/bin/xp/run_access_resultcount.rb ~/Experiments/scenario_blah <access> <optim1>
@@ -79,9 +81,15 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         paramString )
     # need to be in the execution directory because benchmark files will be created there
     with cd(os.path.join(rootPath, execPath)):
-        run(runString)
+        #in case a run never finishes, give it 1 hour and timeout
+        #TODO: make the timeout value not hardcoded and determined more intelligently
+        run(runString, timeout=3600)
+
+def run_commit(execPath):
+    rootPath = rootPathDict[env.host]
+    with cd(os.path.join(rootPath, execPath)):
         run('svn add --force .')
-        run("""svn commit -m '' """)
+        run("""svn commit -m '' """)        
 
 def run_ruby_timed(execPath, scenPath, paramString, outKey, master, masterDelay):
     rootPath = rootPathDict[env.host]

@@ -1,6 +1,6 @@
-diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb ./bud/collections.rb
---- /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb	2014-09-16 14:13:34.000000000 -0400
-+++ ./bud/collections.rb	2015-01-21 15:18:16.000000000 -0500
+diff -rupN .rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb .gem/ruby/2.1.0/gems/bud-0.9.7/lib/bud/collections.rb
+--- .rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/collections.rb	2014-09-16 14:13:34.000000000 -0400
++++ .gem/ruby/2.1.0/gems/bud-0.9.7/lib/bud/collections.rb	2015-01-21 15:18:16.000000000 -0500
 @@ -520,6 +520,21 @@ module Bud
        end
      end
@@ -38,9 +38,9 @@ diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud
          # Reset output buffer
          @wire_buf.rewind
          @wire_buf.truncate(0)
-diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb ./bud/server.rb
---- /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb	2014-09-16 14:13:34.000000000 -0400
-+++ ./bud/server.rb	2014-09-16 23:14:53.000000000 -0400
+diff -rupN .rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb .gem/ruby/2.1.0/gems/bud-0.9.7/lib/bud/server.rb
+--- .rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud/server.rb	2014-09-16 14:13:34.000000000 -0400
++++ .gem/ruby/2.1.0/gems/bud-0.9.7/lib/bud/server.rb	2014-09-16 23:14:53.000000000 -0400
 @@ -1,7 +1,7 @@
  require 'socket'
  
@@ -59,9 +59,9 @@ diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud
        puts e.backtrace
        puts "Inbound messages:"
        @bud.inbound.each do |chn_name, t|
-diff -rupN /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb ./bud.rb
---- /nfs/avid/users4/vzaychik/.rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb	2014-09-16 14:13:34.000000000 -0400
-+++ ./bud.rb	2015-01-29 14:33:49.000000000 -0500
+diff -rupN .rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb .gem/ruby/2.1.0/gems/bud-0.9.7/lib/bud.rb
+--- .rvm/gems/ruby-2.1.2/gems/bud-0.9.7/lib/bud.rb	2014-09-16 14:13:34.000000000 -0400
++++ .gem/ruby/2.1.0/gems/bud-0.9.7/lib/bud.rb	2015-01-29 14:33:49.000000000 -0500
 @@ -75,6 +75,7 @@ module Bud
    attr_accessor :stratified_rules
    attr_accessor :metrics, :periodics

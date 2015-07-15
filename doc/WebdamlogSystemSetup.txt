@@ -60,7 +60,7 @@ On each machine:
 On each machine, for the user running experiments:
 9. patch bud
     cd <gem location of bud>/bud-0.9.7/lib/
-    patch -p4 < <path to webdam experiment folder>/webdamlog-engine/message-loss.patch
+    patch -p6 < <path to webdam experiment folder>/webdamlog-engine/message-loss.patch
 
 10. On the main machine, set up the database.
    Log in to the mysql database as the administrator.
@@ -79,7 +79,7 @@ Host 192.168.0.*
 12. Make sure that security permissions allow incoming/outgoing tcp connections on ports 10000-11000. 
 
 13. For plot generation, on the main machine, install configparser and matplotlib python modules:
-    pip install configparser
-    pip install matplotlib
+     pip install configparser
+     pip install matplotlib
 
 DONE! (Theoretically)

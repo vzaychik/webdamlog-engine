@@ -72,35 +72,38 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
     env.hosts = hosts
     env.parallel = True     # execute on each host in parallel
     try:
-        execute(fab.pull_both, scenPath=scenPath)         # each host should pull latest code and latest exp
+        execute(fab.pull_svn, scenPath=scenPath)         # each host should pull latest code and latest exp
     except:
         print >> sys.stderr, 'Pull failed: ', sys.exc_info()[0]
         execution.success = False
 
-    # prepare parameters for ruby script
-    paramString = ''
-    #paramString += str(timeToRun) + ' '
-    print "the mode which is set is",  mode
-    accessBool = mode & 1
-    optim1Bool = mode & 2
-    optim2Bool = mode & 4
-    print 'Value of accessBool is', accessBool
-    print 'Value of optim1Bool is', optim1Bool
-    print 'Value of optim2Bool is', optim2Bool
-    if (accessBool):
-        paramString += 'access'+' '
-    if (optim1Bool):
-        paramString += 'optim1'+' '
-    if (optim2Bool):
-        paramString += 'optim2'+' '
+    #only try to run ruby if the pull of files worked
+    if execution.success == True:
+        # prepare parameters for ruby script
+        paramString = ''
+        print "the mode which is set is",  mode
+        accessBool = mode & 1
+        optim1Bool = mode & 2
+        optim2Bool = mode & 4
+        if (accessBool):
+            paramString += 'access'+' '
+        if (optim1Bool):
+            paramString += 'optim1'+' '
+        if (optim2Bool):
+            paramString += 'optim2'+' '
+            
+        # run on all hosts
+        try:
+            execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
+        except:
+            print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
+            execution.success = False
 
-    # run on all hosts
-    try:
-        #execute(fab.run_ruby_timed, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey), master=masterHost, masterDelay=masterDelay)
-        execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
-    except:
-        print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
-        execution.success = False
+        try:
+            execute(fab.run_commit, execPath=execPath)
+        except:
+            print >> sys.stderr, 'Failed to commit files, please add them manually: ', sys.exc_info()[0]
+            #this does not change the execution success
     
     execution.runTime = time.time() - start
 
@@ -109,7 +112,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
         pickle.dump(execution, f)
 
 # refresh database for this execution
-#    execute(fab.pull_both)      # make sure files generated at all hosts are in
+#    execute(fab.pull_svn)      # make sure files generated at all hosts are in
 #    loadBenchmark.processExecs( scenID, localExecPath)
 
     driver.localSVNCommit(localScenPath)

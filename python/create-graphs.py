@@ -100,13 +100,13 @@ def gen_line_graphs(saveDir):
         #FIXME: make this work for negative x or y values
         maxX = max(xPoints)
         #to set the plot end, determine the number magnitude and then add half that
-        xtick = pow(10,len(str(maxX))-1)/2
+        xtick = pow(10,len(str(maxX))-1)/2.0
         maxX = maxX + xtick
         print "maxX for plot is " + str(maxX) + " and xtick is " + str(xtick)
         plt.xticks(np.arange(0, maxX, xtick))
         plt.xlim(0, maxX) 
         ytick = float(pow(10,len(str(int(maxValue)))-1))/2
-        maxY = maxValue + ytick
+        maxY = float(maxValue) + ytick
         print "maxY is " + str(maxY) + " and ytick is " + str(ytick)
         plt.ylim(0, maxY)
         plt.yticks(np.arange(0, maxY, ytick))

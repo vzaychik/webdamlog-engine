@@ -9,6 +9,8 @@ from fabric.api import *
 from fabric.tasks import execute
 import fab
 import fabric
+from fabric.exceptions import CommandTimeout
+
 fabric.state.output['debug']=True
 
 build = 15
@@ -95,6 +97,10 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
         # run on all hosts
         try:
             execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
+        except CommandTimeout:
+            execution.success = False
+            #don't want to check the files in, this run is invalid
+            return
         except:
             print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
             execution.success = False

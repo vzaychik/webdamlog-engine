@@ -81,9 +81,9 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         paramString )
     # need to be in the execution directory because benchmark files will be created there
     with cd(os.path.join(rootPath, execPath)):
-        #in case a run never finishes, give it 1 hour and timeout
+        #in case a run never finishes, give it 3 hours and timeout
         #TODO: make the timeout value not hardcoded and determined more intelligently
-        run(runString, timeout=3600)
+        run(runString, timeout=10800)
 
 def run_commit(execPath):
     rootPath = rootPathDict[env.host]

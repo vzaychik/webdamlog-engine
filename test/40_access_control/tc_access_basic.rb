@@ -259,7 +259,7 @@ end
       File.delete(@pg_file2) if File.exists?(@pg_file2)
       if EventMachine::reactor_running?
         runner1.stop
-        runner2.stop true
+        runner2.stop
       end
     end
 
@@ -391,5 +391,4 @@ end
   end
 
 end
-
 

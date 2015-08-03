@@ -17,12 +17,12 @@ import org.stoyanovich.webdam.datagen.Constants.POLICY;
 
 /**
  * This class generates access control annotated Webdamlog programs
- * for the photo album scenario.
+ * for the transitive closure scenario
  * 
- * @author Julia Stoyanovich
+ * @author Vera Zaychik
  *
  */
-public class Album {
+public class AllFriends {
 
 	public static HashMap<Integer,String> _netAddressMap = new HashMap<Integer, String>();
 
@@ -37,11 +37,9 @@ public class Album {
 			int i=0;
 			String host="";
 			
-			// alice, bob and sue share an instance
+			// alice has an instance to herself
 			host = inFP.readLine().trim();
-			while (i<3) {
-				_netAddressMap.put(i++, host);
-			}
+			_netAddressMap.put(i++, host);
 
 			// the next numPeers / peersPerInstance instances are the regular peers
 			int j=peersPerInstance;
@@ -77,8 +75,7 @@ public class Album {
 		
 		StringBuffer res = new StringBuffer("// known peers\n");
 		
-		for (int i=0; i<numPeers; i++) {
-			
+		for (int i=0; i<numPeers; i++) {			
 			String host = "localhost";
 			if (Album._netAddressMap.containsKey(i)) {
 				host = Album._netAddressMap.get(i);
@@ -102,8 +99,8 @@ public class Album {
 	
 	public static void main(String[] args) {
 		
-		if (args.length < 5) {
-			System.out.println("Not enough arguments: Album networkFile policy numFacts valRange deletePercent [instanceFile] [numPeersPerInstance]");
+		if (args.length < 3) {
+			System.out.println("Not enough arguments: AllFriends networkFile policy deletePercent [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
 
@@ -112,28 +109,23 @@ public class Album {
 			
 			String networkFileName = args[0].trim();
 			POLICY policy = POLICY.valueOf(args[1]);
-			int numFacts = Integer.parseInt(args[2].trim());
-			int valRange = Integer.parseInt(args[3].trim());
-			int deletePercent = Integer.parseInt(args[4].trim());
+			int deletePercent = Integer.parseInt(args[2].trim());
 			
 			readmeComment.append("network file=" + networkFileName);
 			readmeComment.append(", policy=" + policy.toString());
-			readmeComment.append(", # facts per relation=" + numFacts);
-			readmeComment.append(", value range=" + valRange);
 			readmeComment.append(", delete %=" + deletePercent);
 			
 			int numPeers=0;
 			String line;
 			BufferedReader inFP = new BufferedReader(new FileReader(networkFileName));
 		
-			while ( (line = inFP.readLine()) != null) {
+			while ( (line = inFP.readLine()) != null ) {
 				
-				System.out.println(line);
+			        //System.out.println(line);
 				
 				String[] tmp = line.split(" ");
 				int auxId = Integer.parseInt(tmp[0]);
 				int id = numPeers++;
-				
 				_peerIdHM.put(auxId, id);
 				Peer p = new Peer(id, PEER_TYPE.PEER);
 				p.setAuxId(auxId);
@@ -142,20 +134,22 @@ public class Album {
 			inFP.close();
 
 			inFP = new BufferedReader(new FileReader(networkFileName));
-			while ( (line = inFP.readLine()) != null) {
+			while ( (line = inFP.readLine()) != null ) {
+
 				String[] tmp = line.split(" ");
 				int auxId = Integer.parseInt(tmp[0]);
+
 				Peer p = _peersList.get(_peerIdHM.get(auxId));
 				
 				for (int i=1; i<tmp.length; i++) {
-					p.addKnownPeer(_peersList.get(_peerIdHM.get(Integer.parseInt(tmp[i]))));
+				    p.addKnownPeer(_peersList.get(_peerIdHM.get(Integer.parseInt(tmp[i]))));
 				}
 			}
 			inFP.close();
 			
-			if (args.length > 5) {
-				String instanceFile = args[5].trim();
-				int peersPerInstance = Integer.parseInt(args[6]);
+			if (args.length > 3) {
+				String instanceFile = args[3].trim();
+				int peersPerInstance = Integer.parseInt(args[4]);
 				if (!initNetAddressMap(instanceFile, peersPerInstance, numPeers)) {
 				    initNetAddressMap(numPeers);
 				}
@@ -166,121 +160,65 @@ public class Album {
 			Peer alice = _peersList.get(0);
 			alice.setType(PEER_TYPE.ALICE);
 			
-			Peer bob = _peersList.get(1);
-			bob.setType(PEER_TYPE.BOB);
-
-			Peer sue = _peersList.get(2);
-			sue.setType(PEER_TYPE.SUE);
-
-			//Sue has to have all peers as known peers
-			for (Peer p : _peersList) {
-			    if (p != sue) {
-				sue.addKnownPeer(p);
-			    }
-			}
-
-			//VZM compute the size of the final result for end condition
+			//the size of the final result for end condition is the number of edges in the original graph because it is one connected component
 			int resultsize = 0;
-			int totalDeletes = 0;
+			Digraph dg = new Digraph(numPeers);
 
 			for (int i=0; i<numPeers; i++) {
 				
 				Peer p = _peersList.get(i);
-				p.setScenario(Constants.SCENARIO.ALBUM);
-				
-				if (p.getType().equals(PEER_TYPE.PEER)) {
-
-					// on peers other than alice, bob and sue, photos and tags contain data
-					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img", numFacts, valRange); 
-					photos.deleteFacts(deletePercent);
-					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
-					Collection tags2 = new Collection("tags2", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
-					Collection relevanttags = new Collection("relevant_tags", p.getName(), COL_TYPE.EXT, 1, "rtag1,rtag2");
-					relevanttags.addFact("\""+bob.getName()+"\",\""+alice.getName()+"\"");
-
-					for (String img : photos.getFacts()) {
-					        int imgTag = 0;
-					        int delTag = 0;
-						for (int j=0; j<numPeers; j++) {
-				
-							Peer taggedPeer = _peersList.get(j);
-				
-							if (taggedPeer.getType().equals(PEER_TYPE.SUE)) {
-								continue;
-							}
-							
-							float rnd = rand.nextFloat();
-						
-							if ((taggedPeer.getType().equals(Constants.PEER_TYPE.PEER)) && (rnd < Constants.PROB_OTHER_PEER_IN_PHOTO)) {
-							    tags.addFact(img+",\""+taggedPeer.getName() + "\"");
-							    //need to add to deletes all tags for photos that were deleted
-							    if (photos.getDeletes().contains(img))
-								tags.deleteFact(img+",\""+taggedPeer.getName()+"\"");
-							} else if ( (taggedPeer.getType().equals(PEER_TYPE.ALICE) || taggedPeer.getType().equals(PEER_TYPE.BOB)) && 
-								    (rnd < Constants.PROB_ALICE_OR_BOB_IN_PHOTO)) {
-							    tags.addFact(img+",\""+taggedPeer.getName() + "\"");
-							    imgTag++;
-							    if (photos.getDeletes().contains(img)) {
-								tags.deleteFact(img+",\""+taggedPeer.getName()+"\"");
-								delTag++;
-							    }
-							}
-						}
-						if (imgTag > 1) { //both bob and alice tagged
-						    resultsize++;
-						}
-						if (delTag > 1) {
-						    totalDeletes++;
-						}
-					}		
-					for (String ff : tags.getFacts()) {
-					    tags2.addFact(ff);
-					}
-					for (String ff : tags.getDeletes()) {
-					    tags2.deleteFact(ff);
-					}
-					p.addCollection(photos);
-					p.addCollection(tags);
-					p.addCollection(tags2);
-					p.addCollection(relevanttags);
-
-					p.addKnownPeer(sue);
-					p.addMaster(sue);
-				} else {
-					// on alice, bob and sue these collections are empty
-					Collection photos = new Collection("photos", p.getName(), COL_TYPE.EXT, 1, "img"); 
-					Collection tags = new Collection("tags", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
-					Collection tags2 = new Collection("tags2", p.getName(), COL_TYPE.EXT, 1, "timg,tag");
-					Collection relevanttags = new Collection("relevant_tags", p.getName(), COL_TYPE.EXT, 1, "rtag1,rtag2");
-
-					p.addCollection(photos);
-					p.addCollection(tags);
-					p.addCollection(tags2);
-					p.addCollection(relevanttags);
-
-					if (p != sue) {
-					    p.addMaster(sue);
-					}
-				}
-				
-				Collection album = new Collection("album", p.getName(), COL_TYPE.INT, 1, "img,peer");
-				p.addCollection(album);
+				p.setScenario(Constants.SCENARIO.FRIENDS);
 
 				Collection friends = new Collection("friends", p.getName(), COL_TYPE.EXT, 1, "peer");
 				for (Peer f : p.getKnownPeers()) {
 					friends.addFact("\"" + f.getName() + "\"");
+					resultsize++;
+				}
+				if (deletePercent > 0) {
+				    if (p == alice) {
+					for (String f : friends.getFacts()) {
+					    int id = Integer.parseInt(f.replaceAll("[^0-9]", ""));
+					    dg.addEdge(p.getAuxId(), id); 					    
+					}
+				    } else {
+					friends.deleteFacts(deletePercent);
+					HashSet<String> temp = new HashSet<String>();
+					temp.addAll(friends.getFacts());
+					temp.removeAll(friends.getDeletes());
+					for (String str : temp) {
+					    int id = Integer.parseInt(str.replaceAll("[^0-9]", ""));
+					    dg.addEdge(p.getAuxId(), id); 
+					}
+				    }
 				}
 				p.addCollection(friends);
 				
 				p.setPolicy(policy);				
 			}
+
+
+			TransitiveClosure tr = new TransitiveClosure(dg);
+			//get the elements of the tr from alice
+			DirectedDFS dfs = tr.getDFS(alice.getAuxId());
+			int totalAfterDelete = 0;
+			//now count the number of edges that are between vertices in the connected component in gr
+			for (int ii=0; ii<dg.V(); ii++) {
+			    if (dfs.marked(ii)) {
+				totalAfterDelete += dg.outdegree(ii);
+			    }
+			}
+
+			if (resultsize == totalAfterDelete) {
+			    System.out.println("WARNING: The total number of results after deletes is the same as before deletes. The scenario would stop prematurely with deletes. Please try a higher delete percentage. No files will be generated.");
+			    System.exit(1);
+			}
 			
-			// set up sue's collections
-			Collection allFriends = new Collection("all_friends", sue.getName(), COL_TYPE.INT, 1, "peer");
-			sue.addCollection(allFriends);
+			// set up alice's collections
+			Collection allFriends = new Collection("all_friends", alice.getName(), COL_TYPE.INT, 1, "peer1, peer2");
+			alice.addCollection(allFriends);
 						
 			// output to program files
-			String knownPeers = Album.peersToString(numPeers);
+			String knownPeers = AllFriends.peersToString(numPeers);
 
 			if (Constants.DO_FILE_IO) {
 					
@@ -321,9 +259,9 @@ public class Album {
 					}
 	
 					if (Constants.MASTER_ONLY_RULES) {
-						// append rules to sue's program
+						// append rules to alice's program
 					        //VZM - write rules to a separate file for later injection run-time
-						String dirName = "out_" + _netAddressMap.get(sue.getId()) + "_" + ts; 
+						String dirName = "out_" + _netAddressMap.get(alice.getId()) + "_" + ts; 
 						String fileName = dirName + "/rules.wdm";
 						BufferedWriter outFP = new BufferedWriter(new FileWriter(fileName, true));
 						outFP.write(masterRules.toString());
@@ -337,7 +275,7 @@ public class Album {
 						//VZM write the expected final result size in number of tuples
 						outFP.write(String.valueOf(resultsize));
 						outFP.write("\n");
-						outFP.write(String.valueOf(resultsize-totalDeletes));
+						outFP.write(String.valueOf(totalAfterDelete));
 						outFP.write("\n");
 						outFP.close();
 						//VZM now write out a writeable for all peers for optim1 mode

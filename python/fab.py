@@ -85,6 +85,10 @@ def run_ruby(execPath, scenPath, paramString, outKey):
         #TODO: make the timeout value not hardcoded and determined more intelligently
         run(runString, timeout=3600)
 
+def clean_tmp():
+    run('rm -f /tmp/masterdone')
+    run('rm -f /tmp/masterfull')
+
 def run_commit(execPath):
     rootPath = rootPathDict[env.host]
     with cd(os.path.join(rootPath, execPath)):

@@ -55,7 +55,9 @@ def generateScenarioFiles(scenario, rootPath):
         javaString.append(str(scenario.numFacts))
         javaString.append(scenario.ruleScenario)
         javaString.append(str(scenario.valRange))
+        javaString.append(str(scenario.deletePercent))
         javaString.append(str(scenario.numExtraCols))        
+        javaString.append(str(scenario.deletePercent))
     if (scenario.scenType == 'PA'): # parameters for PA
         javaString.append('org.stoyanovich.webdam.datagen.Album')
 #        javaString.append(scenario.networkFile)
@@ -63,6 +65,11 @@ def generateScenarioFiles(scenario, rootPath):
         javaString.append(scenario.policy)
         javaString.append(str(scenario.numFacts))
         javaString.append(str(scenario.valRange))
+    if (scenario.scenType == 'FRD'): # parameters for Friendship scenario
+        javaString.append('org.stoyanovich.webdam.datagen.AllFriends')
+        javaString.append(os.path.join(rootPath,'webdamlog-engine/network',str(scenario.networkFile)))
+        javaString.append(scenario.policy)
+        javaString.append(str(scenario.deletePercent))
     # common parameters
     javaString.append('netAddr.txt')
     javaString.append(str(scenario.numPeersPerHost))
@@ -95,6 +102,7 @@ if __name__ == "__main__":
     _valRange = int(argv[7])
     _ruleScenario = argv[8]
     _numPeers = int(argv[9])
+    _delPerc = int(argv[10])
     scenarios = driver.simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _policy, _numFacts, _valRange, _ruleScenario, _numPeers)  # create a list of scenario instances
     for s in scenarios:
         generateScenarioFiles( s, rootPath )    # generate each scenario

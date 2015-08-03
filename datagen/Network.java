@@ -110,10 +110,73 @@ public class Network {
 		return res.toString();
 	}
 
+    public static int computeNumberOfResults(SCENARIO scenario, ArrayList<Peer> aggregators, ArrayList<Peer> followers, boolean wdeletes ) {
+		//VZM compute the final result - yuck - for end condition
+		ArrayList<HashSet<String>> aggr_results = new ArrayList<HashSet<String>>();
+		HashSet<String> result = new HashSet<String>();
+		if (scenario == SCENARIO.UNION_OF_JOINS) {
+		    for (Peer ag : aggregators) {
+			//compute intersection of all followers of this aggregator
+			HashSet<String> agset = new HashSet<String>();
+			boolean first = true;
+			for (Peer p : ag.getKnownPeers()) {
+			    if (p.getType() == PEER_TYPE.FOLLOWER) {
+				Collection col = p.getCollections().get(0);
+				if (first) {
+				    agset.addAll(col.getFacts());
+				    if (wdeletes)
+					agset.removeAll(col.getDeletes());
+				    first = false;
+				} else {
+				    HashSet<String> temp = new HashSet<String>();
+				    temp.addAll(col.getFacts());
+				    if (wdeletes)
+					temp.removeAll(col.getDeletes());
+				    agset.retainAll(temp);
+				}
+			    }
+			}
+			aggr_results.add(agset);
+		    }
+		    //now union of all aggregators
+		    for (HashSet<String> s : aggr_results) {
+			result.addAll(s);
+		    }
+		} else if (scenario == SCENARIO.JOIN_OF_UNIONS) {
+		    for (Peer ag : aggregators) {
+			//compute union of all followers of this aggregator
+			HashSet<String> agset = new HashSet<String>();
+			for (Peer p : ag.getKnownPeers()) {
+			    if (p.getType() == PEER_TYPE.FOLLOWER) {
+				HashSet<String> temp = new HashSet<String>();
+				temp.addAll(p.getCollections().get(0).getFacts());
+				if (wdeletes)
+				    temp.removeAll(p.getCollections().get(0).getDeletes());
+				agset.addAll(temp);
+			    }
+			}
+			aggr_results.add(agset);
+		    }
+		    //now intersection of all aggregators
+		    for (HashSet<String> s : aggr_results) {
+			boolean first = true;
+			for (HashSet<String> st : aggr_results) {
+			    if (first) {
+				result.addAll(st);
+				first = false;
+			    } else {
+				result.retainAll(st);
+			    }
+			}
+		    }
+		}
+		return result.size();
+
+	}
+
 	public static void main(String[] args) {
-		if (args.length < 8) {
-			//System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario dirPath [instanceFile] [numPeersPerInstance]");
-			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange numExtraCols [instanceFile] [numPeersPerInstance]");
+		if (args.length < 9) {
+			System.out.println("Not enough arguments: Network numFollowers numAggregators numAggregatorsPerFollower policy numFacts scenario valRange numExtraCols deletePercent [instanceFile] [numPeersPerInstance]");
 			System.exit(1);
 		}
 
@@ -127,13 +190,12 @@ public class Network {
 		SCENARIO scenario = SCENARIO.valueOf(args[5]);
 		int valRange = Integer.parseInt(args[6].trim()); 
 		int numExtraCols = Integer.parseInt(args[7].trim()); 
+		int deletePercent = Integer.parseInt(args[8].trim());
 
 		String nonKeys="col0";
 		for (int col=1; col<numExtraCols; col++) {
 			nonKeys += ",col" + col;
 		}
-
-		// String dirPath = args[6].trim();
 
 		readmeComment.append("# followers=" + numFollowers);
 		readmeComment.append(", # aggregators=" + numAggregators);
@@ -143,10 +205,11 @@ public class Network {
 		readmeComment.append(", scenario=" + scenario.toString());
 		readmeComment.append(", value range=" + valRange);
 		readmeComment.append(", # extra cols=" + numExtraCols);
+		readmeComment.append(", delete %=" + deletePercent);
 
-		if (args.length > 8) {
-			String instanceFile = args[8].trim();
-			int peersPerInstance = Integer.parseInt(args[9]);
+		if (args.length > 9) {
+			String instanceFile = args[9].trim();
+			int peersPerInstance = Integer.parseInt(args[10]);
 			if (!initNetAddressMap(instanceFile, peersPerInstance, numAggregators, numFollowers)) {
 			    initNetAddressMap(1+numAggregators+numFollowers);
 			}
@@ -190,6 +253,10 @@ public class Network {
 				p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", numFacts, valRange));
 			} else {
 				p.addCollection(new Collection("r", p.getName(), COL_TYPE.EXT, 1, "x", nonKeys, numFacts, valRange));
+			}
+			if (deletePercent > 0) {
+			    //for each peer, grab % facts for deletion
+			    p.getCollectionByName("r").deleteFacts(deletePercent);
 			}
 			HashSet<Integer> aggsToFollow = new HashSet<Integer>();
 			for (int j=0; j <aggregators.size(); j++) {
@@ -247,60 +314,15 @@ public class Network {
 		allPeers.addAll(aggregators);
 		allPeers.addAll(followers);
 
-		//VZM compute the final result - yuck - for end condition
-		ArrayList<HashSet<String>> aggr_results = new ArrayList<HashSet<String>>();
-		HashSet<String> result = new HashSet<String>();
-		if (scenario == SCENARIO.UNION_OF_JOINS) {
-		    for (Peer ag : aggregators) {
-			//compute intersection of all followers of this aggregator
-			HashSet<String> agset = new HashSet<String>();
-			boolean first = true;
-			for (Peer p : ag.getKnownPeers()) {
-			    if (p.getType() == PEER_TYPE.FOLLOWER) {
-				if (first) {
-				    agset.addAll(p.getCollections().get(0).getFacts());
-				    first = false;
-				} else {
-				    agset.retainAll(p.getCollections().get(0).getFacts());
-				}
-			    }
-			}
-			aggr_results.add(agset);
-		    }
-		    //now union of all aggregators
-		    for (HashSet<String> s : aggr_results) {
-			result.addAll(s);
-		    }
-		} else if (scenario == SCENARIO.JOIN_OF_UNIONS) {
-		    for (Peer ag : aggregators) {
-			//compute union of all followers of this aggregator
-			HashSet<String> agset = new HashSet<String>();
-			for (Peer p : ag.getKnownPeers()) {
-			    if (p.getType() == PEER_TYPE.FOLLOWER) {
-				agset.addAll(p.getCollections().get(0).getFacts());
-			    }
-			}
-			aggr_results.add(agset);
-		    }
-		    //now intersection of all aggregators
-		    for (HashSet<String> s : aggr_results) {
-			boolean first = true;
-			for (HashSet<String> st : aggr_results) {
-			    if (first) {
-				result.addAll(st);
-				first = false;
-			    } else {
-				result.retainAll(st);
-			    }
-			}
-		    }
-		}
-		int resultsize = result.size();
+		int resultsize = computeNumberOfResults(scenario, aggregators, followers, false);
+
 		if (resultsize == 0) {
 		    System.out.println("This set of arguments generates an empty result set. No files will be generated.");
 		    System.exit(1);
 		}
 
+		int afterdeletesize = computeNumberOfResults(scenario, aggregators, followers, true);
+		
 		if (Constants.DO_FILE_IO) {
 			try {
 
@@ -357,6 +379,8 @@ public class Network {
 					//VZM write the expected final result size in number of tuples
 					outFP.write(String.valueOf(resultsize));
 					outFP.write("\n");
+					outFP.write(String.valueOf(afterdeletesize));
+					outFP.write("\n");
 					outFP.close();
 					//VZM now write out a writeable for all peers for optim1 mode
 					outFP = new BufferedWriter(new FileWriter( dirName + "/writeable.wdm", true));
@@ -365,7 +389,7 @@ public class Network {
 					    //we only care about the write permission here so find those lines
 					    for (String policyString : policyStrings) {
 						if (policyString.contains(" write ")) {
-						    //TODO extract the name of the relation and who
+						    //extract the name of the relation and who
 						    String relation = policyString.substring(policyString.indexOf(" ")+1, policyString.indexOf(" write")); 
 						    String who = policyString.substring(policyString.indexOf("write ")+6, policyString.indexOf(";"));
 						    if (who.equals("ALL")) {
@@ -380,6 +404,14 @@ public class Network {
 					    }
 					}
 					outFP.close();
+					//now write the delete file for deletions
+					if (deletePercent > 0) {
+					    outFP = new BufferedWriter(new FileWriter( dirName + "/deletes.wdm", true));
+					    for (Peer p : followers) {
+						outFP.write(p.outputDeletes());
+					    }
+					    outFP.close();
+					}
 				}
 
 			} catch (IOException ioe) {

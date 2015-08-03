@@ -18,6 +18,7 @@ class Scenario(BaseModel):
     aggPerFollower = IntegerField(null=True) # aggregatorsPerFollower - degree of follower nodes
     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
+    percentDelete = IntegerField(null=True) # percentDelete - the percent of facts deleted per extensional relation on a follower peer.
     ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
     valRange = IntegerField(null=True) #facts at follower peers are drawn randomly from the interval [0, valRange)
     numExtraCols = IntegerField(null=True) #number additional of non-key columns
@@ -31,6 +32,7 @@ class Execution(BaseModel):
     scenID = ForeignKeyField(Scenario)
     timeToRun = FloatField()
     mode = IntegerField()
+    wdelete = BooleanField()
     runTime = FloatField()
     success = BooleanField()
     build = IntegerField()

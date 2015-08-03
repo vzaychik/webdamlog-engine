@@ -68,7 +68,9 @@ module WLBud
       @dies_at_tick = options[:dies_at_tick] ||= 0
       # Store the state of the relations at the previous tick (used for
       # differential computation)
-      @cached_facts = {}
+      @cached_facts = Hash.new({})
+      # Store the sbuffer relations for rules with nonlocal head
+      @sendbuffers = {}
 
       if options[:wl_test]
         @test_received_on_chan = []
@@ -130,6 +132,12 @@ module WLBud
       @connections_buffer = {}
       @connections_status = {}
 
+      # This is the buffers in which we put all the facts we want to send, its
+      # schema is very simple [:rel_name, :facts] hashed by :@dst should be
+      # the destination where to send the facts in the same format as :@dst in
+      # standard bud channel "ip:port"
+      @sendbuffers = {}
+
       # VZM access control
       @options[:accessc] = true if @options[:optim1]
       @options[:accessc] = true if @options[:optim2]
@@ -153,7 +161,7 @@ module WLBud
       @wl_program = WLBud::WLProgram.new(@peername, @filename, @ip, @options[:port], false, {:debug => @options[:debug], :accessc => @options[:accessc], :optim1 => @options[:optim1], :optim2 => @options[:optim2]} )
       # By default provenance is used to spread deletion, use this tag for
       #   experimental comparisons
-      @options[:noprovenance] ? @provenance = false : @provenance = true
+      @options[:provenance] ? @provenance = true : @provenance = false
       @provenance_graph = ProvenanceGraph.new if @provenance
       
       # XXX : added comments on budlib (unofficial):
@@ -320,9 +328,11 @@ collection int peer_done#{@peername}(key*);"
             elem.invalidate_cache unless elem.class <= PushElement
           }
 
+          #FIXME! make writeable and acl be treated as proper sources
           if @options[:accessc] && @acl_updated
             each_scanner do |scanner, stratum|
               scanner.force_rescan = true
+              scanner.rescan = true
             end
             @acl_updated = false
           end
@@ -419,7 +429,7 @@ collection int peer_done#{@peername}(key*);"
 
         sprout_rules_new = make_seed_sprout
         if !sprout_rules_new.empty?
-          puts "need an extra tick"
+          puts "need an extra tick" if @options[:debug]
           self.schedule_extra_tick
         end
         # WLBud:End adding to Bud
@@ -486,12 +496,6 @@ collection int peer_done#{@peername}(key*);"
       peer_done_rel_name = "peer_done_at_#{@peername}"
       if @dies_at_tick > 0 and @budtime-1 == @dies_at_tick
         #want to stop but want to give the done message a chance to reach the other peers
-        #FIXME - this is a hack, need a better way
-        #EventMachine.run {
-          #EventMachine.add_timer(20) { stop }
-        #}
-
-        #This should be the correct non-hacky way.
         EventMachine.add_periodic_timer(5) {
           done = true
           connections_buffer.each_value do |buf|
@@ -518,6 +522,15 @@ collection int peer_done#{@peername}(key*);"
         end
       end      
     end
+    
+    # Override webdamlog method to remove a single sbuffer
+    def builtin_state
+      super
+      @builtin_tables = @tables.clone if toplevel
+      # Unique channel that serves for all messages. Each timestep exactly one
+      # or zero packet is sent to each peer (see wlpacket).
+      wlchannel :chan, [:@dst,:packet] => []
+    end
 
     def dies_at_tick= num
       @dies_at_tick = num
@@ -526,12 +539,14 @@ collection int peer_done#{@peername}(key*);"
     def update_aclrel (rel, peer, priv)
       tables["acl_at_#{self.peername}".to_sym] << [rel,priv,PList.new([peer].to_set)]
       #grab the symbol for this relation
-      if @options[:optim2]
+      if @options[:optim2] and priv != "W"
         form = tables["aclf_at_#{self.peername}".to_sym][[rel,priv]].formula
         tables["formulas_at_#{self.peername}".to_sym] << [form, PList.new([peer].to_set)]
+        #need to trash all extended formulas which depend on this one
+        #FIXME: for now, just trash all, but make it selective
+        tables["extended_formulas_at_#{self.peername}".to_sym].storage.clear
       end
-      #FIXME - this is a hack
-      @need_rewrite_strata = true
+      @acl_updated = true
     end
   end #class
 

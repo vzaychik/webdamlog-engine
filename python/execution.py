@@ -15,7 +15,7 @@ build = 15
 
 # Executes the scenario given by scenID
 #
-def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, masterDelay ):
+def executeScenario( pathToRepository, scenID, scenType, mode, wdelete, timeToRun, masterDelay ):
 
     stamp = int(time.time()*1000)
     
@@ -25,6 +25,7 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
         scenID = scenID, \
         timeToRun = timeToRun, \
         mode = mode, \
+        wdelete = wdelete, \
         build = build )          # numTicks is now ignored; remove 
     
     # this is the directory containing the scenario: e.g. webdamlog-exp/MAF/1385388824301
@@ -91,6 +92,8 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
             paramString += 'optim1'+' '
         if (optim2Bool):
             paramString += 'optim2'+' '
+        if (wdelete):
+            paramString += 'deletes'+' '
             
         # run on all hosts
         try:
@@ -98,6 +101,10 @@ def executeScenario( pathToRepository, scenID, scenType, mode, timeToRun, master
         except:
             print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
             execution.success = False
+
+        #delete the tmp file that was used for shutdown
+        with settings(warn_only=True):
+            execute(fab.clean_tmp)
 
         try:
             execute(fab.run_commit, execPath=execPath)
@@ -129,7 +136,7 @@ if __name__ == "__main__":
     #p1 = int(p)
     #for scenID in p:
       #  for r in range(runs):
-    executeScenario( rootPath, scenID, 'MAF', 1, 60, 0 )
+    executeScenario( rootPath, scenID, 'MAF', 1, 0, 60, 0 )
            # executeScenario( rootPath, scenID, 'MAF', True, False, 20, 0.25 )
            # executeScenario( rootPath, scenID, 'MAF', True, True, 20, 0.25 )
     print "clearing the dB....."

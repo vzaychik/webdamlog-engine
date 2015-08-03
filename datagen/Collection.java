@@ -22,6 +22,7 @@ public class Collection {
 	public ArrayList<String> _nonKeys;
 	public int _isPersistent = 0;
 	public HashSet<String> _facts;
+        public HashSet<String> _deletes;
 
 	public Collection(String name, String peerName, COL_TYPE type, int isPersistent, String keys, String nonKeys) {
 		_name = name;
@@ -37,6 +38,7 @@ public class Collection {
 		_keys = new ArrayList<String>();
 		_nonKeys = new ArrayList<String>();
 		_facts = new HashSet<String>();
+		_deletes = new HashSet<String>();
 		
 		String[] tmp = keys.trim().split(",");
 		for (int i=0; i<tmp.length; i++) {
@@ -96,11 +98,19 @@ public class Collection {
 	public int getNumFacts() {
 		return _facts.size();
 	}
-	
+    
+        public int getNumDeletes() {
+	        return _deletes.size();
+	}	
+
 	public HashSet<String> getFacts() {
 		return _facts;
 	}
-	
+
+        public HashSet<String> getDeletes() {
+	        return _deletes;
+	}
+
 	public String keysToString() {
 		StringBuffer res = new StringBuffer();
 		for (String key : _keys) {
@@ -168,4 +178,23 @@ public class Collection {
 		_facts.add(fact);
 	}
 	
+        public void deleteFacts(int deletePercent) {
+	    int numDeletes = getNumFacts()*deletePercent/100;
+	    int ii=0;
+	    Random rand = new Random((new java.util.Date()).getTime());
+	    Object[] ar = _facts.toArray();
+	    while (ii > numDeletes) {
+		int index = rand.nextInt(getNumFacts());
+		String fact = (String)ar[index];
+		if (!_deletes.contains(fact)) {
+		    _deletes.add(fact);
+		    ii++;
+		}
+	    }
+	}
+
+        public void deleteFact(String fact) {
+	    if (_facts.contains(fact))
+		_deletes.add(fact);
+	}
 }

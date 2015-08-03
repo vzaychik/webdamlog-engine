@@ -4,8 +4,8 @@ require 'csv'
 
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
 XPFILE = "XP_NOACCESS"
-RULEFILE = "rules.wdm"
 WRITEABLEFILE = "writeable.wdm"
+DELETESFILE = "deletes.wdm"
 
 # Parameters:
 # * XP_FILE_DIR : The path to the directory with the data generator
@@ -39,16 +39,36 @@ def run_access_remote!
     @access_mode = true
     p "optimization 2 - formulas - is on"
   end
+  if ARGV.include?("deletes")
+    @wdeletes = true
+    @deletes = {}
+    #FIXME rewrite using regular webdamlog parsing
+    File.readlines("#{XP_FILE_DIR}/#{DELETESFILE}").each do |fact|
+      #parse out the peer and hash by that
+      fact[/fact (.*)@([a-zA-Z0-9]+)\(/]
+      relname = "#{$1}_at_#{$2}"
+      pname = $2
+      fact[/\((.*)\)/]
+      #fix the quotes
+      tuple = $1.gsub(/\"/,'').split(',')
+      @deletes[pname] = {} if @deletes[pname].nil?
+      @deletes[pname][relname] = [] if @deletes[pname][relname].nil?
+      @deletes[pname][relname] << tuple
+    end
+  end
 
   xpfiles = []
-  expected_tuples = 0
+  expected_tuples = -1
+  expected_afterdel = -1
   #first row is the list of peers
   CSV.foreach(get_run_xp_file) do |row|
     if (xpfiles == [])
       xpfiles = row
       p "Start experiments with #{xpfiles}"
-    else
+    elsif expected_tuples < 0
       expected_tuples = row.first.to_i
+    else
+      expected_afterdel = row.first.to_i
     end
   end
 
@@ -58,26 +78,33 @@ def run_access_remote!
   end
 
   runners = []
+  @hosts = []
   xpfiles.each do |f|
     runners << create_wl_runner(File.join(XP_FILE_DIR,f))
     p "#{runners.last.peername} created"
+    if (runners.last.peername.start_with? "master" or runners.last.peername.start_with? "sue" or runners.last.peername.start_with? "alice")
+      #get a list of all hosts
+      file = File.new f, "r"
+      while line = file.gets
+        if /^peer/.match line
+          hostname = line.split("=").last.split(":").first
+          if !@hosts.include?(hostname)
+            puts "adding host #{hostname}"
+            @hosts << hostname
+          end
+        end
+      end
+      file.close
+    end
   end
-
-  num_running = 0
-
+  
   runners.each do |runner|
     runner.on_shutdown do
       p "Final tick step of #{runner.peername} : #{runner.budtime}"
-      num_running -= 1
-    end
-    if !runner.peername.start_with?("master") && !runner.peername.start_with?("sue")
-      donerel = "master_done_" + (@access_mode ? "plusR_" : "") + "at_#{runner.peername}"
-      runner.register_callback(donerel.to_sym) do
-        p "master is done, shutting #{runner.peername} down"
-        runner.stop
-      end
     end
   end
+
+  not_done = true
 
   runners.each do |runner|
     if @optim1
@@ -85,9 +112,7 @@ def run_access_remote!
         runner.add_facts fct
       }
     end
-    #runner.run_engine_periodic
     runner.run_engine
-    num_running += 1
     p "#{runner.peername} started"
     if runner.peername == "master0"
       @masterp = runner
@@ -95,56 +120,90 @@ def run_access_remote!
     elsif runner.peername.start_with?("sue")
       @masterp = runner
       @scenario = "album"
+    elsif runner.peername.start_with?("alice")
+      if @masterp.nil?
+        @masterp = runner
+        @scenario = "closure"
+      end
     end
   end
 
+  mdeletesdone = false
+  
   if @masterp != nil
-    #inject rules now
-    rules = []
-    donerules = []
-    File.readlines("#{XP_FILE_DIR}/#{RULEFILE}").each do |rule|
-      if rule.start_with?("//") == false
-        if rule.include?("master_done")
-          donerules << rule
-        else
-          rules << rule
-        end
-      end
-    end
-    p "at tick #{@masterp.budtime} injecting rules: #{rules}"
-    @masterp.update_add_rules rules
-
     if @scenario == "network"
       resultrel = "t_i"
     elsif @scenario == "album"
       resultrel = "album_i"
+    elsif @scenario == "closure"
+      resultrel = "all_friends_i"
     end
     if @access_mode == true
       resultrel += "_plusR_at_#{@masterp.peername}"
     else
       resultrel += "_at_#{@masterp.peername}"
     end
-
-    first_time_done = true
+    
     @masterp.register_callback(resultrel.to_sym) do
-      if @masterp.tables[resultrel.to_sym].length == expected_tuples && first_time_done
-        first_time_done = false
-        p "master received all tuples, shutting down"
+      numres = @masterp.tables[resultrel.to_sym].length
+      p "new num results is #{numres}"
+      if numres == expected_tuples
+        if @wdeletes and !mdeletesdone
+          p "start the deletion phase at #{@masterp.budtime}"
+          @hosts.each do |host|
+            str = "ssh #{host} \"echo done > /tmp/masterfull\""
+            puts "trying to execute #{str}"
+            system str
+          end
+          mdeletesdone = true
+        elsif !@wdeletes
+          p "master received all tuples"
+          results = @masterp.tables[resultrel.to_sym].map{ |t| Hash[t.each_pair.to_a] }
+          puts "final contents of master's facts: #{results}"
+          #put a masterdone notice on all hosts running peers
+          @hosts.each do |host|
+            str = "ssh #{host} \"echo done > /tmp/masterdone\""
+            puts "trying to execute #{str}"
+            system str
+          end
+        end
+      elsif numres == expected_afterdel and @wdeletes and mdeletesdone
+        p "master received all tuples and deletions"
         results = @masterp.tables[resultrel.to_sym].map{ |t| Hash[t.each_pair.to_a] }
         puts "final contents of master's facts: #{results}"
-        donerules.each do |rule|
-          @masterp.add_rule rule
-        end
-        @masterp.add_facts ({"done_at_#{@masterp.peername}" => [["1"]]})
-        @masterp.dies_at_tick = @masterp.budtime #this should kill on next tick
-        @masterp.schedule_extra_tick
+        #put a masterdone notice on all hosts running peers
+        @hosts.each do |host|
+          str = "ssh #{host} \"echo done > /tmp/masterdone\""
+          puts "trying to execute #{str}"
+          system str
+        end        
       end
     end
   end
-
-  while num_running > 0
-    p "still running: #{num_running}"
-    sleep 30
+  
+  deletesdone = false
+  while not_done
+    p "still running"
+    if File.exist?('/tmp/masterdone')
+      not_done = false
+      puts "Master done, shutting down"
+      runners.each do |runner|
+        runner.stop
+      end
+    elsif (!deletesdone and File.exist?('/tmp/masterfull'))
+      p "injecting deletes"
+      #inject deletes
+      runners.each do |runner|
+        fcts = @deletes[runner.peername]
+        if !fcts.nil?
+          p "deleting #{fcts} for peer #{runner.peername}"
+          runner.delete_facts(fcts)
+          runner.schedule_extra_tick
+        end
+      end
+      deletesdone = true
+    end
+    sleep 10
   end
 
 end

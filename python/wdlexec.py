@@ -21,6 +21,7 @@ def matchOrCreateScenario(scenList, rootPath):
                 models.Scenario.aggPerFollower == scen.aggPerFollower, \
                 models.Scenario.policy == scen.policy, \
                 models.Scenario.numFacts == scen.numFacts, \
+                models.Scenario.percentDelete = scen.percentDelete, \
                 models.Scenario.ruleScenario == scen.ruleScenario, \
                 models.Scenario.valRange == scen.valRange, \
                 models.Scenario.numExtraCols == scen.numExtraCols, \
@@ -55,9 +56,10 @@ def run(configFile):
         numAggregatorsList = config.get('scenarioMAF', 'numAggregators').split(' ')
         numAgPerFollowerList = config.get('scenarioMAF', 'aggPerFollower').split(' ')
         numFactsList = config.get('scenarioMAF', 'numFacts').split(' ')
+        percentDeleteList = config.get('scenarioMAF', 'percentDelete').split(' ')
         
         # this forms the crossproduct of all set-valued parameters
-        for tup in itertools.product(policyList, ruleScenarioList, numFollowersList, numAggregatorsList, numAgPerFollowerList, numFactsList):       
+        for tup in itertools.product(policyList, ruleScenarioList, numFollowersList, numAggregatorsList, numAgPerFollowerList, numFactsList, percentDeleteList):       
             print tup
             scenario = models.Scenario( \
                 # scenID = _ _ _ (filled in later)
@@ -67,8 +69,8 @@ def run(configFile):
                 aggPerFollower = int(tup[4]), \
                 policy = tup[0], \
                 numFacts = int(tup[5]), \
+                percentDelete = int(tup[6]), \
                 ruleScenario = tup[1], \
-                #valRange = config.getint('scenarioMAF', 'valRange'), \
                 valRange = tup[5], \
                 numExtraCols = config.getint('scenarioMAF', 'numExtraCols'), \
                 numHosts = config.getint('scenarioMAF', 'numHosts'), \
@@ -82,8 +84,9 @@ def run(configFile):
         policyList = config.get('scenarioPA', 'policy').split(' ')
         networkFileList = config.get('scenarioPA', 'networkFile').split(' ')
         numFactsList = config.get('scenarioPA', 'numFacts').split(' ')
+        percentDeleteList = config.get('scenarioPA', 'percentDelete').split(' ')
         
-        for tup in itertools.product(policyList, networkFileList, numFactsList):
+        for tup in itertools.product(policyList, networkFileList, numFactsList, percentDeleteList):
             print tup
             numf = int(tup[1].split('-')[1][1:])-3
             numh = config.getint('scenarioPA', 'numHosts')
@@ -94,11 +97,40 @@ def run(configFile):
                 aggPerFollower = 0, \
                 policy = tup[0], \
                 numFacts = int(tup[2]), \
+                percentDelete = int(tup[3]), \
                 ruleScenario = 'PA', \
                 valRange = int(tup[2]), \
                 numExtraCols = 0, \
                 numHosts = numh, \
                 hosts = config.get('scenarioPA', 'hosts').split(' '), \
+                numPeersPerHost = numf/(numh-1)+1, \
+                networkFile = tup[1] )
+            scenarioList.append(scenario)
+            
+    if scenType == 'FRD':
+
+        # set-valued parameters (space delimited in config file)
+        policyList = config.get('scenarioFRD', 'policy').split(' ')
+        networkFileList = config.get('scenarioFRD', 'networkFile').split(' ')
+        percentDeleteList = config.get('scenarioFRD', 'percentDelete').split(' ')
+
+        for tup in itertools.product(policyList, networkFileList, percentDeleteList):        
+            print tup
+            numf = int(tup[1].split('-')[1][1:])-1
+            numh = config.getint('scenarioFRD', 'numHosts')
+            scenario = models.Scenario( \
+                scenType = 'FRD', \
+                numFollowers = numf, \
+                numAggregators = 0, \
+                aggPerFollower = 0, \
+                policy = tup[0], \
+                numFacts = numf, \
+                percentDelete = int(tup[2]), \
+                ruleScenario = 'FRD', \
+                valRange = 0, \
+                numExtraCols = 0, \
+                numHosts = numh, \
+                hosts = config.get('scenarioFRD', 'hosts').split(' '), \
                 numPeersPerHost = numf/(numh-1)+1, \
                 networkFile = tup[1] )
             scenarioList.append(scenario)
@@ -113,7 +145,8 @@ def run(configFile):
     # start on executions...
     # set-valued execution parameters (space delimited in config file)
     accessCList = config.get('execution', 'accessControl').split(' ')
-    
+    wdelete = config.get('execution', 'withDelete')
+
     for scenID in scenIDList:   # run all the executions, for each scenID
         for run in range( config.getint('execution', 'numRuns') ):
             print 'Running executions for scenID %i' % scenID
@@ -121,7 +154,7 @@ def run(configFile):
                 print 'the string is:', tup
                 mode = int(tup,2)
                 print 'mode is *****', mode
-                execID = execution.executeScenario( rootPath, scenID, scenType, mode,  \
+                execID = execution.executeScenario( rootPath, scenID, scenType, mode,  wdelete, \
                                  config.getfloat('execution', 'timeToRun'), config.getfloat('execution', 'masterDelay')   )
                 print '***  Finished run %i of execution %i.' % (run, execID)
                 sleep(30) 

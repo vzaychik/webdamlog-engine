@@ -139,12 +139,6 @@ public class Peer {
 		for (Collection c : _collections) {
 			prog.append("collection " + c.getType().toString() + c.isPersistentToString() + c.getSchema() + ";\n");
 		}
-		//VZM For non-master peers create a master_done collection
-		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
-		    prog.append("collection ext per done@" + getName() + "(x*);\n");
-		} else {
-		    prog.append("collection ext master_done@" + getName() + "(x*);\n");
-		}
 		return prog.toString();
 	}
 
@@ -156,6 +150,16 @@ public class Peer {
 			}
 		}
 		return prog.toString();
+	}
+
+        public String outputDeletes() {
+	    StringBuffer prog = new StringBuffer();
+	    for (Collection c : _collections) {
+		for (String fact : c.getDeletes()) {
+		    prog.append("fact " + c.getName() + c.getSuffix() + "@" + this.getName() + "(" + fact + ");\n");
+		}
+	    }
+	    return prog.toString();
 	}
 
 	public String outputPolicy() {
@@ -174,16 +178,6 @@ public class Peer {
 				    }
 				}
 			}	
-		}
-		//VZM Need public policy for special completion condition collection
-		if (_type == PEER_TYPE.MASTER || _type == PEER_TYPE.SUE) {
-		    prog.append("policy done read ALL;\n");
-		} else {
-		    if (_scenario == SCENARIO.UNION_OF_JOINS || _scenario == SCENARIO.JOIN_OF_UNIONS) {
-			prog.append("policy master_done write master0;\n");
-		    } else if (_scenario == SCENARIO.ALBUM) {
-			prog.append("policy master_done write " + Album._peersList.get(2).getName() + ";\n");
-		    }
 		}
 		return prog.toString();
 	}
@@ -269,22 +263,17 @@ public class Peer {
 					    //", photos@$peer($img), tags@$peer($img,\"" + alice.getName() + "\"), tags@$peer($img,\"" + bob.getName() + "\");\n");
 							", photos@$peer($img), tags@$peer($img,$tag1), tags2@$peer($img,$tag2), relevant_tags@$peer($tag1,$tag2);\n");
 			}
+		} else if (_scenario == SCENARIO.FRIENDS) {
+		    
+		        if (_type == PEER_TYPE.ALICE) {
+				Peer alice = AllFriends._peersList.get(0);
+				Collection allFriends = this.getCollectionByName("all_friends");
+				Collection friendsAlice = alice.getCollectionByName("friends");				
+				prog.append("rule " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "(\"" + alice.getName() + "\",$peer) :- " + friendsAlice.getSchemaWithVars() + ";\n");
+				prog.append("rule " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "($peer2,$peer3) :- " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "($peer1,$peer2), " + friendsAlice.getName() + "@$peer2($peer3);\n");
+			}
 		}
 
-		//VZM this is for special completion condition handling
-		if (_type == PEER_TYPE.MASTER) {
-		    for (Peer p : _knownPeers) {
-			prog.append("rule master_done@" + p.getName() + "($x) :- done@" + getName() + "($x);\n");
-		    }
-		} else if (_type == PEER_TYPE.SUE) {
-		    //special case for the Album scenario because master might not actually know every peer
-		    for (Peer p : Album._peersList) {
-			if (p.getType() != PEER_TYPE.SUE) {
-			    prog.append("rule master_done@" + p.getName() + "($x) :- done@" + getName() + "($x);\n");
-			}
-		    }
-		}
-		
 		return prog.toString();
 	}
 	

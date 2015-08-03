@@ -443,7 +443,6 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
           tuples.each do |tuple|
             if tuple.is_a? Array or tuple.is_a? Struct
               if tuple.size == @wl_program.wlcollections[relation_name].arity
-
                 if @provenance
                   coll = tables[relation_name.to_sym]
                   if coll.is_a? BudCollection
@@ -652,7 +651,7 @@ engine is trying to write this new rule in an existing file: #{fullfilename}" if
     # 
     # @return [Array] two hash listing the fact only in old and the facts only
     # in new
-    def self.deep_diff_split_lookup(old,new)
+    def deep_diff_split_lookup(old,new)
       raise WLBud::WLError, "deep_diff_split_lookup expect hash but found \
 #{new.class} and #{old.class}" unless old.kind_of?(Hash) and new.kind_of?(Hash)
       left = {}

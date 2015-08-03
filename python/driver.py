@@ -52,7 +52,7 @@ def simplePA():
     return [scenario]
 
 
-def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _policy, _numFacts, _valRange, _ruleScenario, _numPeers):
+def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _policy, _numFacts, _valRange, _ruleScenario, _numPeers, _delPercent):
     scenario = models.Scenario( \
         # scenID = ?? filled in later
         scenType = _scenType, \
@@ -67,6 +67,7 @@ def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _polic
         hosts = ['slave01','slave02','slave03','slave04','slave05','slave06'], \
         numHosts = 6, \
         numPeersPerHost = _numPeers, \
+        deletePercent = _delPercent, \
    ) 
     return [scenario]
 

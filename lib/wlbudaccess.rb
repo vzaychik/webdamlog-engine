@@ -18,7 +18,7 @@ module WLBudAccess
 
     def make_bud_program
       super
-
+      
       if @options[:accessc]
         # #apply policies
         @wl_program.wlpolicies.each {|p| apply_policy(p)}
@@ -31,7 +31,8 @@ module WLBudAccess
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
-              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\",
+              sendbuf = get_sbuffer(p[0])
+              str_res << "#{sendbuf.tabname} <= acl_at_#{@peername} {|rel| [
               \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if
               rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
             end
@@ -47,30 +48,33 @@ module WLBudAccess
         end
       end
     end
-
+    
     def translate_rule(wlrule)
       raise "Impossible to add in bud a rule that is either unbound or non-local" unless @wl_program.bound_n_local?(wlrule)
       puts "Adding a rule: #{wlrule}" if @options[:debug]
       @wl_program.disamb_peername!(wlrule)
       rule = "#{@wl_program.translate_rule_str(wlrule)}"
+      unless @wl_program.bound_n_local?(wlrule.head)
+        #make sure the required sbuffer_ exists
+        get_sbuffer(wlrule.head.peername)
+      end
       name = "webdamlog_#{@peername}_#{wlrule.rule_id}"
-
+      
       # this is a bit hacky - with access control we generate 2 rules instead of
       # one for grant priv and one for read
       if @options[:accessc]
         rule2 = "#{rule}"
-        #rule2.gsub! "\"R\"", "\"G\""
         rule2.gsub! "_plusR", "_plusG"
         rule2.gsub! "aclR", "aclG"
         rule << rule2
       end
-
+      
       install_bud_rule rule, name
       @rule_installed << wlrule
       # the last element is the bud name for the block created
       return wlrule.rule_id, wlrule.show_wdl_format, "__bloom__#{name}"
     end
-
+    
     def add_collection(wlpg_relation)
       if wlpg_relation.is_a?(WLBud::WLCollection)
         collection = wlpg_relation
@@ -81,7 +85,7 @@ module WLBudAccess
       valid, msg = @wl_program.valid_collection? collection
       raise WLErrorProgram, msg unless valid
       puts "Adding a collection: \n #{collection.show_wdl_format}" if @options[:debug]
-
+      
       #Need to update kind relation
       if @options[:accessc] && collection.peername == @peername
         name = collection.atom_name
@@ -105,15 +109,14 @@ module WLBudAccess
         puts "Adding a collection for AC: \n #{extended_collection2.show_wdl_format}" if @options[:debug]
         self.schema_init(extended_collection2)
         @extended_collections_to_flush << extended_collection2
-
       elsif collection.peername == @peername
         name, schema = self.schema_init(collection)
-      end #accessc
-
+      end
+      
       @collection_added = true
       return name.to_s, schema
     end
-
+    
     # Takes in a string representing a WLRule,
     #  * parses it
     #  * rewrite it
@@ -126,11 +129,11 @@ module WLBudAccess
       wlrule = @wl_program.parse(wlpg_rule, true)
       wlrule.author = sourcep
       raise WLErrorProgram, "parse rule and get #{wlrule.class}" unless wlrule.is_a?(WLBud::WLRule)
-
+      
       # rewrite and add it to the engine
       install_rule wlrule
     end    
-
+    
     #   This is for special collections acl and kind VZM access control
     def add_aclkind
       keys=[]
@@ -163,7 +166,6 @@ module WLBudAccess
         keys << :"rel"
         writeableschema = {keys => values}
         self.table("writeable_at_#{peername}".to_sym, writeableschema)
-        #FIXME! writeable distributed manually but there should be a better way to distribute 
       end
 
       if @options[:accessc] and @options[:optim2]
@@ -317,7 +319,8 @@ module WLBudAccess
                         x
                       end
                     }
-                    if !(relation_name.include? "_plusR_at_" or relation_name.include? "_plusG_at_")
+                    if !(relation_name.include? "_plusR_" or relation_name.include? "_plusG_")
+                      #FIXME this permanently changes the relname which affets subsequent tuples
                       #can only insert into extended relations
                       relation_name = @wl_program.make_rel_name(relation_name, "R")
                       #add 2 tuples, one for G, one for R
@@ -424,53 +427,42 @@ module WLBudAccess
     # in a single packet for this peer. This method allow to be sure that facts
     # and rules deduce at the same timestep will be received in the remote peer
     # at the same timestep.
-    # 
-    # FIXME optimization this fact aggregation can done more efficiently
-    # if I create as many sbuffer collection as non-local relation in head of
-    # rules.
     def write_packet_on_channel
       packets_to_send = []
-      sbuffer_facts = aggregate_facts(sbuffer)
-      peer_to_contact = Set.new(sbuffer_facts.keys)
-      peer_to_contact.merge(@rules_to_delegate.keys)
+      peer_to_contact = Set.new(@rules_to_delegate.keys)
       peer_to_contact.merge(@relation_to_declare.keys)
-      if @options[:wl_test]
-        @wl_callback.each_value do |callback|
-          if callback[0] == :callback_step_write_on_chan
-            block = callback[1]
-            unless block.respond_to?(:call)
-              raise WLErrorCallback,
-                "Trying to call a callback method that is not responding to call #{block}"
-            end
-            block.call(self, sbuffer_facts, peer_to_contact)
-          end
-        end
+      #only add those sbuffers that are invalidated
+      @sendbuffers.each_pair do |k,v|
+        peer_to_contact << k unless v.tick_delta.empty?
       end
-
-      #TODO - verify that this works for deletions, once deletions are working
-      #TODO - make this more efficient
-      if sbuffer.tick_delta.length > 0
-        diff_fact_to_del, diff_fact_to_add = WL::deep_diff_split_lookup @cached_facts, sbuffer_facts
-      else
-        diff_fact_to_del = {}
-        diff_fact_to_add = {}
-      end
+      
       peer_to_contact.each do |dest|
         packet = WLPacket.new(dest, @peername, @budtime)
-        packet.data.facts_to_delete = ( diff_fact_to_del[dest] or {} )
-        packet.data.facts = ( diff_fact_to_add[dest] or {} )
+        if @sendbuffers[dest].nil?
+          packet.data.facts_to_delete = {}
+          packet.data.facts = {}
+        else
+          sbuffer_facts = aggregate_facts(@sendbuffers[dest])
+          diff_fact_to_del, diff_fact_to_add = deep_diff_split_lookup @cached_facts[dest], sbuffer_facts
+          packet.data.facts_to_delete = ( diff_fact_to_del or {} )
+          packet.data.facts = ( diff_fact_to_add or {} )
+          #only bother cloning if anything changed
+          if (!packet.data.facts_to_delete.empty? or !packet.data.facts.empty?)
+            @cached_facts[dest] = DeepClone.clone(WLTools::transform_first_inner_array_into_set(sbuffer_facts))
+          end
+        end
         packet.data.rules = @rules_to_delegate[dest]
         packet.data.declarations = @relation_to_declare[dest]
         packets_to_send << packet.serialize_for_channel unless packet.data.empty?
       end
-
+      
       if @options[:wl_test]
         @test_send_on_chan = DeepClone.clone(packets_to_send)
         @wl_callback.each_value do |callback|
           if callback[0] == :callback_step_write_on_chan_2
             block = callback[1]
             raise WLErrorCallback, 
-              "Trying to call a callback method that is not responding to call #{block}" unless block.respond_to?(:call)
+            "Trying to call a callback method that is not responding to call #{block}" unless block.respond_to?(:call)
             block.call(self, packets_to_send)
           end
         end
@@ -478,6 +470,7 @@ module WLBudAccess
       packets_to_send.each do |packet|
         chan <~ [packet]
       end
+      
       # TODO: improvement relation_to_declare and rules_to_delegate could be
       # emptied only when a ack message is received from remote peers to be sure
       # that rules and relations have been correctly installed.
@@ -486,11 +479,7 @@ module WLBudAccess
       # delegations and relations to send ; and  
       @relation_to_declare.clear
       @rules_to_delegate.clear
-
-      if sbuffer.tick_delta.length > 0
-        @cached_facts = DeepClone.clone(WLTools::transform_first_inner_array_into_set(sbuffer_facts))
-      end
-
+      
       if @options[:debug]
         puts "BEGIN display what I wrote in chan to be send"
         wlpacketsdata = chan.pending
@@ -526,8 +515,8 @@ module WLBudAccess
         end
         fctct = wlpacketsdata.empty? ? 0 : wlpacketsdata.to_s.bytesize
         @packet_metrics << declct << rulect << fctct
-
       end
+
     end
 
     # This method group facts by relations and by peers.
@@ -539,35 +528,37 @@ module WLBudAccess
     # 
     # For access control we have to replace pset lattices with arrays for sending over the wire
     def aggregate_facts(fact_buffer)
-      sbuffer_facts = DeepClone.clone(super(fact_buffer))
+      sto = fact_buffer.pro{ |t| t.to_a }
+      #0 field is the relation
+      facts_by_relation = DeepClone.clone(WLTools::merge_multivaluehash_grouped_by_field(sto,0))
       if @options[:accessc]
-        sbuffer_facts.values.each {|fctsinr| #this is the list of collections to update for a peer
-          #accumulate a set of used formulas
-          formulas_used = [].to_set
-          fctsinr.values.each { |fcts|
-            fcts.each {|tuple| #tuple is an array
-              if tuple.is_a? Array
-                tuple.collect! {|x| 
-                  if (x.is_a? PList)
-                    x.to_a
-                  elsif (x.is_a? FormulaList)
-                    formulas_used.add(x)
-                    ":form:" + x.to_a
-                  else
-                    x
-                  end
-                }
-              end
-            }
+        #accumulate formulas and replace plists and formulas with arrays for sending
+        formulas_used = [].to_set
+        facts_by_relation.values.each { |fcts|
+          fcts.each {|tuple| #tuple is an array
+            if tuple.is_a? Array
+              tuple.collect! {|x|
+                if x.is_a? PList
+                  x.to_a
+                elsif x.is_a? FormulaList
+                  formulas_used.add(x)
+                  ":form:" + x.to_a
+                else
+                  x
+                end
+              }
+            end
           }
-          if @options[:optim2]
-            #reduce the formulas to set of symbols used
-            symbols_used = [].to_set
-            formulas_used.each { |formula|
-              symbols_used.merge(formula.to_s.split(' '))
-            }
-            #look up the symbols used and send them
-            tmp,pr = fctsinr.keys.first.split('_at_')
+        }
+        if @options[:optim2]
+          #reduce the formulas to set of symbols used
+          symbols_used = [].to_set
+          formulas_used.each { |formula|
+            symbols_used.merge(formula.to_s.split(' '))
+          }
+          #look up the symbols used and send them
+          if !symbols_used.empty?
+            tmp,pr = facts_by_relation.keys.first.split('_at_')
             symboltups = []
             symbols_used.each { |symbol|
               if !symbol.kind_of?(Omega) #don't need to send Omega
@@ -576,18 +567,60 @@ module WLBudAccess
               end
             }
             if symboltups.length > 0
-              fctsinr["formulas_at_#{pr}"] = symboltups
+              facts_by_relation["formulas_at_#{pr}"] = symboltups
             end
           end
-        }      
+        end          
       end
-      return sbuffer_facts
+      return facts_by_relation
     end
+    
+    def deep_diff_split_lookup(old,new)
+      raise WLBud::WLError, "deep_diff_split_lookup expect hash but found \
+#{new.class} and #{old.class}" unless old.kind_of?(Hash) and new.kind_of?(Hash)
+      left = {}
+      right = {}    
+      lookup_table = DeepClone.clone old
+      # check each relations for each peers
+      (old.keys + new.keys).uniq.each do |key|
+        if old[key] != new[key]
+          if old[key].kind_of?(Set) &&  new[key].kind_of?(Array)
+            # lookup facts          
+            new[key].each do |fact|
+              if lookup_table[key].include?(fact)
+                lookup_table[key].delete(fact)
+              else
+                (right[key] ||= []) << fact unless fact.nil?                 
+              end
+            end
+            left[key] = lookup_table[key].to_a unless lookup_table[key].empty?
+          elsif old[key].nil?
+            right[key] = new[key]
+          elsif new[key].nil?
+            left[key] = lookup_table[key].to_a
+          else
+            raise WLBud::WLError, "unexpected type of data to compared in \
+deep_diff_split_lookup: #{old[key].class} #{new[key].class}"
+          end
+        end
+        left.delete(key) if not left[key].nil? and left[key].empty?
+        right.delete(key) if not right[key].nil? and right[key].empty?
+      end
+      return left, right
+    end    
 
+    def get_sbuffer(destpeer)
+      dest = @wl_program.wlpeers[destpeer]
+      if @sendbuffers[dest].nil?
+        @sendbuffers[dest] = self.table("sbuffer_#{destpeer}".to_sym, [:rel_name, :fact] => [])
+      end
+      @sendbuffers[dest]
+    end
+    
     #like run_bg but ticks are not initiated by messages
     def run_bg_periodic
       start
-
+      
       schedule_and_wait do
         if @running_async
           raise Bud::Error, "run_bg called on already-running Bud instance"
@@ -600,7 +633,7 @@ module WLBudAccess
           end
         }
 
-        # Consume any events received while we weren't running async
+        # Consume any events received while
         tick_internal
       end
       

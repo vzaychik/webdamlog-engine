@@ -210,17 +210,17 @@ end
       #now manually change acl for reading and test that tuples come over
       runner1.update_acl("local2_at_test_access","p1","R")
 
+      assert_equal [{:atom1=>"1", :plist=>Omega.instance}, {:atom1=>"2", :plist=>Omega.instance}].to_set, runner1.tables[:local2_plusR_at_test_access].map{ |t| Hash[t.each_pair.to_a] }.to_set
+
       runner1.tick
       runner1.tick
       runner2.tick
       runner2.tick
 
-      assert_equal [{:deleg_from_test_access_1_1_x_0=>"1",:plist=>FormulaList.new("test_access_A")}, {:deleg_from_test_access_1_1_x_0=>"2",:plist=>FormulaList.new("test_access_A")}].to_set,
-        runner2.tables[:deleg_from_test_access_1_1_plusR_at_p1].map{ |t| Hash[t.each_pair.to_a] }.to_set
-      assert_equal [{:deleg_from_test_access_2_1_x_0=>"1",:plist=>FormulaList.new("test_access_A")}, {:deleg_from_test_access_2_1_x_0=>"2",:plist=>FormulaList.new("test_access_A")}].to_set,
-        runner2.tables[:deleg_from_test_access_2_1_plusR_at_p1].map{ |t| Hash[t.each_pair.to_a]}.to_set
-      assert_equal [{:deleg_from_test_access_3_1_x_0=>"1",:plist=>FormulaList.new("test_access_A")}, {:deleg_from_test_access_3_1_x_0=>"2",:plist=>FormulaList.new("test_access_A")}].to_set,
-        runner2.tables[:deleg_from_test_access_3_1_plusR_at_p1].map{ |t| Hash[t.each_pair.to_a]}.to_set
+      #look up what the formula should be
+      assert_equal ["1","2"], runner2.tables[:deleg_from_test_access_1_1_plusR_at_p1].map{ |t| t[:deleg_from_test_access_1_1_x_0] }
+      assert_equal ["1","2"], runner2.tables[:deleg_from_test_access_2_1_plusR_at_p1].map{ |t| t[:deleg_from_test_access_2_1_x_0] }
+      assert_equal ["1","2"], runner2.tables[:deleg_from_test_access_3_1_plusR_at_p1].map{ |t| t[:deleg_from_test_access_3_1_x_0] }
 
       #test_access doesn't have write privs, so the relation should still be empty
       assert_equal [],
@@ -236,10 +236,9 @@ end
       runner2.tick
       runner2.tick
 
-      assert_equal [{:formula=>"test_access_A",:val=>"R"}], runner2.tables[:formulas_deleg_from_test_access_1_1_at_p1].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"1", :plist=>FormulaList.new("test_access_A")}, {:atom1=>"2",:plist=>FormulaList.new("test_access_A")}].to_set,
-        runner2.tables[:delegated1_i_plusR_at_p1].map{|t| Hash[t.each_pair.to_a]}.to_set
-      assert_equal [{:atom1=>"1", :atom2=>"3", :plist=>FormulaList.new("test_access_A p1_A *")},{:atom1=>"2",:atom2=>"3", :plist=>FormulaList.new("test_access_A p1_A *")}].to_set, runner2.tables[:delegated_join_i_plusR_at_p1].map{ |t| Hash[t.each_pair.to_a] }.to_set
+      assert_equal ["1","2"], runner2.tables[:delegated1_i_plusR_at_p1].map{ |t| t[:atom1] }
+      assert_equal ["1","2"], runner2.tables[:delegated_join_i_plusR_at_p1].map{ |t| t[:atom1]}
+      assert_equal ["3","3"], runner2.tables[:delegated_join_i_plusR_at_p1].map{ |t| t[:atom2]}
       
       #test_access does not have privs to read local1@p1 so no results
       assert_equal [],
@@ -251,10 +250,10 @@ end
       runner1.tick
       runner1.tick
 
-      assert_equal [{:deleg_from_p1_3_1_x_0=>"1", :deleg_from_p1_3_1_y_1=>"3", :plist=>FormulaList.new("test_access_A p1_A *")},{:deleg_from_p1_3_1_x_0=>"2", :deleg_from_p1_3_1_y_1=>"3", :plist=>FormulaList.new("test_access_A p1_A *")}], runner1.tables[:deleg_from_p1_3_1_plusR_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      assert_equal [{:atom1=>"1",:atom2=>"3", :plist=>FormulaList.new("test_access_A p1_A *")},{:atom1=>"2",:atom2=>"3", :plist=>FormulaList.new("test_access_A p1_A *")}], runner1.tables[:local3_i_plusR_at_test_access].map{ |t| Hash[t.each_pair.to_a] }
-      #incidentally, this also means delegated_join has an updated list
-      assert_equal [{:atom1=>"1", :atom2=>"3", :plist=>FormulaList.new("test_access_A p1_A *")},{:atom1=>"2",:atom2=>"3", :plist=>FormulaList.new("test_access_A p1_A *")}], runner2.tables[:delegated_join_i_plusR_at_p1].map{ |t| Hash[t.each_pair.to_a] }
+      assert_equal ["1","2"], runner1.tables[:deleg_from_p1_3_1_plusR_at_test_access].map{ |t| t[:deleg_from_p1_3_1_x_0]}
+      assert_equal ["3","3"], runner1.tables[:deleg_from_p1_3_1_plusR_at_test_access].map{ |t| t[:deleg_from_p1_3_1_y_1]}
+      assert_equal ["1","2"], runner1.tables[:local3_i_plusR_at_test_access].map{ |t| t[:atom1]}
+      assert_equal ["3","3"], runner1.tables[:local3_i_plusR_at_test_access].map{ |t| t[:atom2]}
 
     ensure
       File.delete(@pg_file1) if File.exists?(@pg_file1)
@@ -267,4 +266,5 @@ end
 
   end
 end
+
 

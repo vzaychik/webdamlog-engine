@@ -2,7 +2,6 @@ module WLBud
 
   class WLProgram
     alias_method :orig_initialize, :initialize
-    alias_method :orig_translate_rule_str, :translate_rule_str
 
     attr_accessor :nonlocalheadrules
 
@@ -207,8 +206,9 @@ In the string: #{line}
       local_vars=[]
 
       wlrule.head.fields.flatten.each { |var|
-        local_vars << var.token_text_value
+        local_vars << var.token_text_value if var.variable?
       }
+      
       dec_fields=''
       var_fields=''
       local_vars.each_index do |i|
@@ -227,10 +227,11 @@ In the string: #{line}
       @new_delegations_to_send[addr_destination_peer] << delegation
       @rule_mapping[wlrule.rule_id] << delegation
       @rule_mapping[delegation] << delegation
-      
+
       rulestr = wlrule.show_wdl_format
       rulestr.gsub!('_at_','@')
-      rulestr.gsub!(wlrule.head.relname, relation_name)
+      rulestr.gsub!(wlrule.head.show_wdl_format, intermediary_relation_atom_in_rule)
+
       @new_rewritten_local_rule_to_install << ru = parse(rulestr, true, true)
       ru.author = wlrule.author
       @rule_mapping[wlrule.rule_id] << ru.rule_id
@@ -264,7 +265,7 @@ In the string: #{line}
       elsif @options[:accessc]
         translate_rule_accessc(wlrule)
       else
-        orig_translate_rule_str(wlrule)
+        translate_rule_basic(wlrule)
       end
     end
 
@@ -284,13 +285,69 @@ In the string: #{line}
 
     private
 
+    def translate_rule_basic(wlrule)
+      unless wlrule.is_a?(WLBud::WLRule)
+        raise WLErrorTyping,
+          "wlrule should be of type WLBud::WLRule, not #{wlrule.class}"
+      end
+      unless (head_atom_peername = wlrule.head.peername)
+        raise WLErrorGrammarParsing,
+          "In this rule: #{wlrule.show}\n Problem: the name of the peer in the relation in the head cannot be extracted. Relation in the head #{wlrule.head.text_value}"
+      end
+      if @wlpeers[head_atom_peername].nil?
+        raise WLErrorPeerId,
+          "In #{wlrule.text_value} the peer name: #{head_atom_peername} cannot be found in the list of known peer: #{@wlpeers.inspect}"
+      end
+      str_res = ""
+      body = wlrule.body
+
+      # Generate rule head:
+      # + send fact buffer if non-local head
+      # + use deferred for pure extensional (pure means not intermediary rules)
+      unless bound_n_local?(wlrule.head)
+        str_res << "sbuffer_#{wlrule.head.peername} <= "
+      else if is_tmp?(wlrule.head)
+          str_res << "temp :#{wlrule.head.fullrelname} <= "
+        else
+          if pure_extensional_head? wlrule
+            str_res << "#{wlrule.head.fullrelname} <+ "
+          else
+            str_res << "#{wlrule.head.fullrelname} <= "
+          end
+        end
+      end
+
+      # Make the locations dictionaries for this rule
+      wlrule.make_dictionaries unless wlrule.dic_made
+
+      if body.length==0
+        str_res << " ["
+        str_res << projection_bud_string(wlrule)
+        str_res << "];"
+      else
+        if body.length==1
+          str_res << body.first.fullrelname
+        else
+          s = make_combos(wlrule)
+          str_res << s
+        end
+        str_res << " do |";
+        wlrule.dic_invert_relation_name.keys.sort.each {|v| str_res << "#{WLProgram.atom_iterator_by_pos(v)}, "}
+        str_res.slice!(-2..-1) #remove last and before last
+        str_res << "| "        
+        str_res << projection_bud_string(wlrule)
+        str_res << condition_bud_string(wlrule)
+        str_res << " end;"
+      end
+    end
+
     def translate_rule_accessc(wlrule)
       str_res = ""
       body = wlrule.body
       
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer <= "
+        str_res << "sbuffer_#{wlrule.head.peername} <= "
       else if is_tmp?(wlrule.head)
              str_res << "temp :#{wlrule.head.fullrelname} <= "
            else
@@ -408,7 +465,7 @@ In the string: #{line}
 
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer <= "
+        str_res << "sbuffer_#{wlrule.head.peername} <= "
       else if is_tmp?(wlrule.head)
              str_res << "temp :#{wlrule.head.fullrelname} <= "
            else
@@ -537,7 +594,7 @@ In the string: #{line}
 
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer <= "
+        str_res << "sbuffer_#{wlrule.head.peername} <= "
       else if is_tmp?(wlrule.head)
              str_res << "temp :#{wlrule.head.fullrelname} <= "
            else
@@ -685,15 +742,10 @@ In the string: #{line}
     def projection_bud_string (wlrule)
       str = '['
 
-      # add the remote peer and relation name which should receive the fact.
+      # add the remote relation name which should receive the fact.
       #   conform to facts to be sent via sbuffer
       unless bound_n_local?(wlrule.head)
-        destination = "#{@wlpeers[wlrule.head.peername]}"
-        # add location specifier
-        raise WLErrorPeerId, "impossible to define the peer that should receive a message" if destination.nil? or destination.empty?
-        str << "\"#{destination}\", "
         relation = make_rel_name(wlrule.head.fullrelname, "R")
-        raise WLErrorProgram, "impossible to define the relation that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{relation}\", "
         str << "["
       end

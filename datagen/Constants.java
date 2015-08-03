@@ -23,9 +23,9 @@ public class Constants {
 	
 	// In the UNION_OF_JOINS scenario, master takes a union of the aggregators, while aggregators take a join of the followers.
 	// In the JOIN_OF_UNIONS scenario, master takes a join of the aggregators, while aggregators take a union of the followers.
-	public static enum SCENARIO {UNION_OF_JOINS, JOIN_OF_UNIONS, ALBUM}
+        public static enum SCENARIO {UNION_OF_JOINS, JOIN_OF_UNIONS, ALBUM, FRIENDS}
 	
-	public static boolean MASTER_ONLY_RULES = true;
+	public static boolean MASTER_ONLY_RULES = false;
 	
 	public static boolean DO_FILE_IO = true;
 	

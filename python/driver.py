@@ -67,7 +67,7 @@ def simpleMAF(_scenType, _numFollowers, _numAggregators, _aggPerFollower, _polic
         hosts = ['slave01','slave02','slave03','slave04','slave05','slave06'], \
         numHosts = 6, \
         numPeersPerHost = _numPeers, \
-        deletePercent = _delPercent, \
+        percentDelete = _delPercent, \
    ) 
     return [scenario]
 

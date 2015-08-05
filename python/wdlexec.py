@@ -21,7 +21,7 @@ def matchOrCreateScenario(scenList, rootPath):
                 models.Scenario.aggPerFollower == scen.aggPerFollower, \
                 models.Scenario.policy == scen.policy, \
                 models.Scenario.numFacts == scen.numFacts, \
-                models.Scenario.percentDelete = scen.percentDelete, \
+                models.Scenario.percentDelete == scen.percentDelete, \
                 models.Scenario.ruleScenario == scen.ruleScenario, \
                 models.Scenario.valRange == scen.valRange, \
                 models.Scenario.numExtraCols == scen.numExtraCols, \
@@ -145,7 +145,7 @@ def run(configFile):
     # start on executions...
     # set-valued execution parameters (space delimited in config file)
     accessCList = config.get('execution', 'accessControl').split(' ')
-    wdelete = config.get('execution', 'withDelete')
+    wdelete = int(config.get('execution', 'withDelete'))
 
     for scenID in scenIDList:   # run all the executions, for each scenID
         for run in range( config.getint('execution', 'numRuns') ):

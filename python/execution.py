@@ -9,9 +9,11 @@ from fabric.api import *
 from fabric.tasks import execute
 import fab
 import fabric
+from fabric.exceptions import CommandTimeout
+
 fabric.state.output['debug']=True
 
-build = 15
+build = 16
 
 # Executes the scenario given by scenID
 #
@@ -98,6 +100,13 @@ def executeScenario( pathToRepository, scenID, scenType, mode, wdelete, timeToRu
         # run on all hosts
         try:
             execute(fab.run_ruby, execPath=execPath, scenPath=scenPath, paramString=paramString, outKey=str(outKey))
+        except CommandTimeout:
+            execution.success = False
+            #delete the tmp file that was used for shutdown
+            with settings(warn_only=True):
+                execute(fab.clean_tmp)
+            #don't want to check the files in, this run is invalid
+            return        
         except:
             print >> sys.stderr, 'Execution failed: ', sys.exc_info()[0]
             execution.success = False

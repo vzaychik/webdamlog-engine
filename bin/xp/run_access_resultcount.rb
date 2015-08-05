@@ -80,11 +80,12 @@ def run_access_remote!
   runners = []
   @hosts = []
   xpfiles.each do |f|
-    runners << create_wl_runner(File.join(XP_FILE_DIR,f))
+    filename = File.join(XP_FILE_DIR,f)
+    runners << create_wl_runner(filename)
     p "#{runners.last.peername} created"
     if (runners.last.peername.start_with? "master" or runners.last.peername.start_with? "sue" or runners.last.peername.start_with? "alice")
       #get a list of all hosts
-      file = File.new f, "r"
+      file = File.new filename, "r"
       while line = file.gets
         if /^peer/.match line
           hostname = line.split("=").last.split(":").first

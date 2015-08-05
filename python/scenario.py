@@ -55,9 +55,8 @@ def generateScenarioFiles(scenario, rootPath):
         javaString.append(str(scenario.numFacts))
         javaString.append(scenario.ruleScenario)
         javaString.append(str(scenario.valRange))
-        javaString.append(str(scenario.deletePercent))
+        javaString.append(str(scenario.percentDelete))
         javaString.append(str(scenario.numExtraCols))        
-        javaString.append(str(scenario.deletePercent))
     if (scenario.scenType == 'PA'): # parameters for PA
         javaString.append('org.stoyanovich.webdam.datagen.Album')
 #        javaString.append(scenario.networkFile)
@@ -65,11 +64,12 @@ def generateScenarioFiles(scenario, rootPath):
         javaString.append(scenario.policy)
         javaString.append(str(scenario.numFacts))
         javaString.append(str(scenario.valRange))
+        javaString.append(str(scenario.percentDelete))
     if (scenario.scenType == 'FRD'): # parameters for Friendship scenario
         javaString.append('org.stoyanovich.webdam.datagen.AllFriends')
         javaString.append(os.path.join(rootPath,'webdamlog-engine/network',str(scenario.networkFile)))
         javaString.append(scenario.policy)
-        javaString.append(str(scenario.deletePercent))
+        javaString.append(str(scenario.percentDelete))
     # common parameters
     javaString.append('netAddr.txt')
     javaString.append(str(scenario.numPeersPerHost))

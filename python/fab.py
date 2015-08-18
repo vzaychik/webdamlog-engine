@@ -30,7 +30,11 @@ rootPathDict = { \
     'slave13':machinePath, \
     'slave14':machinePath, \
     'slave15':machinePath, \
-    'slave16':machinePath, }
+    'slave16':machinePath, \
+    'slave17':machinePath, \
+    'slave18':machinePath, \
+    'slave19':machinePath, \
+    'slave20':machinePath, }
 
 #@task
 @parallel

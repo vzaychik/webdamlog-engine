@@ -13,7 +13,7 @@ from fabric.exceptions import CommandTimeout
 
 fabric.state.output['debug']=True
 
-build = 16
+build = 17
 
 # Executes the scenario given by scenID
 #
@@ -65,6 +65,8 @@ def executeScenario( pathToRepository, scenID, scenType, mode, wdelete, timeToRu
 	if (len(glob.glob(os.path.join(out,'run_master*')))) == 1:
             masterHost = extractedHostName
         if (len(glob.glob(os.path.join(out,'run_sue*')))) == 1:
+            masterHost = extractedHostName
+        elif (len(glob.glob(os.path.join(out, 'run_alice*')))) == 1:
             masterHost = extractedHostName
         hosts.append(extractedHostName)
     assert(masterHost != None)

@@ -549,7 +549,7 @@ module WLBudAccess
             }
             #look up the symbols used and send them
             if !symbols_used.empty?
-              tmp,pr = facts_by_relation.keys.first.split('_at_')
+              tmp,pr = fctsinr.keys.first.split('_at_')
               symboltups = []
               symbols_used.each { |symbol|
                 if !symbol.kind_of?(Omega) #don't need to send Omega
@@ -558,13 +558,13 @@ module WLBudAccess
                 end
               }
               if symboltups.length > 0
-                facts_by_relation["formulas_at_#{pr}"] = symboltups
+                fctsinr["formulas_at_#{pr}"] = symboltups
               end
             end
           end          
         }
       end
-      return facts_by_relation
+      return sbuffer_facts
     end
 
     #like run_bg but ticks are not initiated by messages

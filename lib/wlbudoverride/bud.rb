@@ -68,9 +68,7 @@ module WLBud
       @dies_at_tick = options[:dies_at_tick] ||= 0
       # Store the state of the relations at the previous tick (used for
       # differential computation)
-      @cached_facts = Hash.new({})
-      # Store the sbuffer relations for rules with nonlocal head
-      @sendbuffers = {}
+      @cached_facts = {}
 
       if options[:wl_test]
         @test_received_on_chan = []
@@ -131,12 +129,6 @@ module WLBud
       # VZM connections
       @connections_buffer = {}
       @connections_status = {}
-
-      # This is the buffers in which we put all the facts we want to send, its
-      # schema is very simple [:rel_name, :facts] hashed by :@dst should be
-      # the destination where to send the facts in the same format as :@dst in
-      # standard bud channel "ip:port"
-      @sendbuffers = {}
 
       # VZM access control
       @options[:accessc] = true if @options[:optim1]
@@ -523,15 +515,6 @@ collection int peer_done#{@peername}(key*);"
       end      
     end
     
-    # Override webdamlog method to remove a single sbuffer
-    def builtin_state
-      super
-      @builtin_tables = @tables.clone if toplevel
-      # Unique channel that serves for all messages. Each timestep exactly one
-      # or zero packet is sent to each peer (see wlpacket).
-      wlchannel :chan, [:@dst,:packet] => []
-    end
-
     def dies_at_tick= num
       @dies_at_tick = num
     end

@@ -65,7 +65,6 @@ public class AllFriends {
 	}
 	
 	public static void initNetAddressMap(int numPeers) {
-
 		for (int i=0; i<numPeers; i++) {
 			_netAddressMap.put(i, "localhost");
 		}
@@ -77,8 +76,8 @@ public class AllFriends {
 		
 		for (int i=0; i<numPeers; i++) {			
 			String host = "localhost";
-			if (Album._netAddressMap.containsKey(i)) {
-				host = Album._netAddressMap.get(i);
+			if (AllFriends._netAddressMap.containsKey(i)) {
+				host = AllFriends._netAddressMap.get(i);
 			}
 			res.append("peer " + _peersList.get(i).getName() + "=" + host + ":" + (Constants.PORT_OFFSET + i) + ";\n");
 		}
@@ -120,8 +119,6 @@ public class AllFriends {
 			BufferedReader inFP = new BufferedReader(new FileReader(networkFileName));
 		
 			while ( (line = inFP.readLine()) != null ) {
-				
-			        //System.out.println(line);
 				
 				String[] tmp = line.split(" ");
 				int auxId = Integer.parseInt(tmp[0]);
@@ -173,6 +170,11 @@ public class AllFriends {
 				for (Peer f : p.getKnownPeers()) {
 					friends.addFact("\"" + f.getName() + "\"");
 					resultsize++;
+				}
+				//now add alice as the known peer
+				for (int j=0; j<numPeers; j++) {
+				    if (i != j)
+					p.addKnownPeer(_peersList.get(j));
 				}
 				if (deletePercent > 0) {
 				    if (p == alice) {

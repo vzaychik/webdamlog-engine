@@ -305,7 +305,7 @@ In the string: #{line}
       # + send fact buffer if non-local head
       # + use deferred for pure extensional (pure means not intermediary rules)
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer_#{wlrule.head.peername} <= "
+        str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
           str_res << "temp :#{wlrule.head.fullrelname} <= "
         else
@@ -347,7 +347,7 @@ In the string: #{line}
       
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer_#{wlrule.head.peername} <= "
+        str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
              str_res << "temp :#{wlrule.head.fullrelname} <= "
            else
@@ -465,7 +465,7 @@ In the string: #{line}
 
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer_#{wlrule.head.peername} <= "
+        str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
              str_res << "temp :#{wlrule.head.fullrelname} <= "
            else
@@ -594,7 +594,7 @@ In the string: #{line}
 
       # Generate rule head Send fact buffer if non-local head
       unless bound_n_local?(wlrule.head)
-        str_res << "sbuffer_#{wlrule.head.peername} <= "
+        str_res << "sbuffer <= "
       else if is_tmp?(wlrule.head)
              str_res << "temp :#{wlrule.head.fullrelname} <= "
            else

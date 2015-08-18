@@ -31,7 +31,7 @@ module WLBudAccess
           str_res = ""
           @wl_program.wlpeers.each {|p|
             if p[0] != @peername
-              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [
+              str_res << "sbuffer <= acl_at_#{@peername} {|rel| [\"#{p[1]}\",
               \"writeable_at_#{p[0]}\", [\"#{peername}\", rel.rel]] if
               rel.priv == \"W\" && rel.plist.include?(\"#{p[0]}\")};"
             end
@@ -437,8 +437,8 @@ module WLBudAccess
       end
       peer_to_contact.each do |dest|
         packet = WLPacket.new(dest, @peername, @budtime)
-        packet.data.facts_to_delete = ( diff_fact_to_del or {} )
-        packet.data.facts = ( diff_fact_to_add or {} )
+        packet.data.facts_to_delete = ( diff_fact_to_del[dest] or {} )
+        packet.data.facts = ( diff_fact_to_add[dest] or {} )
         packet.data.rules = @rules_to_delegate[dest]
         packet.data.declarations = @relation_to_declare[dest]
         packets_to_send << packet.serialize_for_channel unless packet.data.empty?

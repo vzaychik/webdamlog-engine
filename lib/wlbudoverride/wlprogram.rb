@@ -745,7 +745,12 @@ In the string: #{line}
       # add the remote relation name which should receive the fact.
       #   conform to facts to be sent via sbuffer
       unless bound_n_local?(wlrule.head)
+        destination = "#{@wlpeers[wlrule.head.peername]}"
+        # add location specifier
+        raise WLErrorPeerId, "impossible to define the peer that should receive a message" if destination.nil? or destination.empty?
+        str << "\"#{destination}\", "
         relation = make_rel_name(wlrule.head.fullrelname, "R")
+        raise WLErrorProgram, "impossible to define the relation that should receive a message" if destination.nil? or destination.empty?
         str << "\"#{relation}\", "
         str << "["
       end

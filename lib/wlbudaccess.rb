@@ -430,7 +430,7 @@ module WLBudAccess
       peer_to_contact.merge(sbuffer_facts.keys)
       
       if sbuffer.tick_delta.length > 0
-        diff_fact_to_del, diff_fact_to_add = WL::deep_diff_split_lookup @cached_facts, sbuffer_facts
+        diff_fact_to_del, diff_fact_to_add = deep_diff_split_lookup @cached_facts, sbuffer_facts
       else
         diff_fact_to_del = {}
         diff_fact_to_add = {}

@@ -26,6 +26,7 @@ module Bud
       @locspec = locspec
       @connected = false
       @bud.connections_status[@locspec] = false
+      set_comm_inactivity_timeout(1)
     end
 
     def connection_completed
@@ -40,7 +41,7 @@ module Bud
       @bud.connections_status[@locspec] = false
       @connected = false
       unless @bud.connections_buffer[@locspec].nil? or @bud.connections_buffer[@locspec].empty?
-        EventMachine.add_timer(1) { reconnect(@locspec[0], @locspec[1]) }
+        EventMachine.add_timer(2) { reconnect(@locspec[0], @locspec[1]) }
       else
         @bud.connections[@locspec].delete(@locspec)
       end

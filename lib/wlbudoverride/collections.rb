@@ -40,9 +40,7 @@ module Bud
       @bud.connections_status[@locspec] = false
       @connected = false
       unless @bud.connections_buffer[@locspec].nil? or @bud.connections_buffer[@locspec].empty?
-        EventMachine.run {
-          EventMachine.add_timer(1) { reconnect(@locspec[0], @locspec[1]) }
-        }
+        EventMachine.add_timer(1) { reconnect(@locspec[0], @locspec[1]) }
       else
         @bud.connections[@locspec].delete(@locspec)
       end

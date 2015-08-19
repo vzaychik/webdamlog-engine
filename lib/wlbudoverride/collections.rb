@@ -26,7 +26,7 @@ module Bud
       @locspec = locspec
       @connected = false
       @bud.connections_status[@locspec] = false
-      set_comm_inactivity_timeout(1)
+      set_comm_inactivity_timeout(5)
     end
 
     def connection_completed

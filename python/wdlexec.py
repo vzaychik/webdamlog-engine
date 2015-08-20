@@ -111,10 +111,11 @@ def run(configFile):
 
         # set-valued parameters (space delimited in config file)
         policyList = config.get('scenarioFRD', 'policy').split(' ')
+        ruleScenarioList = config.get('scenarioFRD', 'ruleScenario').split(' ')
         networkFileList = config.get('scenarioFRD', 'networkFile').split(' ')
         percentDeleteList = config.get('scenarioFRD', 'percentDelete').split(' ')
 
-        for tup in itertools.product(policyList, networkFileList, percentDeleteList):        
+        for tup in itertools.product(policyList, networkFileList, ruleScenarioList, percentDeleteList):        
             print tup
             numf = int(tup[1].split('-')[1][1:])-1
             numh = config.getint('scenarioFRD', 'numHosts')
@@ -125,8 +126,8 @@ def run(configFile):
                 aggPerFollower = 0, \
                 policy = tup[0], \
                 numFacts = numf, \
-                percentDelete = int(tup[2]), \
-                ruleScenario = 'FRD', \
+                percentDelete = int(tup[3]), \
+                ruleScenario = tup[2], \
                 valRange = 0, \
                 numExtraCols = 0, \
                 numHosts = numh, \

@@ -69,6 +69,7 @@ def generateScenarioFiles(scenario, rootPath):
         javaString.append('org.stoyanovich.webdam.datagen.AllFriends')
         javaString.append(os.path.join(rootPath,'webdamlog-engine/network',str(scenario.networkFile)))
         javaString.append(scenario.policy)
+        javaString.append(scenario.ruleScenario)
         javaString.append(str(scenario.percentDelete))
     # common parameters
     javaString.append('netAddr.txt')

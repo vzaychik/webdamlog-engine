@@ -19,7 +19,7 @@ class Scenario(BaseModel):
     policy = CharField(null=True) # policy - one of PUBLIC, PRIVATE, KNOWN
     numFacts = IntegerField(null=True) # numFacts - number of facts per extensional relation on a follower peer.  
     percentDelete = IntegerField(null=True) # percentDelete - the percent of facts deleted per extensional relation on a follower peer.
-    ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS
+    ruleScenario = CharField(null=True) # scenario - one of UNION_OF_JOINS and JOIN_OF_UNIONS or CONNECT_COMP or FRIENDSHIPS
     valRange = IntegerField(null=True) #facts at follower peers are drawn randomly from the interval [0, valRange)
     numExtraCols = IntegerField(null=True) #number additional of non-key columns
     numHosts = IntegerField(null=True)  # number of hosts

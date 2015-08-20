@@ -14,6 +14,7 @@ import java.util.Random;
 import org.stoyanovich.webdam.datagen.Constants.COL_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.PEER_TYPE;
 import org.stoyanovich.webdam.datagen.Constants.POLICY;
+import org.stoyanovich.webdam.datagen.Constants.SCENARIO;
 
 /**
  * This class generates access control annotated Webdamlog programs
@@ -98,8 +99,8 @@ public class AllFriends {
 	
 	public static void main(String[] args) {
 		
-		if (args.length < 3) {
-			System.out.println("Not enough arguments: AllFriends networkFile policy deletePercent [instanceFile] [numPeersPerInstance]");
+		if (args.length < 4) {
+			System.out.println("Not enough arguments: AllFriends networkFile policy scenario deletePercent [instanceFile] [numPeersPerInstance]");
 			System.exit(0);
 		}
 
@@ -108,10 +109,12 @@ public class AllFriends {
 			
 			String networkFileName = args[0].trim();
 			POLICY policy = POLICY.valueOf(args[1]);
-			int deletePercent = Integer.parseInt(args[2].trim());
+			SCENARIO scenario = SCENARIO.valueOf(args[2]);
+			int deletePercent = Integer.parseInt(args[3].trim());
 			
 			readmeComment.append("network file=" + networkFileName);
 			readmeComment.append(", policy=" + policy.toString());
+			readmeComment.append(", scenario=" + scenario.toString());
 			readmeComment.append(", delete %=" + deletePercent);
 			
 			int numPeers=0;
@@ -144,9 +147,9 @@ public class AllFriends {
 			}
 			inFP.close();
 			
-			if (args.length > 3) {
-				String instanceFile = args[3].trim();
-				int peersPerInstance = Integer.parseInt(args[4]);
+			if (args.length > 4) {
+				String instanceFile = args[4].trim();
+				int peersPerInstance = Integer.parseInt(args[5]);
 				if (!initNetAddressMap(instanceFile, peersPerInstance, numPeers)) {
 				    initNetAddressMap(numPeers);
 				}
@@ -157,57 +160,63 @@ public class AllFriends {
 			Peer alice = _peersList.get(0);
 			alice.setType(PEER_TYPE.ALICE);
 			
-			//the size of the final result for end condition is the number of edges in the original graph because it is one connected component
+			//the size of the final result for end condition is 
+			//A: the number of edges in the original graph because it is one connected component for the FRIENDSHIP scenario
+			//B: the number of peers in the network for the CONNECT_C scenario
 			int resultsize = 0;
 			Digraph dg = new Digraph(numPeers);
-
+			
 			for (int i=0; i<numPeers; i++) {
-				
-				Peer p = _peersList.get(i);
-				p.setScenario(Constants.SCENARIO.FRIENDS);
-
-				Collection friends = new Collection("friends", p.getName(), COL_TYPE.EXT, 1, "peer");
-				for (Peer f : p.getKnownPeers()) {
-					friends.addFact("\"" + f.getName() + "\"");
-					resultsize++;
-				}
-				//now add alice as the known peer
-				for (int j=0; j<numPeers; j++) {
-				    if (i != j)
-					p.addKnownPeer(_peersList.get(j));
-				}
-				if (deletePercent > 0) {
-				    if (p == alice) {
-					for (String f : friends.getFacts()) {
-					    int id = Integer.parseInt(f.replaceAll("[^0-9]", ""));
-					    dg.addEdge(p.getAuxId(), id); 					    
-					}
-				    } else {
-					friends.deleteFacts(deletePercent);
-					HashSet<String> temp = new HashSet<String>();
-					temp.addAll(friends.getFacts());
-					temp.removeAll(friends.getDeletes());
-					for (String str : temp) {
-					    int id = Integer.parseInt(str.replaceAll("[^0-9]", ""));
-					    dg.addEdge(p.getAuxId(), id); 
-					}
+			    
+			    Peer p = _peersList.get(i);
+			    p.setScenario(scenario);
+			    
+			    Collection friends = new Collection("friends", p.getName(), COL_TYPE.EXT, 1, "peer");
+			    for (Peer f : p.getKnownPeers()) {
+				friends.addFact("\"" + f.getName() + "\"");
+				resultsize++;
+			    }
+			    //now add alice as the known peer
+			    for (int j=0; j<numPeers; j++) {
+				if (i != j)
+				    p.addKnownPeer(_peersList.get(j));
+			    }
+			    if (deletePercent > 0) {
+				if (p == alice) {
+				    for (String f : friends.getFacts()) {
+					int id = Integer.parseInt(f.replaceAll("[^0-9]", ""));
+					dg.addEdge(p.getAuxId(), id); 					    
+				    }
+				} else {
+				    friends.deleteFacts(deletePercent);
+				    HashSet<String> temp = new HashSet<String>();
+				    temp.addAll(friends.getFacts());
+				    temp.removeAll(friends.getDeletes());
+				    for (String str : temp) {
+					int id = Integer.parseInt(str.replaceAll("[^0-9]", ""));
+					dg.addEdge(p.getAuxId(), id); 
 				    }
 				}
-				p.addCollection(friends);
-				
-				p.setPolicy(policy);				
+			    }
+			    p.addCollection(friends);
+			    
+			    p.setPolicy(policy);				
 			}
-
-
+			
 			TransitiveClosure tr = new TransitiveClosure(dg);
 			//get the elements of the tr from alice
 			DirectedDFS dfs = tr.getDFS(alice.getAuxId());
 			int totalAfterDelete = 0;
-			//now count the number of edges that are between vertices in the connected component in gr
-			for (int ii=0; ii<dg.V(); ii++) {
-			    if (dfs.marked(ii)) {
-				totalAfterDelete += dg.outdegree(ii);
+			if (scenario == SCENARIO.FRIENDSHIPS) {
+			    //now count the number of edges that are between vertices in the connected component in gr
+			    for (int ii=0; ii<dg.V(); ii++) {
+				if (dfs.marked(ii)) {
+				    totalAfterDelete += dg.outdegree(ii);
+				}
 			    }
+			} else if (scenario == SCENARIO.CONNECT_COMP) {
+			    resultsize = numPeers;
+			    totalAfterDelete = dfs.count();
 			}
 
 			if (resultsize == totalAfterDelete) {
@@ -216,7 +225,12 @@ public class AllFriends {
 			}
 			
 			// set up alice's collections
-			Collection allFriends = new Collection("all_friends", alice.getName(), COL_TYPE.INT, 1, "peer1, peer2");
+			Collection allFriends = null;
+			if (scenario == SCENARIO.FRIENDSHIPS) {
+			    allFriends = new Collection("all_friends", alice.getName(), COL_TYPE.INT, 1, "peer1, peer2");
+			} else if (scenario == SCENARIO.CONNECT_COMP) {
+			    allFriends = new Collection("all_friends", alice.getName(), COL_TYPE.INT, 1, "peer");
+			}
 			alice.addCollection(allFriends);
 						
 			// output to program files

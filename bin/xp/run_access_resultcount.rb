@@ -2,6 +2,8 @@ require_relative '../../lib/access_runner'
 require_relative '../../lib/wlbud/wlerror'
 require 'csv'
 
+#require 'em/pure_ruby'
+
 XP_FILE_DIR = ARGV.first if defined?(ARGV)
 XPFILE = "XP_NOACCESS"
 WRITEABLEFILE = "writeable.wdm"
@@ -81,9 +83,23 @@ def run_access_remote!
   @hosts = []
   xpfiles.each do |f|
     filename = File.join(XP_FILE_DIR,f)
-    runners << create_wl_runner(filename)
-    p "#{runners.last.peername} created"
-    if (runners.last.peername.start_with? "master" or runners.last.peername.start_with? "sue" or runners.last.peername.start_with? "alice")
+    runner = create_wl_runner(filename)
+    runners << runner
+    p "#{runner.peername} created"
+    if (runner.peername.start_with? "master" or runner.peername.start_with? "sue" or runner.peername.start_with? "alice")
+      if runner.peername == "master0"
+        @masterp = runner
+        @scenario = "network"
+      elsif runner.peername.start_with?("sue")
+        @masterp = runner
+        @scenario = "album"
+      elsif runner.peername.start_with?("alice")
+        if @masterp.nil?
+          @masterp = runner
+          @scenario = "closure"
+        end
+      end
+
       #get a list of all hosts
       file = File.new filename, "r"
       while line = file.gets
@@ -107,30 +123,6 @@ def run_access_remote!
 
   not_done = true
 
-  runners.each do |runner|
-    if @optim1
-      writeable[runner.peername].each { |fct|
-        runner.add_facts fct
-      }
-    end
-    runner.run_engine
-    p "#{runner.peername} started"
-    if runner.peername == "master0"
-      @masterp = runner
-      @scenario = "network"
-    elsif runner.peername.start_with?("sue")
-      @masterp = runner
-      @scenario = "album"
-    elsif runner.peername.start_with?("alice")
-      if @masterp.nil?
-        @masterp = runner
-        @scenario = "closure"
-      end
-    end
-  end
-
-  mdeletesdone = false
-  
   if @masterp != nil
     if @scenario == "network"
       resultrel = "t_i"
@@ -181,6 +173,19 @@ def run_access_remote!
       end
     end
   end
+
+  runners.each do |runner|
+    if @optim1
+      writeable[runner.peername].each { |fct|
+        runner.add_facts fct
+      }
+    end
+    runner.run_engine
+    p "#{runner.peername} started"
+    sleep 1
+  end
+
+  mdeletesdone = false  
   
   deletesdone = false
   while not_done

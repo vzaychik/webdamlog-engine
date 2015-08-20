@@ -263,7 +263,7 @@ public class Peer {
 					    //", photos@$peer($img), tags@$peer($img,\"" + alice.getName() + "\"), tags@$peer($img,\"" + bob.getName() + "\");\n");
 							", photos@$peer($img), tags@$peer($img,$tag1), tags2@$peer($img,$tag2), relevant_tags@$peer($tag1,$tag2);\n");
 			}
-		} else if (_scenario == SCENARIO.FRIENDS) {
+		} else if (_scenario == SCENARIO.FRIENDSHIPS) {
 		    
 		        if (_type == PEER_TYPE.ALICE) {
 				Peer alice = AllFriends._peersList.get(0);
@@ -271,6 +271,13 @@ public class Peer {
 				Collection friendsAlice = alice.getCollectionByName("friends");				
 				prog.append("rule " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "(\"" + alice.getName() + "\",$peer) :- " + friendsAlice.getSchemaWithVars() + ";\n");
 				prog.append("rule " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "($peer2,$peer3) :- " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "($peer1,$peer2), " + friendsAlice.getName() + "@$peer2($peer3);\n");
+			}
+		} else if (_scenario == SCENARIO.CONNECT_COMP) {
+		        if (_type == PEER_TYPE.ALICE) {
+			        Collection allFriends = getCollectionByName("all_friends");
+				Collection friendsAlice = getCollectionByName("friends");
+				prog.append("rule " + allFriends.getSchemaWithVars() + ":- " + friendsAlice.getSchemaWithVars() + ";\n");
+				prog.append("rule " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "($peer2) :- " + allFriends.getName() + allFriends.getSuffix() + "@" + getName() + "($peer1), " + friendsAlice.getName() + "@$peer1($peer2);\n");
 			}
 		}
 
